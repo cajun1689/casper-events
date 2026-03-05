@@ -1,0 +1,42 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Header } from "@/components/Header";
+import HomePage from "@/pages/HomePage";
+import EventDetailPage from "@/pages/EventDetailPage";
+import OrganizationsPage from "@/pages/OrganizationsPage";
+import OrgDetailPage from "@/pages/OrgDetailPage";
+import LoginPage from "@/pages/LoginPage";
+import SignupPage from "@/pages/SignupPage";
+import DashboardPage from "@/pages/DashboardPage";
+import CreateEventPage from "@/pages/CreateEventPage";
+import AdminPage from "@/pages/AdminPage";
+import AdminReviewPage from "@/pages/AdminReviewPage";
+import AdminOrgsPage from "@/pages/AdminOrgsPage";
+import AdminCategoriesPage from "@/pages/AdminCategoriesPage";
+import EmbedSettingsPage from "@/pages/EmbedSettingsPage";
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/events/:id" element={<EventDetailPage />} />
+            <Route path="/organizations" element={<OrganizationsPage />} />
+            <Route path="/organizations/:slug" element={<OrgDetailPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/dashboard/events/new" element={<CreateEventPage />} />
+            <Route path="/dashboard/embed" element={<EmbedSettingsPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin/reviews" element={<AdminReviewPage />} />
+            <Route path="/admin/organizations" element={<AdminOrgsPage />} />
+            <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
+  );
+}

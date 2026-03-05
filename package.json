@@ -1,0 +1,27 @@
+{
+  "name": "cyh-calendar",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Community event calendar platform with embeddable widgets and Facebook integration",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev:api": "pnpm --filter @cyh/api dev",
+    "dev:web": "pnpm --filter @cyh/web dev",
+    "dev:embed": "pnpm --filter @cyh/embed dev",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @cyh/api db:generate",
+    "db:migrate": "pnpm --filter @cyh/api db:migrate",
+    "db:seed": "pnpm --filter @cyh/api db:seed",
+    "cdk:deploy": "pnpm --filter @cyh/infra deploy",
+    "cdk:synth": "pnpm --filter @cyh/infra synth"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

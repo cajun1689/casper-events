@@ -1,0 +1,29 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:host {
+  display: block;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#cyh-embed-root {
+  font-family: var(--cyh-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  color: var(--cyh-text, #1f2937);
+}
+
+button {
+  font-family: inherit;
+}
+
+@keyframes cyh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

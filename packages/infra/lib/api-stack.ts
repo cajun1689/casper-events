@@ -1,0 +1,160 @@
+import * as cdk from "aws-cdk-lib";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as s3 from "aws-cdk-lib/aws-s3";
+import * as cognito from "aws-cdk-lib/aws-cognito";
+import * as events from "aws-cdk-lib/aws-events";
+import * as targets from "aws-cdk-lib/aws-events-targets";
+import * as acm from "aws-cdk-lib/aws-certificatemanager";
+import * as route53 from "aws-cdk-lib/aws-route53";
+import * as route53Targets from "aws-cdk-lib/aws-route53-targets";
+import { Construct } from "constructs";
+
+interface ApiStackProps extends cdk.StackProps {
+  vpc: ec2.IVpc;
+  dbSecretArn: string;
+  dbClusterEndpoint: string;
+  userPool: cognito.IUserPool;
+  mediaBucket: s3.IBucket;
+  domainName: string;
+  hostedZoneId: string;
+  certificateArn: string;
+}
+
+export class ApiStack extends cdk.Stack {
+  public readonly api: apigateway.RestApi;
+
+  constructor(scope: Construct, id: string, props: ApiStackProps) {
+    super(scope, id, props);
+
+    const certificate = acm.Certificate.fromCertificateArn(
+      this,
+      "ApiCert",
+      props.certificateArn
+    );
+
+    const hostedZone = route53.HostedZone.fromHostedZoneAttributes(
+      this,
+      "Zone",
+      {
+        hostedZoneId: props.hostedZoneId,
+        zoneName: props.domainName,
+      }
+    );
+
+    const lambdaSg = new ec2.SecurityGroup(this, "LambdaSg", {
+      vpc: props.vpc,
+      description: "Security group for API Lambda functions",
+    });
+
+    const apiHandler = new lambda.Function(this, "ApiHandler", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "index.handler",
+      code: lambda.Code.fromAsset("../api/dist"),
+      memorySize: 512,
+      timeout: cdk.Duration.seconds(30),
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [lambdaSg],
+      environment: {
+        NODE_ENV: "production",
+        DB_SECRET_ARN: props.dbSecretArn,
+        DB_HOST: props.dbClusterEndpoint,
+        DB_NAME: "cyhcalendar",
+        COGNITO_USER_POOL_ID: props.userPool.userPoolId,
+        MEDIA_BUCKET: props.mediaBucket.bucketName,
+        CORS_ORIGIN: `https://${props.domainName}`,
+      },
+    });
+
+    apiHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["secretsmanager:GetSecretValue"],
+        resources: [props.dbSecretArn],
+      })
+    );
+
+    props.mediaBucket.grantReadWrite(apiHandler);
+
+    const apiDomainName = `api.${props.domainName}`;
+
+    this.api = new apigateway.RestApi(this, "CalendarApi", {
+      restApiName: "Casper Events API",
+      description: "Community calendar REST API",
+      domainName: {
+        domainName: apiDomainName,
+        certificate,
+      },
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: [
+          "Content-Type",
+          "Authorization",
+          "X-Api-Key",
+          "X-Amz-Date",
+        ],
+      },
+      deployOptions: {
+        stageName: "v1",
+        throttlingRateLimit: 100,
+        throttlingBurstLimit: 200,
+      },
+    });
+
+    const lambdaIntegration = new apigateway.LambdaIntegration(apiHandler, {
+      proxy: true,
+    });
+
+    this.api.root.addProxy({
+      defaultIntegration: lambdaIntegration,
+      anyMethod: true,
+    });
+
+    // DNS: api.casperevents.org -> API Gateway
+    new route53.ARecord(this, "ApiAlias", {
+      zone: hostedZone,
+      recordName: apiDomainName,
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.ApiGateway(this.api)
+      ),
+    });
+
+    // Scheduled task: sync Facebook events and check token health
+    const scheduledHandler = new lambda.Function(this, "ScheduledHandler", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "scheduled.handler",
+      code: lambda.Code.fromAsset("../api/dist"),
+      memorySize: 256,
+      timeout: cdk.Duration.minutes(5),
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [lambdaSg],
+      environment: {
+        NODE_ENV: "production",
+        DB_SECRET_ARN: props.dbSecretArn,
+        DB_HOST: props.dbClusterEndpoint,
+        DB_NAME: "cyhcalendar",
+      },
+    });
+
+    scheduledHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["secretsmanager:GetSecretValue"],
+        resources: [props.dbSecretArn],
+      })
+    );
+
+    new events.Rule(this, "SyncSchedule", {
+      schedule: events.Schedule.rate(cdk.Duration.hours(6)),
+      targets: [new targets.LambdaFunction(scheduledHandler)],
+    });
+
+    new cdk.CfnOutput(this, "ApiUrl", {
+      value: `https://${apiDomainName}`,
+      description: "API URL",
+    });
+  }
+}

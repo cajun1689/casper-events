@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @cyh/shared build
+
+      - name: Build API
+        run: pnpm --filter @cyh/api build
+
+      - name: Build web app
+        run: pnpm --filter @cyh/web build
+
+      - name: Build embed widget
+        run: pnpm --filter @cyh/embed build
+
+      - name: Synthesize CDK stacks
+        run: pnpm --filter @cyh/infra synth
+        env:
+          CDK_DEFAULT_ACCOUNT: "000000000000"
+          CDK_DEFAULT_REGION: us-east-1
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm build
+
+      - name: Deploy CDK stacks
+        run: pnpm --filter @cyh/infra deploy -- --require-approval never
+
+      - name: Deploy web to S3
+        run: |
+          BUCKET=$(aws cloudformation describe-stacks --stack-name CyhStorage --query "Stacks[0].Outputs[?OutputKey=='StaticBucketName'].OutputValue" --output text)
+          aws s3 sync packages/web/dist s3://$BUCKET --delete
+
+      - name: Deploy embed to S3
+        run: |
+          BUCKET=$(aws cloudformation describe-stacks --stack-name CyhStorage --query "Stacks[0].Outputs[?OutputKey=='StaticBucketName'].OutputValue" --output text)
+          aws s3 cp packages/embed/dist/embed.js s3://$BUCKET/embed.js --cache-control "public, max-age=3600"
+
+      - name: Invalidate CloudFront
+        run: |
+          DIST_ID=$(aws cloudformation describe-stacks --stack-name CyhStorage --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" --output text 2>/dev/null || echo "")
+          if [ -n "$DIST_ID" ]; then
+            aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
+          fi
