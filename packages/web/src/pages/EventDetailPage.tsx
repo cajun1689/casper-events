@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { MapPin, Clock, CalendarDays, ExternalLink, Ticket, DollarSign, Building2, ArrowLeft, Share2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import DOMPurify from "dompurify";
 import { eventsApi } from "@/lib/api";
 import type { EventWithDetails } from "@cyh/shared";
 
@@ -93,7 +94,12 @@ export default function EventDetailPage() {
             )}
           </div>
 
-          {event.description && <div className="mb-8 whitespace-pre-wrap text-sm leading-relaxed text-gray-600 border-t border-gray-100 pt-6">{event.description}</div>}
+          {event.description && (
+            <div
+              className="prose prose-sm max-w-none mb-8 text-gray-600 border-t border-gray-100 pt-6"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(event.description) }}
+            />
+          )}
 
           <div className="flex flex-wrap gap-3">
             {event.ticketUrl && (

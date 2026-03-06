@@ -81,14 +81,18 @@ export function EmbedEventDetail({ event }: EmbedEventDetailProps) {
       )}
 
       {event.description && (
-        <div style={{
-          fontSize: "13px",
-          lineHeight: 1.65,
-          color: "color-mix(in srgb, var(--cyh-text, #1f2937) 70%, transparent)",
-          whiteSpace: "pre-line",
-        }}>
-          {event.description}
-        </div>
+        <div
+          style={{
+            fontSize: "13px",
+            lineHeight: 1.65,
+            color: "color-mix(in srgb, var(--cyh-text, #1f2937) 70%, transparent)",
+          }}
+          dangerouslySetInnerHTML={{
+            __html: event.description.startsWith("<")
+              ? event.description
+              : event.description.replace(/\n/g, "<br/>"),
+          }}
+        />
       )}
 
       {event.ticketUrl && (

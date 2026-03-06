@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { eventsApi, categoriesApi, api } from "@/lib/api";
 import { ImageUpload } from "@/components/ImageUpload";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 export default function CreateEventPage() {
   const navigate = useNavigate();
@@ -91,8 +92,12 @@ export default function CreateEventPage() {
             <input id="title" type="text" required value={form.title} onChange={(e) => update("title", e.target.value)} className={inputCls} placeholder="Community Potluck Dinner" />
           </div>
           <div>
-            <label htmlFor="description" className="mb-1.5 block text-sm font-semibold text-gray-700">Description</label>
-            <textarea id="description" rows={5} value={form.description} onChange={(e) => update("description", e.target.value)} className={inputCls + " resize-y"} placeholder="Tell people about your event…" />
+            <label className="mb-1.5 block text-sm font-semibold text-gray-700">Description</label>
+            <RichTextEditor
+              value={form.description}
+              onChange={(html) => update("description", html)}
+              placeholder="Tell people about your event…"
+            />
           </div>
         </section>
 
