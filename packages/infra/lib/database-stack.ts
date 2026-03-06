@@ -8,7 +8,7 @@ interface DatabaseStackProps extends cdk.StackProps {
 }
 
 export class DatabaseStack extends cdk.Stack {
-  public readonly cluster: rds.IDatabaseCluster;
+  public readonly cluster: rds.DatabaseCluster;
   public readonly securityGroup: ec2.SecurityGroup;
   public readonly secret: cdk.aws_secretsmanager.ISecret;
 
