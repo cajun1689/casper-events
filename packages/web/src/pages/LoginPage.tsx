@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogIn, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { LogIn, Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import {
   CognitoIdentityProviderClient,
   InitiateAuthCommand,
   RespondToAuthChallengeCommand,
+  ForgotPasswordCommand,
+  ConfirmForgotPasswordCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { useStore } from "@/lib/store";
 import { authApi } from "@/lib/api";
@@ -21,16 +23,25 @@ export default function LoginPage() {
   const { setAuth } = useStore();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState<"login" | "newPassword">("login");
+  const [step, setStep] = useState<"login" | "newPassword" | "forgotPassword" | "resetCode">("login");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [challengeSession, setChallengeSession] = useState<string | null>(null);
+  const [resetCode, setResetCode] = useState("");
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   async function completeLogin(idToken: string) {
     const payload = JSON.parse(atob(idToken.split(".")[1]));
     localStorage.setItem("cyh_token", idToken);
 
-    const profile = await authApi.me();
+    let profile: { user: unknown; organization: unknown };
+    try {
+      profile = await authApi.me();
+    } catch {
+      await authApi.register({});
+      profile = await authApi.me();
+    }
+
     setAuth(
       idToken,
       {
@@ -109,6 +120,56 @@ export default function LoginPage() {
     }
   }
 
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      await cognito.send(
+        new ForgotPasswordCommand({ ClientId: CLIENT_ID, Username: email })
+      );
+      setStep("resetCode");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send reset code");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (newPassword !== confirmNewPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+    setLoading(true);
+    try {
+      await cognito.send(
+        new ConfirmForgotPasswordCommand({
+          ClientId: CLIENT_ID,
+          Username: email,
+          ConfirmationCode: resetCode,
+          Password: newPassword,
+        })
+      );
+      setResetSuccess(true);
+      setStep("login");
+      setPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setResetCode("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to reset password");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const inputCls = "w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-10 pr-10 text-sm transition-all focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100";
 
   return (
@@ -119,18 +180,27 @@ export default function LoginPage() {
             <LogIn className="h-7 w-7 text-white" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
-            {step === "login" ? "Welcome back" : "Set your new password"}
+            {step === "login" && "Welcome back"}
+            {step === "newPassword" && "Set your new password"}
+            {step === "forgotPassword" && "Reset your password"}
+            {step === "resetCode" && "Enter reset code"}
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            {step === "login"
-              ? "Sign in to manage your events and organization"
-              : "Your account was created by an admin. Please choose a new password to continue."}
+            {step === "login" && "Sign in to manage your events and organization"}
+            {step === "newPassword" && "Your account was created by an admin. Please choose a new password to continue."}
+            {step === "forgotPassword" && "Enter your email and we'll send you a code to reset your password"}
+            {step === "resetCode" && `We sent a reset code to ${email}`}
           </p>
         </div>
 
         <div className="rounded-2xl border border-gray-200/60 bg-white/80 p-8 shadow-xl shadow-gray-200/40 backdrop-blur-sm">
           {step === "login" ? (
             <form onSubmit={handleSubmit} className="space-y-5">
+              {resetSuccess && (
+                <div className="rounded-xl bg-emerald-50 border border-emerald-200/60 px-4 py-3 text-sm font-semibold text-emerald-700">
+                  Password reset successfully! Sign in with your new password.
+                </div>
+              )}
               {error && (
                 <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</div>
               )}
@@ -163,6 +233,86 @@ export default function LoginPage() {
                 ) : (
                   "Sign In"
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setStep("forgotPassword"); setError(null); setResetSuccess(false); }}
+                className="w-full text-sm font-semibold text-primary-600 transition-colors hover:text-primary-700"
+              >
+                Forgot your password?
+              </button>
+            </form>
+          ) : step === "forgotPassword" ? (
+            <form onSubmit={handleForgotPassword} className="space-y-5">
+              {error && (
+                <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</div>
+              )}
+
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} placeholder="you@example.com" required />
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading} className="w-full rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 py-3 text-sm font-bold text-white shadow-lg shadow-primary-500/25 transition-all hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed">
+                {loading ? "Sending..." : "Send Reset Code"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setStep("login"); setError(null); }}
+                className="inline-flex w-full items-center justify-center gap-1 text-sm font-semibold text-gray-500 transition-colors hover:text-gray-700"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" /> Back to sign in
+              </button>
+            </form>
+          ) : step === "resetCode" ? (
+            <form onSubmit={handleResetPassword} className="space-y-5">
+              {error && (
+                <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</div>
+              )}
+
+              <div className="rounded-xl bg-blue-50/80 px-4 py-3 text-sm text-blue-700">
+                Check your inbox (and spam folder) for a 6-digit code.
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Reset Code</label>
+                <input type="text" value={resetCode} onChange={(e) => setResetCode(e.target.value)} className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 px-4 text-center text-lg font-bold tracking-widest transition-all focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100" placeholder="000000" required maxLength={6} autoComplete="one-time-code" />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700">New Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input type={showPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={inputCls} placeholder="Min 8 characters" required minLength={8} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Confirm Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input type={showPassword ? "text" : "password"} value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} className={inputCls} placeholder="Confirm password" required minLength={8} />
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading} className="w-full rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 py-3 text-sm font-bold text-white shadow-lg shadow-primary-500/25 transition-all hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed">
+                {loading ? "Resetting..." : "Reset Password"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setStep("login"); setError(null); }}
+                className="inline-flex w-full items-center justify-center gap-1 text-sm font-semibold text-gray-500 transition-colors hover:text-gray-700"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" /> Back to sign in
               </button>
             </form>
           ) : (
