@@ -38,7 +38,10 @@ export default function LoginPage() {
     try {
       profile = await authApi.me();
     } catch {
-      await authApi.register({});
+      const pendingOrg = sessionStorage.getItem("cyh_pending_org");
+      const orgData = pendingOrg ? JSON.parse(pendingOrg) : {};
+      await authApi.register(orgData);
+      sessionStorage.removeItem("cyh_pending_org");
       profile = await authApi.me();
     }
 

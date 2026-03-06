@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { UserPlus, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Mail, Lock, User, Eye, EyeOff, Building2 } from "lucide-react";
 import {
   CognitoIdentityProviderClient,
   SignUpCommand,
@@ -11,10 +11,18 @@ import {
 const cognito = new CognitoIdentityProviderClient({ region: "us-east-1" });
 const CLIENT_ID = "6iiuflu8b3r81fr57oifkj1o6a";
 
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [orgName, setOrgName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [confirmCode, setConfirmCode] = useState("");
   const [step, setStep] = useState<"signup" | "confirm">("signup");
@@ -61,6 +69,15 @@ export default function SignupPage() {
           ConfirmationCode: confirmCode,
         })
       );
+      if (orgName.trim()) {
+        sessionStorage.setItem(
+          "cyh_pending_org",
+          JSON.stringify({
+            organizationName: orgName.trim(),
+            organizationSlug: slugify(orgName.trim()),
+          })
+        );
+      }
       navigate("/login");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Confirmation failed");
@@ -140,6 +157,21 @@ export default function SignupPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-10 pr-4 text-sm transition-all focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100"
                     placeholder="you@example.com"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Organization Name</label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={orgName}
+                    onChange={(e) => setOrgName(e.target.value)}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-10 pr-4 text-sm transition-all focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100"
+                    placeholder="Your organization or business name"
                     required
                   />
                 </div>
