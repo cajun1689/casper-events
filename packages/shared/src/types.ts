@@ -13,6 +13,8 @@ export interface EventWithDetails {
   imageUrl: string | null;
   ticketUrl: string | null;
   cost: string | null;
+  isOnline: boolean;
+  onlineEventUrl: string | null;
   status: "draft" | "published" | "approved" | "rejected" | "cancelled";
   facebookEventId: string | null;
   source: "manual" | "facebook_import" | "ical_import" | "google_calendar_import";

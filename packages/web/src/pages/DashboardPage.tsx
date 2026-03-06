@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, CalendarDays, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Facebook, Share2, Calendar } from "lucide-react";
+import { Plus, CalendarDays, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Facebook, Share2, Calendar, Pencil, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { eventsApi, api } from "@/lib/api";
 import type { EventWithDetails } from "@cyh/shared";
@@ -13,6 +13,8 @@ export default function DashboardPage() {
   const [fbConnected, setFbConnected] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [sharingId, setSharingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!token) { navigate("/login"); return; }
@@ -41,6 +43,19 @@ export default function DashboardPage() {
       alert(err instanceof Error ? err.message : "Failed to share");
     } finally {
       setSharingId(null);
+    }
+  };
+
+  const handleDelete = async (eventId: string) => {
+    setDeleting(true);
+    try {
+      await eventsApi.delete(eventId);
+      setEvents((prev) => prev.filter((e) => e.id !== eventId));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete event");
+    } finally {
+      setDeleting(false);
+      setDeleteId(null);
     }
   };
 
@@ -149,6 +164,20 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Delete confirmation */}
+      {deleteId && (
+        <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-5 animate-fade-in">
+          <p className="text-sm font-semibold text-red-700">Are you sure you want to delete this event?</p>
+          <p className="mt-1 text-xs text-red-600">This action cannot be undone.</p>
+          <div className="mt-4 flex gap-3">
+            <button onClick={() => handleDelete(deleteId)} disabled={deleting} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition-all hover:bg-red-700 disabled:opacity-50">
+              {deleting ? "Deleting..." : "Yes, Delete"}
+            </button>
+            <button onClick={() => setDeleteId(null)} className="rounded-xl px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-800">Cancel</button>
+          </div>
+        </div>
+      )}
+
       {/* Events list */}
       <div className="rounded-2xl border border-gray-200/60 bg-white/70 shadow-sm backdrop-blur-sm">
         <div className="border-b border-gray-100 px-6 py-4">
@@ -167,21 +196,21 @@ export default function DashboardPage() {
         ) : (
           <div className="divide-y divide-gray-100">
             {events.map((event) => (
-              <Link key={event.id} to={`/events/${event.id}`} className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-primary-50/30">
+              <div key={event.id} className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-primary-50/30">
                 <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 text-primary-700">
                   <span className="text-[9px] font-bold uppercase leading-none">{new Date(event.startAt).toLocaleDateString("en", { month: "short" })}</span>
                   <span className="text-base font-extrabold leading-tight">{new Date(event.startAt).getDate()}</span>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-gray-900">{event.title}</p>
+                <Link to={`/events/${event.id}`} className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-gray-900 hover:text-primary-600 transition-colors">{event.title}</p>
                   <p className="text-xs text-gray-400">{event.venueName ?? "No venue"}</p>
-                </div>
-                <div className="flex items-center gap-2">
+                </Link>
+                <div className="flex items-center gap-1.5">
                   {fbConnected && (
                     <button
                       onClick={(e) => shareToFacebook(event.id, e)}
                       disabled={sharingId === event.id}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-blue-50 hover:text-[#1877F2] disabled:opacity-50"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-blue-50 hover:text-[#1877F2] disabled:opacity-50"
                       title="Share to Facebook"
                     >
                       {sharingId === event.id ? (
@@ -191,7 +220,21 @@ export default function DashboardPage() {
                       )}
                     </button>
                   )}
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                  <Link
+                    to={`/dashboard/events/${event.id}/edit`}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-primary-50 hover:text-primary-600"
+                    title="Edit"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Link>
+                  <button
+                    onClick={() => setDeleteId(event.id)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-red-50 hover:text-red-600"
+                    title="Delete"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                  <span className={`ml-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
                     event.status === "approved" ? "bg-emerald-50 text-emerald-600" :
                     event.status === "published" ? "bg-blue-50 text-blue-600" :
                     event.status === "rejected" ? "bg-red-50 text-red-600" :
@@ -200,7 +243,7 @@ export default function DashboardPage() {
                     {event.status}
                   </span>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}

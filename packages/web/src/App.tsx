@@ -8,7 +8,9 @@ import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
 import DashboardPage from "@/pages/DashboardPage";
 import CreateEventPage from "@/pages/CreateEventPage";
+import EditEventPage from "@/pages/EditEventPage";
 import AdminPage from "@/pages/AdminPage";
+import AdminEventsPage from "@/pages/AdminEventsPage";
 import AdminReviewPage from "@/pages/AdminReviewPage";
 import AdminOrgsPage from "@/pages/AdminOrgsPage";
 import AdminCategoriesPage from "@/pages/AdminCategoriesPage";
@@ -34,11 +36,13 @@ export default function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/dashboard/events/new" element={<CreateEventPage />} />
+            <Route path="/dashboard/events/:id/edit" element={<EditEventPage />} />
             <Route path="/dashboard/embed" element={<EmbedSettingsPage />} />
             <Route path="/dashboard/facebook" element={<FacebookSettingsPage />} />
             <Route path="/dashboard/google-calendar" element={<GoogleCalendarSettingsPage />} />
             <Route path="/dashboard/settings" element={<FacebookSettingsPage />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin/events" element={<AdminEventsPage />} />
             <Route path="/admin/reviews" element={<AdminReviewPage />} />
             <Route path="/admin/organizations" element={<AdminOrgsPage />} />
             <Route path="/admin/categories" element={<AdminCategoriesPage />} />

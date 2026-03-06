@@ -17,10 +17,20 @@ export async function eventRoutes(app: FastifyInstance) {
     const query = listEventsSchema.parse(request.query);
     const db = await getDb();
 
+    let isOwnOrg = false;
+    let isAdmin = false;
+    if (request.user?.sub) {
+      const userOrg = await resolveUserOrg(db, request.user.sub);
+      if (userOrg?.isAdmin) isAdmin = true;
+      if (query.orgId && userOrg?.orgId === query.orgId) isOwnOrg = true;
+    }
+
     const conditions: SQL[] = [];
 
     if (query.status) {
       conditions.push(eq(schema.events.status, query.status));
+    } else if (isOwnOrg || isAdmin) {
+      // Org owners and admins see all statuses for their org
     } else {
       conditions.push(
         inArray(schema.events.status, ["published", "approved"])
@@ -96,10 +106,12 @@ export async function eventRoutes(app: FastifyInstance) {
       }
     }
 
-    let filteredEvents = eventsResult.filter((event) => {
-      const org = orgsMap[event.orgId];
-      return org && org.status === "active";
-    });
+    let filteredEvents = (isOwnOrg || isAdmin)
+      ? eventsResult
+      : eventsResult.filter((event) => {
+          const org = orgsMap[event.orgId];
+          return org && org.status === "active";
+        });
 
     if (query.categories && query.categories.length > 0) {
       const catSlugs = query.categories;

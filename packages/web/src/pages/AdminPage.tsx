@@ -15,6 +15,7 @@ export default function AdminPage() {
   }, [token, user, navigate]);
 
   const cards = [
+    { to: "/admin/events", label: "All Events", desc: "View, edit, or delete any event", icon: BarChart3, gradient: "from-orange-500 to-orange-600", count: stats?.events?.total },
     { to: "/admin/reviews", label: "Review Events", desc: "Approve or reject pending events", icon: CalendarCheck, gradient: "from-violet-500 to-violet-600", count: stats?.events?.draft },
     { to: "/admin/organizations", label: "Organizations", desc: "Manage organization status", icon: Building2, gradient: "from-blue-500 to-blue-600", count: stats?.organizations },
     { to: "/admin/categories", label: "Categories", desc: "Add or edit event categories", icon: Tags, gradient: "from-emerald-500 to-emerald-600" },
@@ -32,7 +33,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
           <Link key={card.to} to={card.to} className="group rounded-2xl border border-gray-200/60 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 hover:bg-white">
             <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${card.gradient} shadow-lg`}>
