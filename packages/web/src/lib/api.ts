@@ -106,6 +106,22 @@ export const uploadApi = {
   },
 };
 
+export const googleCalendarApi = {
+  status: () =>
+    api.get<{ connected: boolean; calendarId: string | null }>(
+      "/google-calendar/status"
+    ),
+  calendars: () =>
+    api.get<{
+      calendars: { id: string; name: string; primary: boolean; color: string | null }[];
+      selectedCalendarId: string | null;
+    }>("/google-calendar/calendars"),
+  selectCalendar: (calendarId: string) =>
+    api.put<{ success: boolean }>("/google-calendar/calendar", { calendarId }),
+  sync: () => api.post<{ success: boolean }>("/google-calendar/sync"),
+  disconnect: () => api.delete("/google-calendar/disconnect"),
+};
+
 export const adminApi = {
   pendingEvents: () =>
     api.get<{ data: EventWithDetails[] }>("/admin/events/pending"),

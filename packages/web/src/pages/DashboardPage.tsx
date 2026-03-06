@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, CalendarDays, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Facebook, Share2 } from "lucide-react";
+import { Plus, CalendarDays, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Facebook, Share2, Calendar } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { eventsApi, api } from "@/lib/api";
 import type { EventWithDetails } from "@cyh/shared";
@@ -11,6 +11,7 @@ export default function DashboardPage() {
   const [events, setEvents] = useState<EventWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [fbConnected, setFbConnected] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState(false);
   const [sharingId, setSharingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -19,9 +20,11 @@ export default function DashboardPage() {
     Promise.all([
       eventsApi.list({ orgId: organization.id }),
       api.get<{ connected: boolean }>("/facebook/pages").catch(() => ({ connected: false })),
-    ]).then(([eventsRes, fbRes]) => {
+      api.get<{ connected: boolean }>("/google-calendar/status").catch(() => ({ connected: false })),
+    ]).then(([eventsRes, fbRes, googleRes]) => {
       setEvents(eventsRes.data);
       setFbConnected(fbRes.connected);
+      setGoogleConnected(googleRes.connected);
       setLoading(false);
     });
   }, [token, organization, navigate]);
@@ -71,6 +74,9 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-500">Manage your events and organization settings</p>
         </div>
         <div className="flex gap-3">
+          <Link to="/dashboard/google-calendar" className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200/80 bg-emerald-50/50 px-4 py-2.5 text-sm font-semibold text-emerald-700 shadow-sm transition-all hover:bg-emerald-50 hover:shadow">
+            <Calendar className="h-4 w-4" /> {googleConnected ? "Google Cal" : "Connect Google"}
+          </Link>
           <Link to="/dashboard/facebook" className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200/80 bg-blue-50/50 px-4 py-2.5 text-sm font-semibold text-[#1877F2] shadow-sm transition-all hover:bg-blue-50 hover:shadow">
             <Facebook className="h-4 w-4" /> {fbConnected ? "Facebook" : "Connect Facebook"}
           </Link>

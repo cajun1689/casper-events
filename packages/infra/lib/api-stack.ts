@@ -65,7 +65,14 @@ export class ApiStack extends cdk.Stack {
         DB_NAME: "cyhcalendar",
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
         MEDIA_BUCKET: props.mediaBucket.bucketName,
+        CDN_DOMAIN: props.domainName,
         CORS_ORIGIN: `https://${props.domainName}`,
+        FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID || "",
+        FACEBOOK_APP_SECRET: process.env.FACEBOOK_APP_SECRET || "",
+        FACEBOOK_REDIRECT_URI: process.env.FACEBOOK_REDIRECT_URI || `https://api.${props.domainName}/auth/facebook/callback`,
+        GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+        GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
+        GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI || `https://api.${props.domainName}/auth/google/callback`,
       },
     });
 
@@ -137,6 +144,10 @@ export class ApiStack extends cdk.Stack {
         DB_SECRET_ARN: props.dbSecretArn,
         DB_HOST: props.dbClusterEndpoint,
         DB_NAME: "cyhcalendar",
+        MEDIA_BUCKET: props.mediaBucket.bucketName,
+        CDN_DOMAIN: props.domainName,
+        GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+        GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
       },
     });
 
@@ -146,6 +157,8 @@ export class ApiStack extends cdk.Stack {
         resources: [props.dbSecretArn],
       })
     );
+
+    props.mediaBucket.grantReadWrite(scheduledHandler);
 
     new events.Rule(this, "SyncSchedule", {
       schedule: events.Schedule.rate(cdk.Duration.hours(6)),

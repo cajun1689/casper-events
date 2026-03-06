@@ -14,6 +14,7 @@ import AdminOrgsPage from "@/pages/AdminOrgsPage";
 import AdminCategoriesPage from "@/pages/AdminCategoriesPage";
 import EmbedSettingsPage from "@/pages/EmbedSettingsPage";
 import FacebookSettingsPage from "@/pages/FacebookSettingsPage";
+import GoogleCalendarSettingsPage from "@/pages/GoogleCalendarSettingsPage";
 import AboutPage from "@/pages/AboutPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="/dashboard/events/new" element={<CreateEventPage />} />
             <Route path="/dashboard/embed" element={<EmbedSettingsPage />} />
             <Route path="/dashboard/facebook" element={<FacebookSettingsPage />} />
+            <Route path="/dashboard/google-calendar" element={<GoogleCalendarSettingsPage />} />
             <Route path="/dashboard/settings" element={<FacebookSettingsPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/admin/reviews" element={<AdminReviewPage />} />

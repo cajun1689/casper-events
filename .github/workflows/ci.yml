@@ -70,6 +70,13 @@ jobs:
 
       - name: Deploy CDK stacks
         run: pnpm --filter @cyh/infra deploy -- --require-approval never
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+          FACEBOOK_APP_ID: ${{ secrets.FACEBOOK_APP_ID }}
+          FACEBOOK_APP_SECRET: ${{ secrets.FACEBOOK_APP_SECRET }}
+          FACEBOOK_REDIRECT_URI: ${{ secrets.FACEBOOK_REDIRECT_URI }}
 
       - name: Deploy web to S3
         run: |

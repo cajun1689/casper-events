@@ -1,6 +1,7 @@
 import { getDb } from "./db/connection.js";
 import { eq, and, lt, isNotNull } from "drizzle-orm";
 import * as schema from "@cyh/shared/db";
+import { syncGoogleCalendarEvents } from "./routes/google-calendar.js";
 
 export async function handler() {
   const db = await getDb();
@@ -38,6 +39,25 @@ export async function handler() {
     }
   }
 
+  // Sync Google Calendar events
+  const orgsWithGoogle = await db
+    .select()
+    .from(schema.organizations)
+    .where(
+      and(
+        isNotNull(schema.organizations.googleRefreshToken),
+        isNotNull(schema.organizations.googleCalendarId)
+      )
+    );
+
+  for (const org of orgsWithGoogle) {
+    try {
+      await syncGoogleCalendarEvents(db, org);
+    } catch (err) {
+      console.error(`Failed to sync Google Calendar events for org ${org.id}:`, err);
+    }
+  }
+
   // Check for expiring Facebook tokens (within 7 days)
   const expiringOrgs = await db
     .select()
@@ -60,7 +80,11 @@ export async function handler() {
     // TODO: Send SES email notification to admins
   }
 
-  return { synced: orgsWithFb.length, icalSynced: orgsWithIcal.length };
+  return {
+    synced: orgsWithFb.length,
+    icalSynced: orgsWithIcal.length,
+    googleSynced: orgsWithGoogle.length,
+  };
 }
 
 async function syncFacebookEvents(

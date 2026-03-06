@@ -32,6 +32,7 @@ export const eventSourceEnum = pgEnum("event_source", [
   "manual",
   "facebook_import",
   "ical_import",
+  "google_calendar_import",
 ]);
 
 export const userRoleEnum = pgEnum("user_role", ["owner", "editor", "viewer"]);
@@ -65,6 +66,11 @@ export const organizations = pgTable(
     facebookPageToken: text("facebook_page_token"),
     fbTokenExpiresAt: timestamp("fb_token_expires_at", { withTimezone: true }),
     icalFeedUrl: varchar("ical_feed_url", { length: 500 }),
+    googleRefreshToken: text("google_refresh_token"),
+    googleCalendarId: varchar("google_calendar_id", { length: 500 }),
+    googleTokenExpiresAt: timestamp("google_token_expires_at", {
+      withTimezone: true,
+    }),
     status: orgStatusEnum("status").default("pending").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -103,6 +109,7 @@ export const events = pgTable(
     status: eventStatusEnum("status").default("draft").notNull(),
     facebookEventId: varchar("facebook_event_id", { length: 255 }),
     publishToFacebook: boolean("publish_to_facebook").default(false).notNull(),
+    googleCalendarEventId: varchar("google_calendar_event_id", { length: 500 }),
     source: eventSourceEnum("source").default("manual").notNull(),
     recurrenceRule: varchar("recurrence_rule", { length: 255 }),
     recurrenceParentId: uuid("recurrence_parent_id"),

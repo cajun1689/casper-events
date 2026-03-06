@@ -15,7 +15,7 @@ export interface EventWithDetails {
   cost: string | null;
   status: "draft" | "published" | "approved" | "rejected" | "cancelled";
   facebookEventId: string | null;
-  source: "manual" | "facebook_import" | "ical_import";
+  source: "manual" | "facebook_import" | "ical_import" | "google_calendar_import";
   recurrenceRule: string | null;
   createdAt: string;
   updatedAt: string;

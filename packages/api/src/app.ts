@@ -7,6 +7,7 @@ import { adminRoutes } from "./routes/admin.js";
 import { authRoutes } from "./routes/auth.js";
 import { embedRoutes } from "./routes/embed.js";
 import { facebookRoutes } from "./routes/facebook.js";
+import { googleCalendarRoutes } from "./routes/google-calendar.js";
 import { icalRoutes } from "./routes/ical.js";
 import { uploadRoutes } from "./routes/upload.js";
 import { venueRoutes } from "./routes/venues.js";
@@ -31,6 +32,7 @@ export function buildApp() {
   app.register(adminRoutes);
   app.register(embedRoutes);
   app.register(facebookRoutes);
+  app.register(googleCalendarRoutes);
   app.register(icalRoutes);
   app.register(uploadRoutes);
   app.register(venueRoutes);
