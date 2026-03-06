@@ -13,8 +13,8 @@ A centralized event calendar platform for county and regional communities. Organ
 - **Organization connections** — Orgs can opt-in to show each other's events
 - **Admin approval** — Events appear on org embeds immediately, but require admin review for the main community calendar
 - **Facebook integration** — Import events from Facebook Pages, post events back to Facebook
+- **Google Calendar sync** — Connect a Google Calendar to automatically import events and images
 - **iCal feeds** — Subscribe to the calendar from Google Calendar, Apple Calendar, Outlook
-- **iCal import** — Organizations with existing Google Calendars can sync automatically
 - **Image uploads** — Event images via pre-signed S3 uploads
 - **Mobile-ready architecture** — API-first design for future React Native apps
 
@@ -119,6 +119,7 @@ See [docs/EMBEDDING.md](docs/EMBEDDING.md) for full configuration options.
 - [x] Embeddable themed widget
 - [x] Admin approval workflow
 - [x] Facebook integration
+- [x] Google Calendar sync with image import
 - [x] iCal feed output and import
 - [ ] Native mobile apps (React Native)
 - [ ] Push notifications

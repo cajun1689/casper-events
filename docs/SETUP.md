@@ -142,10 +142,30 @@ aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
    - `pages_show_list`
    - `pages_read_engagement`
    - `pages_manage_posts`
-6. Set these environment variables on your Lambda:
+6. Set these environment variables on your Lambda (or in `.env` for local dev):
    - `FACEBOOK_APP_ID`
    - `FACEBOOK_APP_SECRET`
    - `FACEBOOK_REDIRECT_URI`
+
+## Google Calendar Integration Setup
+
+Allows organizations to connect a Google Calendar and automatically import events (including image attachments).
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com) and create a project (or use an existing one)
+2. Enable the **Google Calendar API** and **Google Drive API** under APIs & Services
+3. Configure the **OAuth consent screen**:
+   - Add scopes: `calendar.readonly`, `drive.readonly`
+   - Set publishing status to **Production** (or add test users while in Testing mode)
+4. Create **OAuth 2.0 credentials** (Web application type):
+   - Authorized JavaScript origins: `https://yourdomain.com`
+   - Authorized redirect URIs: `https://api.yourdomain.com/v1/auth/google/callback`
+5. Set these environment variables on your Lambda (or in `.env` for local dev):
+   - `GOOGLE_CLIENT_ID`
+   - `GOOGLE_CLIENT_SECRET`
+   - `GOOGLE_REDIRECT_URI`
+6. For CI/CD, add these as GitHub Secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`
+
+Once configured, users connect their Google Calendar from **Dashboard > Google Calendar** in the web app. A scheduled Lambda syncs events every hour automatically.
 
 ## Environment Variables Reference
 
@@ -160,10 +180,14 @@ aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
 | `COGNITO_USER_POOL_ID` | Cognito user pool ID |
 | `AWS_REGION` | AWS region |
 | `MEDIA_BUCKET` | S3 bucket for media uploads |
+| `CDN_DOMAIN` | CloudFront/CDN domain for media URLs |
 | `CORS_ORIGIN` | Allowed CORS origin |
 | `FACEBOOK_APP_ID` | Facebook app ID |
 | `FACEBOOK_APP_SECRET` | Facebook app secret |
 | `FACEBOOK_REDIRECT_URI` | Facebook OAuth callback URL |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `GOOGLE_REDIRECT_URI` | Google OAuth callback URL |
 
 ### Web Frontend
 

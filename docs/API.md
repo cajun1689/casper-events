@@ -193,6 +193,43 @@ Check if a Facebook Page is connected.
 
 Disconnect Facebook Page.
 
+### Google Calendar
+
+#### `GET /auth/google/connect` (Auth required)
+
+Initiate Google OAuth flow. Returns a redirect URL for the user to authorize calendar access.
+
+#### `GET /auth/google/callback`
+
+Google OAuth callback (handles token exchange and stores refresh token).
+
+#### `GET /google-calendar/status` (Auth required)
+
+Check if a Google Calendar is connected for the current organization.
+
+#### `GET /google-calendar/calendars` (Auth required)
+
+List available calendars from the connected Google account.
+
+#### `PUT /google-calendar/calendar` (Auth required)
+
+Select which Google Calendar to sync events from.
+
+Body:
+```json
+{
+  "calendarId": "primary"
+}
+```
+
+#### `POST /google-calendar/sync` (Auth required)
+
+Trigger a manual sync of events from the connected Google Calendar.
+
+#### `DELETE /google-calendar/disconnect` (Auth required)
+
+Disconnect Google Calendar and revoke access tokens.
+
 ### Upload
 
 #### `POST /upload/presign` (Auth required)
