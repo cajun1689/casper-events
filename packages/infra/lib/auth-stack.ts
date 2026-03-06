@@ -1,5 +1,6 @@
 import * as cdk from "aws-cdk-lib";
 import * as cognito from "aws-cdk-lib/aws-cognito";
+import * as ses from "aws-cdk-lib/aws-ses";
 import { Construct } from "constructs";
 
 export class AuthStack extends cdk.Stack {
@@ -27,6 +28,18 @@ export class AuthStack extends cdk.Stack {
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
+      email: cognito.UserPoolEmail.withSES({
+        sesRegion: "us-east-1",
+        fromEmail: "noreply@casperevents.org",
+        fromName: "Casper Events",
+        sesVerifiedDomain: "casperevents.org",
+      }),
+      userVerification: {
+        emailSubject: "Verify your Casper Events account",
+        emailBody:
+          "Hi! Your verification code is {####}. Enter this code on the signup page to verify your email and start using Casper Events.",
+        emailStyle: cognito.VerificationEmailStyle.CODE,
+      },
     });
 
     this.userPoolClient = this.userPool.addClient("WebClient", {
