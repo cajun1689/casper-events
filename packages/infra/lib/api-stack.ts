@@ -69,10 +69,10 @@ export class ApiStack extends cdk.Stack {
         CORS_ORIGIN: `https://${props.domainName}`,
         FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID || "",
         FACEBOOK_APP_SECRET: process.env.FACEBOOK_APP_SECRET || "",
-        FACEBOOK_REDIRECT_URI: process.env.FACEBOOK_REDIRECT_URI || `https://api.${props.domainName}/auth/facebook/callback`,
+        FACEBOOK_REDIRECT_URI: process.env.FACEBOOK_REDIRECT_URI || `https://api.${props.domainName}/v1/auth/facebook/callback`,
         GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
         GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
-        GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI || `https://api.${props.domainName}/auth/google/callback`,
+        GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI || `https://api.${props.domainName}/v1/auth/google/callback`,
       },
     });
 
