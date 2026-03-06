@@ -13,13 +13,17 @@ import AdminReviewPage from "@/pages/AdminReviewPage";
 import AdminOrgsPage from "@/pages/AdminOrgsPage";
 import AdminCategoriesPage from "@/pages/AdminCategoriesPage";
 import EmbedSettingsPage from "@/pages/EmbedSettingsPage";
+import FacebookSettingsPage from "@/pages/FacebookSettingsPage";
+import AboutPage from "@/pages/AboutPage";
+import PrivacyPage from "@/pages/PrivacyPage";
+import TermsPage from "@/pages/TermsPage";
 
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen">
         <Header />
-        <main>
+        <main className="animate-fade-in">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/events/:id" element={<EventDetailPage />} />
@@ -30,10 +34,15 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/dashboard/events/new" element={<CreateEventPage />} />
             <Route path="/dashboard/embed" element={<EmbedSettingsPage />} />
+            <Route path="/dashboard/facebook" element={<FacebookSettingsPage />} />
+            <Route path="/dashboard/settings" element={<FacebookSettingsPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/admin/reviews" element={<AdminReviewPage />} />
             <Route path="/admin/organizations" element={<AdminOrgsPage />} />
             <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
           </Routes>
         </main>
       </div>

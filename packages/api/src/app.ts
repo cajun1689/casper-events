@@ -9,6 +9,7 @@ import { embedRoutes } from "./routes/embed.js";
 import { facebookRoutes } from "./routes/facebook.js";
 import { icalRoutes } from "./routes/ical.js";
 import { uploadRoutes } from "./routes/upload.js";
+import { venueRoutes } from "./routes/venues.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -32,6 +33,7 @@ export function buildApp() {
   app.register(facebookRoutes);
   app.register(icalRoutes);
   app.register(uploadRoutes);
+  app.register(venueRoutes);
 
   return app;
 }

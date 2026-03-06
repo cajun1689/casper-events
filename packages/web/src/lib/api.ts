@@ -76,6 +76,36 @@ export const authApi = {
   register: (data: unknown) => api.post("/auth/register", data),
 };
 
+export const venuesApi = {
+  search: (q: string) =>
+    api.get<{ data: Array<{ id: string; name: string; address: string | null; usageCount: number }> }>(
+      `/venues?q=${encodeURIComponent(q)}`,
+    ),
+};
+
+export const uploadApi = {
+  getPresignedUrl: (filename: string, contentType: string, fileSize: number, folder?: string) =>
+    api.post<{ uploadUrl: string; publicUrl: string; key: string }>(
+      "/upload/presign",
+      { filename, contentType, fileSize, folder },
+    ),
+
+  uploadFile: async (file: File, folder?: string): Promise<string> => {
+    const { uploadUrl, publicUrl } = await uploadApi.getPresignedUrl(
+      file.name,
+      file.type,
+      file.size,
+      folder,
+    );
+    await fetch(uploadUrl, {
+      method: "PUT",
+      body: file,
+      headers: { "Content-Type": file.type },
+    });
+    return publicUrl;
+  },
+};
+
 export const adminApi = {
   pendingEvents: () =>
     api.get<{ data: EventWithDetails[] }>("/admin/events/pending"),
@@ -91,4 +121,11 @@ export const adminApi = {
     api.get<{ data: OrganizationPublic[] }>("/admin/organizations"),
   updateOrgStatus: (id: string, status: string) =>
     api.put(`/admin/organizations/${id}/status`, { status }),
+  createOrganization: (data: { orgName: string; orgSlug: string; contactName: string; contactEmail: string }) =>
+    api.post<{ organization: OrganizationPublic; tempPassword: string }>(
+      "/admin/organizations",
+      data,
+    ),
+  updateOrganization: (id: string, data: { name?: string; slug?: string; logoUrl?: string | null }) =>
+    api.put<OrganizationPublic>(`/admin/organizations/${id}`, data),
 };

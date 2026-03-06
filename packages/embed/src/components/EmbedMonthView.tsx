@@ -1,30 +1,30 @@
 import { useState } from "react";
 import {
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  format,
-  isSameMonth,
-  isSameDay,
-  isToday,
-  parseISO,
-  addMonths,
-  subMonths,
+  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
+  eachDayOfInterval, format, isSameMonth, isSameDay, isToday, parseISO,
+  addMonths, subMonths,
 } from "date-fns";
 import type { EmbedEvent } from "../types";
 import { EmbedEventDetail } from "./EmbedEventDetail";
 
 interface EmbedMonthViewProps {
   events: EmbedEvent[];
+  onMonthChange?: (date: Date) => void;
 }
 
 const DAY_HEADERS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-export function EmbedMonthView({ events }: EmbedMonthViewProps) {
+export function EmbedMonthView({ events, onMonthChange }: EmbedMonthViewProps) {
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const navigateMonth = (direction: 1 | -1) => {
+    setCurrentDate((d) => {
+      const next = direction === 1 ? addMonths(d, 1) : subMonths(d, 1);
+      onMonthChange?.(next);
+      return next;
+    });
+  };
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -44,54 +44,35 @@ export function EmbedMonthView({ events }: EmbedMonthViewProps) {
     ? eventsByDate.get(format(selectedDate, "yyyy-MM-dd")) ?? []
     : [];
 
+  const navBtnStyle: React.CSSProperties = {
+    background: "none",
+    border: "1px solid var(--cyh-border, #e5e7eb)",
+    cursor: "pointer",
+    padding: "5px 10px",
+    borderRadius: "8px",
+    color: "var(--cyh-text, #1f2937)",
+    fontSize: "16px",
+    lineHeight: 1,
+    transition: "all 0.15s",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+
   return (
     <div>
       <div style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "8px 4px",
-        marginBottom: "4px",
+        padding: "4px 0",
+        marginBottom: "8px",
       }}>
-        <button
-          onClick={() => setCurrentDate((d) => subMonths(d, 1))}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: "4px 8px",
-            borderRadius: "var(--cyh-radius, 6px)",
-            color: "var(--cyh-text, #1f2937)",
-            fontSize: "16px",
-            lineHeight: 1,
-          }}
-          aria-label="Previous month"
-        >
-          ‹
-        </button>
-        <span style={{
-          fontWeight: 600,
-          fontSize: "14px",
-          color: "var(--cyh-text, #1f2937)",
-        }}>
+        <button onClick={() => navigateMonth(-1)} style={navBtnStyle} aria-label="Previous month">‹</button>
+        <span style={{ fontWeight: 800, fontSize: "14px", color: "var(--cyh-text)", letterSpacing: "-0.01em" }}>
           {format(currentDate, "MMMM yyyy")}
         </span>
-        <button
-          onClick={() => setCurrentDate((d) => addMonths(d, 1))}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: "4px 8px",
-            borderRadius: "var(--cyh-radius, 6px)",
-            color: "var(--cyh-text, #1f2937)",
-            fontSize: "16px",
-            lineHeight: 1,
-          }}
-          aria-label="Next month"
-        >
-          ›
-        </button>
+        <button onClick={() => navigateMonth(1)} style={navBtnStyle} aria-label="Next month">›</button>
       </div>
 
       <div style={{
@@ -99,19 +80,19 @@ export function EmbedMonthView({ events }: EmbedMonthViewProps) {
         gridTemplateColumns: "repeat(7, 1fr)",
         gap: "1px",
         backgroundColor: "var(--cyh-border, #e5e7eb)",
-        borderRadius: "var(--cyh-radius, 6px)",
+        borderRadius: "var(--cyh-radius, 10px)",
         overflow: "hidden",
         border: "1px solid var(--cyh-border, #e5e7eb)",
       }}>
         {DAY_HEADERS.map((day) => (
           <div key={day} style={{
-            padding: "6px 2px",
+            padding: "8px 2px",
             textAlign: "center",
-            fontSize: "11px",
-            fontWeight: 600,
+            fontSize: "10px",
+            fontWeight: 800,
             textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            color: "color-mix(in srgb, var(--cyh-text, #1f2937) 50%, transparent)",
+            letterSpacing: "0.08em",
+            color: "color-mix(in srgb, var(--cyh-text, #1f2937) 40%, transparent)",
             backgroundColor: "color-mix(in srgb, var(--cyh-bg, #ffffff) 95%, var(--cyh-text, #1f2937))",
           }}>
             {day}
@@ -128,50 +109,44 @@ export function EmbedMonthView({ events }: EmbedMonthViewProps) {
           return (
             <button
               key={key}
-              onClick={() => setSelectedDate(
-                selected ? null : day,
-              )}
+              onClick={() => setSelectedDate(selected ? null : day)}
               style={{
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 gap: "3px",
-                padding: "6px 2px 4px",
+                padding: "7px 2px 5px",
                 border: "none",
                 cursor: "pointer",
                 backgroundColor: selected
-                  ? "color-mix(in srgb, var(--cyh-primary, #2563eb) 12%, var(--cyh-bg, #ffffff))"
+                  ? "color-mix(in srgb, var(--cyh-primary, #4f46e5) 10%, var(--cyh-bg, #ffffff))"
                   : "var(--cyh-bg, #ffffff)",
-                minHeight: "44px",
+                minHeight: "48px",
                 transition: "background-color 0.15s",
               }}
               onMouseEnter={(e) => {
-                if (!selected) {
-                  e.currentTarget.style.backgroundColor =
-                    "color-mix(in srgb, var(--cyh-primary, #2563eb) 6%, var(--cyh-bg, #ffffff))";
-                }
+                if (!selected) e.currentTarget.style.backgroundColor = "var(--cyh-hover, color-mix(in srgb, var(--cyh-primary) 6%, var(--cyh-bg)))";
               }}
               onMouseLeave={(e) => {
-                if (!selected) {
-                  e.currentTarget.style.backgroundColor = "var(--cyh-bg, #ffffff)";
-                }
+                if (!selected) e.currentTarget.style.backgroundColor = "var(--cyh-bg, #ffffff)";
               }}
             >
               <span style={{
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: "24px",
-                height: "24px",
-                borderRadius: "50%",
+                width: "26px",
+                height: "26px",
+                borderRadius: "8px",
                 fontSize: "12px",
-                fontWeight: today ? 700 : 500,
-                backgroundColor: today ? "var(--cyh-primary, #2563eb)" : "transparent",
+                fontWeight: today ? 800 : 600,
+                background: today ? "linear-gradient(135deg, var(--cyh-primary, #4f46e5), color-mix(in srgb, var(--cyh-primary) 80%, #000))" : "transparent",
                 color: today
                   ? "#fff"
                   : inMonth
                     ? "var(--cyh-text, #1f2937)"
-                    : "color-mix(in srgb, var(--cyh-text, #1f2937) 35%, transparent)",
+                    : "color-mix(in srgb, var(--cyh-text, #1f2937) 30%, transparent)",
+                boxShadow: today ? `0 2px 6px color-mix(in srgb, var(--cyh-primary) 30%, transparent)` : "none",
               }}>
                 {format(day, "d")}
               </span>
@@ -179,16 +154,12 @@ export function EmbedMonthView({ events }: EmbedMonthViewProps) {
               {dayEvents.length > 0 && (
                 <div style={{ display: "flex", gap: "2px" }}>
                   {dayEvents.slice(0, 3).map((event) => (
-                    <span
-                      key={event.id}
-                      style={{
-                        width: "5px",
-                        height: "5px",
-                        borderRadius: "50%",
-                        backgroundColor:
-                          event.categories[0]?.color ?? "var(--cyh-primary, #2563eb)",
-                      }}
-                    />
+                    <span key={event.id} style={{
+                      width: "5px",
+                      height: "5px",
+                      borderRadius: "50%",
+                      backgroundColor: event.categories[0]?.color ?? "var(--cyh-primary, #4f46e5)",
+                    }} />
                   ))}
                 </div>
               )}
@@ -198,29 +169,31 @@ export function EmbedMonthView({ events }: EmbedMonthViewProps) {
       </div>
 
       {selectedDate && (
-        <div style={{ marginTop: "12px" }}>
+        <div style={{ marginTop: "14px", animation: "cyh-fade-in 0.25s ease-out" }}>
           <div style={{
             fontSize: "12px",
-            fontWeight: 600,
-            color: "var(--cyh-text, #1f2937)",
-            marginBottom: "8px",
+            fontWeight: 800,
+            color: "var(--cyh-text)",
+            marginBottom: "10px",
             padding: "0 4px",
+            letterSpacing: "-0.01em",
           }}>
             {format(selectedDate, "EEEE, MMMM d")}
           </div>
           {selectedEvents.length === 0 ? (
             <div style={{
               fontSize: "13px",
-              color: "color-mix(in srgb, var(--cyh-text, #1f2937) 50%, transparent)",
-              padding: "12px",
+              fontWeight: 600,
+              color: "color-mix(in srgb, var(--cyh-text) 45%, transparent)",
+              padding: "16px",
               textAlign: "center",
-              backgroundColor: "color-mix(in srgb, var(--cyh-bg, #ffffff) 95%, var(--cyh-text, #1f2937))",
-              borderRadius: "var(--cyh-radius, 6px)",
+              backgroundColor: "color-mix(in srgb, var(--cyh-bg) 95%, var(--cyh-text))",
+              borderRadius: "var(--cyh-radius, 10px)",
             }}>
               No events this day
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {selectedEvents.map((event) => (
                 <EmbedEventDetail key={event.id} event={event} />
               ))}

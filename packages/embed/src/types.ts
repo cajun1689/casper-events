@@ -13,6 +13,7 @@ export interface CYHCalendarConfig {
   };
   defaultView?: "month" | "week" | "list";
   categories?: string[];
+  hiddenCategories?: string[];
 }
 
 export interface EmbedEvent {
@@ -34,4 +35,9 @@ export interface EmbedEvent {
     icon: string | null;
     color: string | null;
   }[];
+  organization?: {
+    name: string;
+    slug: string;
+    logoUrl: string | null;
+  } | null;
 }

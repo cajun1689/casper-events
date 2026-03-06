@@ -20,8 +20,10 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@cyh/embed/*": ["../embed/src/*"],
+      "@cyh/embed": ["../embed/src"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../embed/src"]
 }

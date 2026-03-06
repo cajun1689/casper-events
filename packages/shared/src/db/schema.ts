@@ -98,8 +98,11 @@ export const events = pgTable(
     imageUrl: varchar("image_url", { length: 500 }),
     ticketUrl: varchar("ticket_url", { length: 500 }),
     cost: varchar("cost", { length: 100 }),
+    isOnline: boolean("is_online").default(false).notNull(),
+    onlineEventUrl: varchar("online_event_url", { length: 500 }),
     status: eventStatusEnum("status").default("draft").notNull(),
     facebookEventId: varchar("facebook_event_id", { length: 255 }),
+    publishToFacebook: boolean("publish_to_facebook").default(false).notNull(),
     source: eventSourceEnum("source").default("manual").notNull(),
     recurrenceRule: varchar("recurrence_rule", { length: 255 }),
     recurrenceParentId: uuid("recurrence_parent_id"),
@@ -212,6 +215,28 @@ export const embedConfigs = pgTable("embed_configs", {
     .defaultNow()
     .notNull(),
 });
+
+export const venues = pgTable(
+  "venues",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: varchar("name", { length: 255 }).notNull(),
+    address: text("address"),
+    latitude: real("latitude"),
+    longitude: real("longitude"),
+    usageCount: integer("usage_count").default(1).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("venues_name_idx").on(table.name),
+    index("venues_usage_count_idx").on(table.usageCount),
+  ]
+);
 
 export const adminReviews = pgTable(
   "admin_reviews",

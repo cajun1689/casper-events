@@ -33,7 +33,7 @@ export async function authRoutes(app: FastifyInstance) {
         .values({
           name: organizationName,
           slug: organizationSlug,
-          status: "active",
+          status: "pending",
         })
         .returning();
 

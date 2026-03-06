@@ -5,6 +5,13 @@ import { reviewEventSchema, createCategorySchema } from "@cyh/shared";
 import { getDb } from "../db/connection.js";
 import { requireAuth } from "../middleware/auth.js";
 import { resolveUserOrg } from "../services/user-org.js";
+import {
+  CognitoIdentityProviderClient,
+  AdminCreateUserCommand,
+} from "@aws-sdk/client-cognito-identity-provider";
+
+const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION || "us-east-1" });
+const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID || "";
 
 async function requireAdmin(
   db: Awaited<ReturnType<typeof getDb>>,
@@ -243,6 +250,137 @@ export async function adminRoutes(app: FastifyInstance) {
         updatedAt: updated.updatedAt.toISOString(),
       });
     }
+  );
+
+  // ── Admin: Update organization details ─────────────────────
+
+  app.put(
+    "/admin/organizations/:id",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const body = request.body as {
+        name?: string;
+        slug?: string;
+        logoUrl?: string | null;
+        description?: string | null;
+        website?: string | null;
+      };
+      const db = await getDb();
+      await requireAdmin(db, request.user!.sub);
+
+      const updates: Record<string, unknown> = { updatedAt: new Date() };
+      if (body.name !== undefined) updates.name = body.name;
+      if (body.slug !== undefined) updates.slug = body.slug;
+      if (body.logoUrl !== undefined) updates.logoUrl = body.logoUrl;
+      if (body.description !== undefined) updates.description = body.description;
+      if (body.website !== undefined) updates.website = body.website;
+
+      const [updated] = await db
+        .update(schema.organizations)
+        .set(updates)
+        .where(eq(schema.organizations.id, id))
+        .returning();
+
+      if (!updated) {
+        return reply.status(404).send({ error: "Organization not found" });
+      }
+
+      return reply.send({
+        ...updated,
+        createdAt: updated.createdAt.toISOString(),
+        updatedAt: updated.updatedAt.toISOString(),
+      });
+    },
+  );
+
+  // ── Admin: Create organization with user account ───────────
+
+  app.post(
+    "/admin/organizations",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      await requireAdmin(db, request.user!.sub);
+
+      const { orgName, orgSlug, contactName, contactEmail } = request.body as {
+        orgName: string;
+        orgSlug: string;
+        contactName: string;
+        contactEmail: string;
+      };
+
+      if (!orgName || !orgSlug || !contactName || !contactEmail) {
+        return reply.status(400).send({ error: "All fields are required" });
+      }
+
+      const existingOrg = await db
+        .select()
+        .from(schema.organizations)
+        .where(eq(schema.organizations.slug, orgSlug));
+
+      if (existingOrg.length > 0) {
+        return reply.status(409).send({ error: `Organization slug "${orgSlug}" is already taken` });
+      }
+
+      const tempPassword = `Casper${Math.random().toString(36).slice(2, 8)}!${Math.floor(Math.random() * 90 + 10)}`;
+
+      let cognitoSub: string;
+      try {
+        const cognitoResult = await cognitoClient.send(
+          new AdminCreateUserCommand({
+            UserPoolId: USER_POOL_ID,
+            Username: contactEmail,
+            TemporaryPassword: tempPassword,
+            UserAttributes: [
+              { Name: "email", Value: contactEmail },
+              { Name: "email_verified", Value: "true" },
+              { Name: "name", Value: contactName },
+            ],
+            DesiredDeliveryMediums: ["EMAIL"],
+            MessageAction: undefined,
+          }),
+        );
+        cognitoSub = cognitoResult.User?.Username || "";
+        if (!cognitoSub) {
+          return reply.status(500).send({ error: "Failed to create Cognito user" });
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to create user account";
+        if (message.includes("UsernameExistsException") || message.includes("already exists")) {
+          return reply.status(409).send({ error: `A user with email ${contactEmail} already exists` });
+        }
+        return reply.status(500).send({ error: message });
+      }
+
+      const [org] = await db
+        .insert(schema.organizations)
+        .values({
+          name: orgName,
+          slug: orgSlug,
+          status: "active",
+        })
+        .returning();
+
+      await db.insert(schema.embedConfigs).values({ orgId: org.id });
+
+      await db.insert(schema.users).values({
+        email: contactEmail,
+        name: contactName,
+        cognitoSub,
+        orgId: org.id,
+        role: "owner",
+      });
+
+      return reply.status(201).send({
+        organization: {
+          ...org,
+          createdAt: org.createdAt.toISOString(),
+          updatedAt: org.updatedAt.toISOString(),
+        },
+        tempPassword,
+      });
+    },
   );
 
   // ── Admin: Dashboard stats ──────────────────────────────────

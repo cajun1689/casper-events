@@ -97,13 +97,29 @@ export async function embedRoutes(app: FastifyInstance) {
       }
     }
 
-    let result = events.map((e) => ({
+    const allOrgIds = [...new Set(events.map((e) => e.orgId))];
+    const orgsMap: Record<string, { name: string; slug: string; logoUrl: string | null; status: string }> = {};
+    if (allOrgIds.length > 0) {
+      const orgs = await db
+        .select({ id: schema.organizations.id, name: schema.organizations.name, slug: schema.organizations.slug, logoUrl: schema.organizations.logoUrl, status: schema.organizations.status })
+        .from(schema.organizations)
+        .where(inArray(schema.organizations.id, allOrgIds));
+      for (const org of orgs) orgsMap[org.id] = { name: org.name, slug: org.slug, logoUrl: org.logoUrl, status: org.status };
+    }
+
+    const activeEvents = events.filter((e) => {
+      const org = orgsMap[e.orgId];
+      return org && org.status === "active";
+    });
+
+    let result = activeEvents.map((e) => ({
       ...e,
       startAt: e.startAt.toISOString(),
       endAt: e.endAt?.toISOString() ?? null,
       createdAt: e.createdAt.toISOString(),
       updatedAt: e.updatedAt.toISOString(),
       categories: categoriesMap[e.id] || [],
+      organization: orgsMap[e.orgId] ? { name: orgsMap[e.orgId].name, slug: orgsMap[e.orgId].slug, logoUrl: orgsMap[e.orgId].logoUrl } : null,
     }));
 
     if (catFilter) {

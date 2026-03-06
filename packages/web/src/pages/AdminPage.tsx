@@ -1,193 +1,51 @@
 import { useState, useEffect } from "react";
-import { Link, Navigate } from "react-router-dom";
-import {
-  ClipboardList,
-  Building2,
-  Tag,
-  CheckCircle,
-  ArrowRight,
-} from "lucide-react";
-import { format } from "date-fns";
+import { Link, useNavigate } from "react-router-dom";
+import { Shield, CalendarCheck, Building2, Tags, BarChart3 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { adminApi } from "@/lib/api";
-import type { EventWithDetails } from "@cyh/shared";
-
-interface Stats {
-  events: Record<string, number>;
-  organizations: number;
-}
-
-const statCards = [
-  {
-    label: "Total Events",
-    key: "total",
-    icon: ClipboardList,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-  },
-  {
-    label: "Pending Review",
-    key: "pending",
-    icon: ClipboardList,
-    color: "text-amber-600",
-    bg: "bg-amber-50",
-  },
-  {
-    label: "Approved",
-    key: "approved",
-    icon: CheckCircle,
-    color: "text-green-600",
-    bg: "bg-green-50",
-  },
-  {
-    label: "Organizations",
-    key: "organizations",
-    icon: Building2,
-    color: "text-purple-600",
-    bg: "bg-purple-50",
-  },
-] as const;
-
-const navLinks = [
-  { label: "Pending Reviews", to: "/admin/reviews", icon: ClipboardList },
-  { label: "Organizations", to: "/admin/organizations", icon: Building2 },
-  { label: "Categories", to: "/admin/categories", icon: Tag },
-];
 
 export default function AdminPage() {
-  const { user } = useStore();
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [pendingEvents, setPendingEvents] = useState<EventWithDetails[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { token, user } = useStore();
+  const navigate = useNavigate();
+  const [stats, setStats] = useState<{ events: Record<string, number>; organizations: number } | null>(null);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [statsRes, pendingRes] = await Promise.all([
-          adminApi.stats(),
-          adminApi.pendingEvents(),
-        ]);
-        setStats(statsRes);
-        setPendingEvents(pendingRes.data.slice(0, 5));
-      } catch (err) {
-        console.error("Failed to load admin data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+    if (!token || !user?.isAdmin) { navigate("/"); return; }
+    adminApi.stats().then(setStats);
+  }, [token, user, navigate]);
 
-  if (!user?.isAdmin) {
-    return <Navigate to="/" replace />;
-  }
-
-  function getStatValue(key: string): number {
-    if (!stats) return 0;
-    if (key === "organizations") return stats.organizations;
-    if (key === "total") {
-      return Object.values(stats.events).reduce((a, b) => a + b, 0);
-    }
-    return stats.events[key] ?? 0;
-  }
+  const cards = [
+    { to: "/admin/reviews", label: "Review Events", desc: "Approve or reject pending events", icon: CalendarCheck, gradient: "from-violet-500 to-violet-600", count: stats?.events?.draft },
+    { to: "/admin/organizations", label: "Organizations", desc: "Manage organization status", icon: Building2, gradient: "from-blue-500 to-blue-600", count: stats?.organizations },
+    { to: "/admin/categories", label: "Categories", desc: "Add or edit event categories", icon: Tags, gradient: "from-emerald-500 to-emerald-600" },
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-        <nav className="flex items-center gap-2">
-          {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <link.icon className="w-4 h-4" />
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 animate-fade-in">
+      <div className="mb-8 flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg shadow-primary-500/25">
+          <Shield className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Admin Dashboard</h1>
+          <p className="text-sm text-gray-500">Manage the community calendar</p>
+        </div>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : (
-        <>
-          {/* Stats grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {statCards.map((card) => {
-              const Icon = card.icon;
-              return (
-                <div
-                  key={card.key}
-                  className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-start gap-4"
-                >
-                  <div className={`${card.bg} rounded-lg p-2.5`}>
-                    <Icon className={`w-5 h-5 ${card.color}`} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">
-                      {card.label}
-                    </p>
-                    <p className={`text-3xl font-bold mt-1 ${card.color}`}>
-                      {getStatValue(card.key)}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Pending review preview */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Pending Review
-              </h2>
-              <Link
-                to="/admin/reviews"
-                className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-              >
-                View all
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+      <div className="grid gap-4 sm:grid-cols-3">
+        {cards.map((card) => (
+          <Link key={card.to} to={card.to} className="group rounded-2xl border border-gray-200/60 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 hover:bg-white">
+            <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${card.gradient} shadow-lg`}>
+              <card.icon className="h-5 w-5 text-white" />
             </div>
-
-            {pendingEvents.length === 0 ? (
-              <div className="px-5 py-10 text-center text-gray-500">
-                No events pending review.
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-100">
-                {pendingEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="flex items-center justify-between px-5 py-3.5"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-900 truncate">
-                        {event.title}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {event.organization.name} &middot;{" "}
-                        {format(new Date(event.startAt), "MMM d, yyyy")}
-                      </p>
-                    </div>
-                    <Link
-                      to="/admin/reviews"
-                      className="shrink-0 ml-4 text-sm font-medium text-blue-600 hover:text-blue-700"
-                    >
-                      Review
-                    </Link>
-                  </div>
-                ))}
-              </div>
+            <h2 className="text-base font-bold text-gray-900 group-hover:text-primary-600 transition-colors">{card.label}</h2>
+            <p className="mt-1 text-sm text-gray-500">{card.desc}</p>
+            {card.count !== undefined && (
+              <p className="mt-3 text-2xl font-extrabold text-gray-900">{card.count}</p>
             )}
-          </div>
-        </>
-      )}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

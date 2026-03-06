@@ -14,16 +14,25 @@
 }
 
 #cyh-embed-root {
-  font-family: var(--cyh-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  font-family: var(--cyh-font, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
   color: var(--cyh-text, #1f2937);
 }
 
 button {
   font-family: inherit;
+  cursor: pointer;
 }
 
 @keyframes cyh-spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes cyh-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cyh-scale-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
 }

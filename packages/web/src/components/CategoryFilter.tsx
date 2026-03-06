@@ -11,14 +11,14 @@ interface CategoryFilterProps {
 
 export function CategoryFilter({ categories, selected, onToggle, onClear }: CategoryFilterProps) {
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
       {selected.length > 0 && (
         <button
           onClick={onClear}
-          className="flex shrink-0 items-center gap-1 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100"
+          className="flex shrink-0 items-center gap-1.5 rounded-full border border-gray-200/80 bg-white/60 px-3 py-1.5 text-xs font-semibold text-gray-500 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:text-gray-700 hover:shadow"
         >
           <X className="h-3 w-3" />
-          Clear filters
+          Clear
         </button>
       )}
 
@@ -29,14 +29,17 @@ export function CategoryFilter({ categories, selected, onToggle, onClear }: Cate
             key={cat.id}
             onClick={() => onToggle(cat.slug)}
             className={clsx(
-              "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+              "flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all",
               isSelected
-                ? "border-transparent text-white shadow-sm"
-                : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50",
+                ? "border-transparent text-white shadow-md -translate-y-px"
+                : "border-gray-200/80 bg-white/60 text-gray-600 shadow-sm backdrop-blur-sm hover:bg-white hover:shadow hover:-translate-y-px",
             )}
             style={
               isSelected
-                ? { backgroundColor: cat.color ?? "#2563eb" }
+                ? {
+                    backgroundColor: cat.color ?? "#4f46e5",
+                    boxShadow: `0 4px 14px -3px ${cat.color ?? "#4f46e5"}50`,
+                  }
                 : undefined
             }
           >

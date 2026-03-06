@@ -19,17 +19,19 @@ export function EmbedEventDetail({ event }: EmbedEventDetailProps) {
 
   return (
     <div style={{
-      padding: "14px",
-      borderRadius: "var(--cyh-radius, 6px)",
+      padding: "16px",
+      borderRadius: "var(--cyh-radius, 10px)",
       border: "1px solid var(--cyh-border, #e5e7eb)",
       backgroundColor: "var(--cyh-bg, #ffffff)",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.03)",
     }}>
       <div style={{
         fontSize: "15px",
-        fontWeight: 700,
+        fontWeight: 800,
         color: "var(--cyh-text, #1f2937)",
         lineHeight: 1.3,
-        marginBottom: "8px",
+        marginBottom: "10px",
+        letterSpacing: "-0.01em",
       }}>
         {event.title}
       </div>
@@ -37,20 +39,17 @@ export function EmbedEventDetail({ event }: EmbedEventDetailProps) {
       <div style={{
         display: "flex",
         flexDirection: "column",
-        gap: "6px",
-        marginBottom: event.description || event.categories.length > 0 ? "12px" : 0,
+        gap: "7px",
+        marginBottom: event.description || event.categories.length > 0 ? "14px" : 0,
       }}>
         <DetailRow icon="📅" text={dateLabel} />
         <DetailRow icon="🕐" text={timeLabel} />
         {event.venueName && <DetailRow icon="📍" text={event.venueName} />}
         {event.address && (
-          <DetailRow
-            icon="🗺"
-            text={event.address}
-            href={`https://maps.google.com/?q=${encodeURIComponent(event.address)}`}
-          />
+          <DetailRow icon="🗺" text={event.address} href={`https://maps.google.com/?q=${encodeURIComponent(event.address)}`} />
         )}
         {event.cost && <DetailRow icon="💰" text={event.cost} />}
+        {event.organization && <DetailRow icon="🏢" text={event.organization.name} />}
       </div>
 
       {event.categories.length > 0 && (
@@ -58,7 +57,7 @@ export function EmbedEventDetail({ event }: EmbedEventDetailProps) {
           display: "flex",
           flexWrap: "wrap",
           gap: "4px",
-          marginBottom: event.description ? "12px" : 0,
+          marginBottom: event.description ? "14px" : 0,
         }}>
           {event.categories.map((cat) => (
             <span
@@ -67,12 +66,12 @@ export function EmbedEventDetail({ event }: EmbedEventDetailProps) {
                 display: "inline-block",
                 padding: "2px 8px",
                 borderRadius: "9999px",
-                fontSize: "11px",
-                fontWeight: 600,
+                fontSize: "10px",
+                fontWeight: 700,
                 backgroundColor: cat.color
-                  ? `color-mix(in srgb, ${cat.color} 15%, var(--cyh-bg, #ffffff))`
-                  : "color-mix(in srgb, var(--cyh-primary, #2563eb) 10%, var(--cyh-bg, #ffffff))",
-                color: cat.color ?? "var(--cyh-primary, #2563eb)",
+                  ? `color-mix(in srgb, ${cat.color} 12%, var(--cyh-bg, #ffffff))`
+                  : "color-mix(in srgb, var(--cyh-primary, #4f46e5) 10%, var(--cyh-bg, #ffffff))",
+                color: cat.color ?? "var(--cyh-primary, #4f46e5)",
               }}
             >
               {cat.icon ? `${cat.icon} ` : ""}{cat.name}
@@ -84,8 +83,8 @@ export function EmbedEventDetail({ event }: EmbedEventDetailProps) {
       {event.description && (
         <div style={{
           fontSize: "13px",
-          lineHeight: 1.6,
-          color: "color-mix(in srgb, var(--cyh-text, #1f2937) 75%, transparent)",
+          lineHeight: 1.65,
+          color: "color-mix(in srgb, var(--cyh-text, #1f2937) 70%, transparent)",
           whiteSpace: "pre-line",
         }}>
           {event.description}
@@ -101,18 +100,19 @@ export function EmbedEventDetail({ event }: EmbedEventDetailProps) {
             display: "inline-flex",
             alignItems: "center",
             gap: "6px",
-            marginTop: "12px",
-            padding: "8px 16px",
-            borderRadius: "var(--cyh-radius, 6px)",
-            backgroundColor: "var(--cyh-primary, #2563eb)",
+            marginTop: "14px",
+            padding: "9px 18px",
+            borderRadius: "10px",
+            background: "linear-gradient(135deg, var(--cyh-primary, #4f46e5), color-mix(in srgb, var(--cyh-primary) 80%, #000))",
             color: "#fff",
             fontSize: "13px",
-            fontWeight: 600,
+            fontWeight: 700,
             textDecoration: "none",
-            transition: "opacity 0.15s",
+            transition: "all 0.2s ease",
+            boxShadow: "0 2px 8px color-mix(in srgb, var(--cyh-primary) 30%, transparent)",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.9"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px color-mix(in srgb, var(--cyh-primary) 35%, transparent)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px color-mix(in srgb, var(--cyh-primary) 30%, transparent)"; }}
         >
           🎟 Get Tickets
         </a>
@@ -121,22 +121,15 @@ export function EmbedEventDetail({ event }: EmbedEventDetailProps) {
   );
 }
 
-function DetailRow({
-  icon,
-  text,
-  href,
-}: {
-  icon: string;
-  text: string;
-  href?: string;
-}) {
-  const content = (
+function DetailRow({ icon, text, href }: { icon: string; text: string; href?: string }) {
+  return (
     <div style={{
       display: "flex",
       alignItems: "flex-start",
       gap: "8px",
       fontSize: "12px",
-      color: "color-mix(in srgb, var(--cyh-text, #1f2937) 70%, transparent)",
+      fontWeight: 500,
+      color: "color-mix(in srgb, var(--cyh-text, #1f2937) 65%, transparent)",
       lineHeight: 1.4,
     }}>
       <span style={{ flexShrink: 0, fontSize: "13px" }}>{icon}</span>
@@ -145,10 +138,7 @@ function DetailRow({
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            color: "var(--cyh-primary, #2563eb)",
-            textDecoration: "none",
-          }}
+          style={{ color: "var(--cyh-primary, #4f46e5)", textDecoration: "none", fontWeight: 600 }}
           onMouseEnter={(e) => { e.currentTarget.style.textDecoration = "underline"; }}
           onMouseLeave={(e) => { e.currentTarget.style.textDecoration = "none"; }}
         >
@@ -159,5 +149,4 @@ function DetailRow({
       )}
     </div>
   );
-  return content;
 }

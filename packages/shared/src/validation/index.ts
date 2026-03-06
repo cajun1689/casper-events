@@ -23,19 +23,22 @@ export const updateOrganizationSchema = createOrganizationSchema.partial();
 export const createEventSchema = z
   .object({
     title: z.string().min(2).max(500),
-    description: z.string().max(5000).optional(),
-    startAt: z.string().datetime(),
-    endAt: z.string().datetime().optional(),
+    description: z.string().max(5000).nullish(),
+    startAt: z.string().min(1),
+    endAt: z.string().nullish(),
     allDay: z.boolean().default(false),
-    venueName: z.string().max(255).optional(),
-    address: z.string().max(500).optional(),
-    latitude: z.number().min(-90).max(90).optional(),
-    longitude: z.number().min(-180).max(180).optional(),
-    imageUrl: z.string().url().max(500).optional(),
-    ticketUrl: z.string().url().max(500).optional(),
-    cost: z.string().max(100).optional(),
+    venueName: z.string().max(255).nullish(),
+    address: z.string().max(500).nullish(),
+    latitude: z.number().min(-90).max(90).nullish(),
+    longitude: z.number().min(-180).max(180).nullish(),
+    imageUrl: z.string().max(500).nullish(),
+    ticketUrl: z.string().max(500).nullish(),
+    cost: z.string().max(100).nullish(),
+    isOnline: z.boolean().default(false),
+    onlineEventUrl: z.string().max(500).nullish(),
+    publishToFacebook: z.boolean().default(false),
     categoryIds: z.array(z.string().uuid()).default([]),
-    recurrenceRule: z.string().max(255).optional(),
+    recurrenceRule: z.string().max(255).nullish(),
   })
   .refine(
     (data) => {

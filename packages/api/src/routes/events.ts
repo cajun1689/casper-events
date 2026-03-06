@@ -9,6 +9,7 @@ import {
 import { getDb } from "../db/connection.js";
 import { requireAuth, optionalAuth } from "../middleware/auth.js";
 import { resolveUserOrg } from "../services/user-org.js";
+import { upsertVenue } from "./venues.js";
 
 export async function eventRoutes(app: FastifyInstance) {
   // List events (public, with filters)
@@ -95,11 +96,14 @@ export async function eventRoutes(app: FastifyInstance) {
       }
     }
 
-    // Category filtering (post-query since it's a join table)
-    let filteredEvents = eventsResult;
+    let filteredEvents = eventsResult.filter((event) => {
+      const org = orgsMap[event.orgId];
+      return org && org.status === "active";
+    });
+
     if (query.categories && query.categories.length > 0) {
       const catSlugs = query.categories;
-      filteredEvents = eventsResult.filter((event) => {
+      filteredEvents = filteredEvents.filter((event) => {
         const cats = categoriesMap[event.id] || [];
         return cats.some((c) => catSlugs.includes(c.slug));
       });
@@ -199,6 +203,23 @@ export async function eventRoutes(app: FastifyInstance) {
           .send({ error: "You must belong to an organization to create events" });
       }
 
+      const [org] = await db
+        .select()
+        .from(schema.organizations)
+        .where(eq(schema.organizations.id, userOrg.orgId));
+
+      if (org.status === "pending") {
+        return reply
+          .status(403)
+          .send({ error: "Your organization is pending approval. An admin will review it shortly." });
+      }
+
+      if (org.status === "suspended") {
+        return reply
+          .status(403)
+          .send({ error: "Your organization has been suspended. Contact an admin for help." });
+      }
+
       const { categoryIds, ...eventData } = body;
 
       const [event] = await db
@@ -221,13 +242,75 @@ export async function eventRoutes(app: FastifyInstance) {
         );
       }
 
-      return reply.status(201).send({
+      if (eventData.venueName) {
+        upsertVenue(eventData.venueName, eventData.address, eventData.latitude, eventData.longitude).catch(() => {});
+      }
+
+      const response: Record<string, unknown> = {
         ...event,
         startAt: event.startAt.toISOString(),
         endAt: event.endAt?.toISOString() ?? null,
         createdAt: event.createdAt.toISOString(),
         updatedAt: event.updatedAt.toISOString(),
-      });
+        facebookEventCreated: false,
+      };
+
+      if (eventData.publishToFacebook) {
+        try {
+          const [org] = await db
+            .select()
+            .from(schema.organizations)
+            .where(eq(schema.organizations.id, userOrg.orgId));
+
+          if (org.facebookPageId && org.facebookPageToken) {
+            const fbPayload: Record<string, unknown> = {
+              name: event.title,
+              start_time: event.startAt.toISOString(),
+              description: event.description || undefined,
+              access_token: org.facebookPageToken,
+            };
+
+            if (event.endAt) fbPayload.end_time = event.endAt.toISOString();
+
+            if (event.isOnline && event.onlineEventUrl) {
+              fbPayload.is_online = true;
+              fbPayload.online_event_format = "OTHER";
+              fbPayload.online_event_third_party_url = event.onlineEventUrl;
+            } else if (event.venueName || event.address) {
+              fbPayload.place = {
+                name: event.venueName || event.address || "",
+                location: event.address ? { street: event.address } : undefined,
+              };
+            }
+
+            if (event.ticketUrl) fbPayload.ticket_uri = event.ticketUrl;
+
+            const fbRes = await fetch(
+              `https://graph.facebook.com/v21.0/${org.facebookPageId}/events`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(fbPayload),
+              },
+            );
+
+            const fbData = (await fbRes.json()) as { id?: string };
+
+            if (fbData.id) {
+              await db
+                .update(schema.events)
+                .set({ facebookEventId: fbData.id })
+                .where(eq(schema.events.id, event.id));
+              response.facebookEventId = fbData.id;
+              response.facebookEventCreated = true;
+            }
+          }
+        } catch {
+          // Facebook event creation is best-effort during event creation
+        }
+      }
+
+      return reply.status(201).send(response);
     }
   );
 

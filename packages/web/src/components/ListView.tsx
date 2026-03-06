@@ -20,35 +20,36 @@ export function ListView({ events }: ListViewProps) {
 
   if (events.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 text-center shadow-sm">
-        <p className="text-lg font-medium text-gray-400">No events found</p>
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-200/60 bg-white/70 py-20 text-center shadow-sm backdrop-blur-sm">
+        <div className="mb-3 text-4xl">📭</div>
+        <p className="text-lg font-bold text-gray-400">No events found</p>
         <p className="mt-1 text-sm text-gray-400">Try adjusting your filters or date range.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {sortedDates.map((dateKey) => {
+    <div className="space-y-10">
+      {sortedDates.map((dateKey, i) => {
         const dayEvents = grouped.get(dateKey)!;
         const date = parseISO(dateKey);
 
         return (
-          <section key={dateKey}>
-            <div className="mb-3 flex items-center gap-3">
-              <div className="flex h-12 w-12 flex-col items-center justify-center rounded-xl bg-primary-50 text-primary-700">
-                <span className="text-[11px] font-bold uppercase leading-none">
+          <section key={dateKey} className="animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
+            <div className="mb-4 flex items-center gap-4">
+              <div className="flex h-14 w-14 flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-lg shadow-primary-500/20">
+                <span className="text-[10px] font-bold uppercase leading-none tracking-wider opacity-80">
                   {format(date, "MMM")}
                 </span>
-                <span className="text-lg font-bold leading-tight">
+                <span className="text-xl font-extrabold leading-tight">
                   {format(date, "d")}
                 </span>
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-gray-900">
+                <h2 className="text-sm font-bold text-gray-900">
                   {format(date, "EEEE, MMMM d, yyyy")}
                 </h2>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs font-medium text-gray-400">
                   {dayEvents.length} event{dayEvents.length !== 1 ? "s" : ""}
                 </p>
               </div>

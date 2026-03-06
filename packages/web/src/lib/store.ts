@@ -4,7 +4,7 @@ import type { CategoryPublic } from "@cyh/shared";
 interface AppState {
   token: string | null;
   user: { sub: string; email: string; name?: string; isAdmin?: boolean } | null;
-  organization: { id: string; name: string; slug: string } | null;
+  organization: { id: string; name: string; slug: string; status?: string } | null;
   categories: CategoryPublic[];
   selectedCategories: string[];
   viewMode: "month" | "week" | "list";

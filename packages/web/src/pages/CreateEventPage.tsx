@@ -1,85 +1,64 @@
 import { useState, useEffect, type FormEvent } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
-import { ArrowLeft, ImagePlus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate, Navigate, Link } from "react-router-dom";
+import { ArrowLeft, Facebook, Globe, Video, ChevronDown } from "lucide-react";
+import clsx from "clsx";
 import { useStore } from "@/lib/store";
-import { eventsApi, categoriesApi } from "@/lib/api";
-import type { CategoryPublic } from "@cyh/shared";
+import { eventsApi, categoriesApi, api } from "@/lib/api";
+import { ImageUpload } from "@/components/ImageUpload";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 export default function CreateEventPage() {
   const navigate = useNavigate();
   const { token, categories, setCategories } = useStore();
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [form, setForm] = useState({
-    title: "",
-    description: "",
-    startDate: "",
-    startTime: "",
-    endDate: "",
-    endTime: "",
-    allDay: false,
-    venueName: "",
-    address: "",
-    cost: "",
-    ticketUrl: "",
-    imageUrl: "",
+    title: "", description: "", startDate: "", startTime: "", endDate: "", endTime: "",
+    allDay: false, venueName: "", address: "", cost: "", ticketUrl: "", imageUrl: "",
+    isOnline: false, onlineEventUrl: "", publishToFacebook: false,
   });
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
+  const [fbConnected, setFbConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (categories.length === 0) {
-      categoriesApi
-        .list()
-        .then((res) => setCategories(res.data))
-        .catch(console.error);
+      categoriesApi.list().then((res) => setCategories(res.data)).catch(console.error);
     }
   }, [categories.length, setCategories]);
 
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
+  useEffect(() => {
+    if (token) {
+      api.get<{ connected: boolean }>("/facebook/pages")
+        .then((res) => setFbConnected(res.connected))
+        .catch(() => setFbConnected(false));
+    }
+  }, [token]);
+
+  if (!token) return <Navigate to="/login" replace />;
 
   function update(field: keyof typeof form, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
   function toggleCat(id: string) {
-    setSelectedCats((prev) =>
-      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
-    );
+    setSelectedCats((prev) => prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]);
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
-    const startAt = form.allDay
-      ? `${form.startDate}T00:00:00`
-      : `${form.startDate}T${form.startTime}`;
-
-    const endAt =
-      form.endDate || form.endTime
-        ? form.allDay
-          ? `${form.endDate || form.startDate}T23:59:59`
-          : `${form.endDate || form.startDate}T${form.endTime || form.startTime}`
-        : null;
-
+    const startAt = form.allDay ? `${form.startDate}T00:00:00` : `${form.startDate}T${form.startTime}`;
+    const endAt = form.endDate || form.endTime
+      ? form.allDay ? `${form.endDate || form.startDate}T23:59:59` : `${form.endDate || form.startDate}T${form.endTime || form.startTime}`
+      : null;
     try {
       await eventsApi.create({
-        title: form.title,
-        description: form.description || null,
-        startAt,
-        endAt,
-        allDay: form.allDay,
-        venueName: form.venueName || null,
-        address: form.address || null,
-        cost: form.cost || null,
-        ticketUrl: form.ticketUrl || null,
-        imageUrl: form.imageUrl || null,
+        title: form.title, description: form.description || null, startAt, endAt,
+        allDay: form.allDay, venueName: form.venueName || null, address: form.address || null,
+        cost: form.cost || null, ticketUrl: form.ticketUrl || null, imageUrl: form.imageUrl || null,
+        isOnline: form.isOnline, onlineEventUrl: form.onlineEventUrl || null,
+        publishToFacebook: form.publishToFacebook,
         categoryIds: selectedCats,
       });
       navigate("/dashboard");
@@ -90,311 +69,177 @@ export default function CreateEventPage() {
     }
   }
 
-  const inputCls =
-    "w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow";
+  const inputCls = "w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm transition-all focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100";
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <Link
-        to="/dashboard"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Dashboard
+    <div className="mx-auto max-w-3xl px-4 py-8 animate-fade-in">
+      <Link to="/dashboard" className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-gray-400 transition-colors hover:text-gray-700">
+        <ArrowLeft className="h-4 w-4" /> Back to Dashboard
       </Link>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">
-        Create New Event
-      </h1>
+      <h1 className="mb-8 text-2xl font-extrabold tracking-tight text-gray-900">Create New Event</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="p-3 rounded-lg bg-red-50 text-sm text-red-700">
-            {error}
-          </div>
+          <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</div>
         )}
 
-        {/* Basic info */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
-          <h2 className="text-base font-semibold text-gray-900">
-            Event Details
-          </h2>
-
+        <section className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm space-y-5">
+          <h2 className="text-base font-bold text-gray-900">Event Details</h2>
           <div>
-            <label
-              htmlFor="title"
-              className="block text-sm font-medium text-gray-700 mb-1.5"
-            >
-              Title *
-            </label>
-            <input
-              id="title"
-              type="text"
-              required
-              value={form.title}
-              onChange={(e) => update("title", e.target.value)}
-              className={inputCls}
-              placeholder="Community Potluck Dinner"
-            />
+            <label htmlFor="title" className="mb-1.5 block text-sm font-semibold text-gray-700">Title *</label>
+            <input id="title" type="text" required value={form.title} onChange={(e) => update("title", e.target.value)} className={inputCls} placeholder="Community Potluck Dinner" />
           </div>
-
           <div>
-            <label
-              htmlFor="description"
-              className="block text-sm font-medium text-gray-700 mb-1.5"
-            >
-              Description
-            </label>
-            <textarea
-              id="description"
-              rows={5}
-              value={form.description}
-              onChange={(e) => update("description", e.target.value)}
-              className={inputCls + " resize-y"}
-              placeholder="Tell people about your event…"
-            />
+            <label htmlFor="description" className="mb-1.5 block text-sm font-semibold text-gray-700">Description</label>
+            <textarea id="description" rows={5} value={form.description} onChange={(e) => update("description", e.target.value)} className={inputCls + " resize-y"} placeholder="Tell people about your event…" />
           </div>
         </section>
 
-        {/* Date & time */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
-          <h2 className="text-base font-semibold text-gray-900">
-            Date & Time
-          </h2>
-
-          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.allDay}
-              onChange={(e) => update("allDay", e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
+        <section className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm space-y-5">
+          <h2 className="text-base font-bold text-gray-900">Date & Time</h2>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+            <input type="checkbox" checked={form.allDay} onChange={(e) => update("allDay", e.target.checked)} className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
             All-day event
           </label>
-
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label
-                htmlFor="startDate"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
-              >
-                Start Date *
-              </label>
-              <input
-                id="startDate"
-                type="date"
-                required
-                value={form.startDate}
-                onChange={(e) => update("startDate", e.target.value)}
-                className={inputCls}
-              />
+              <label htmlFor="startDate" className="mb-1.5 block text-sm font-semibold text-gray-700">Start Date *</label>
+              <input id="startDate" type="date" required value={form.startDate} onChange={(e) => update("startDate", e.target.value)} className={inputCls} />
             </div>
-
             {!form.allDay && (
               <div>
-                <label
-                  htmlFor="startTime"
-                  className="block text-sm font-medium text-gray-700 mb-1.5"
-                >
-                  Start Time *
-                </label>
-                <input
-                  id="startTime"
-                  type="time"
-                  required={!form.allDay}
-                  value={form.startTime}
-                  onChange={(e) => update("startTime", e.target.value)}
-                  className={inputCls}
-                />
+                <label htmlFor="startTime" className="mb-1.5 block text-sm font-semibold text-gray-700">Start Time *</label>
+                <input id="startTime" type="time" step="300" required={!form.allDay} value={form.startTime} onChange={(e) => update("startTime", e.target.value)} className={inputCls} />
               </div>
             )}
-
             <div>
-              <label
-                htmlFor="endDate"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
-              >
-                End Date
-              </label>
-              <input
-                id="endDate"
-                type="date"
-                value={form.endDate}
-                onChange={(e) => update("endDate", e.target.value)}
-                className={inputCls}
-              />
+              <label htmlFor="endDate" className="mb-1.5 block text-sm font-semibold text-gray-700">End Date</label>
+              <input id="endDate" type="date" value={form.endDate} onChange={(e) => update("endDate", e.target.value)} className={inputCls} />
             </div>
-
             {!form.allDay && (
               <div>
-                <label
-                  htmlFor="endTime"
-                  className="block text-sm font-medium text-gray-700 mb-1.5"
-                >
-                  End Time
-                </label>
-                <input
-                  id="endTime"
-                  type="time"
-                  value={form.endTime}
-                  onChange={(e) => update("endTime", e.target.value)}
-                  className={inputCls}
-                />
+                <label htmlFor="endTime" className="mb-1.5 block text-sm font-semibold text-gray-700">End Time</label>
+                <input id="endTime" type="time" step="300" value={form.endTime} onChange={(e) => update("endTime", e.target.value)} className={inputCls} />
               </div>
             )}
           </div>
         </section>
 
-        {/* Location */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
-          <h2 className="text-base font-semibold text-gray-900">Location</h2>
+        <section className="relative z-20 rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm space-y-5 overflow-visible">
+          <h2 className="text-base font-bold text-gray-900">Location</h2>
+          <p className="text-xs text-gray-400 -mt-3">Start typing a venue name or address and we'll suggest matching locations.</p>
 
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label
-                htmlFor="venueName"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
-              >
-                Venue Name
-              </label>
-              <input
-                id="venueName"
-                type="text"
-                value={form.venueName}
-                onChange={(e) => update("venueName", e.target.value)}
-                className={inputCls}
-                placeholder="Community Center"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="address"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
-              >
-                Address
-              </label>
-              <input
-                id="address"
-                type="text"
-                value={form.address}
-                onChange={(e) => update("address", e.target.value)}
-                className={inputCls}
-                placeholder="123 Main St, Anytown"
-              />
-            </div>
-          </div>
-        </section>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+            <input type="checkbox" checked={form.isOnline} onChange={(e) => update("isOnline", e.target.checked)} className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+            <Globe className="h-4 w-4 text-gray-400" />
+            This is an online / virtual event
+          </label>
 
-        {/* Cost & tickets */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
-          <h2 className="text-base font-semibold text-gray-900">
-            Cost & Tickets
-          </h2>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label
-                htmlFor="cost"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
-              >
-                Cost
+          {form.isOnline && (
+            <div className="animate-fade-in">
+              <label htmlFor="onlineEventUrl" className="mb-1.5 block text-sm font-semibold text-gray-700">
+                <Video className="mr-1 inline h-4 w-4 text-gray-400" />
+                Meeting / Streaming URL
               </label>
               <input
-                id="cost"
-                type="text"
-                value={form.cost}
-                onChange={(e) => update("cost", e.target.value)}
-                className={inputCls}
-                placeholder="Free / $10 / Donation"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="ticketUrl"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
-              >
-                Ticket URL
-              </label>
-              <input
-                id="ticketUrl"
+                id="onlineEventUrl"
                 type="url"
-                value={form.ticketUrl}
-                onChange={(e) => update("ticketUrl", e.target.value)}
+                value={form.onlineEventUrl}
+                onChange={(e) => update("onlineEventUrl", e.target.value)}
                 className={inputCls}
-                placeholder="https://tickets.example.com"
+                placeholder="https://zoom.us/j/123456789 or https://youtube.com/live/..."
               />
+              <p className="mt-1 text-xs text-gray-400">Zoom, Google Meet, YouTube Live, etc.</p>
+            </div>
+          )}
+
+          {!form.isOnline && (
+            <AddressAutocomplete
+              venueValue={form.venueName}
+              addressValue={form.address}
+              onVenueChange={(v) => update("venueName", v)}
+              onAddressChange={(v) => update("address", v)}
+            />
+          )}
+
+          {form.isOnline && (
+            <div className="rounded-lg bg-blue-50/50 px-3 py-2">
+              <p className="text-xs text-blue-600">
+                You can still add a physical venue below if the event is hybrid (both in-person and online).
+              </p>
+              <button
+                type="button"
+                className="mt-1 text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
+                onClick={() => {
+                  const el = document.getElementById("hybrid-venue");
+                  if (el) el.classList.toggle("hidden");
+                }}
+              >
+                <ChevronDown className="h-3 w-3" /> Add physical venue
+              </button>
+              <div id="hybrid-venue" className="hidden mt-3">
+                <AddressAutocomplete
+                  venueValue={form.venueName}
+                  addressValue={form.address}
+                  onVenueChange={(v) => update("venueName", v)}
+                  onAddressChange={(v) => update("address", v)}
+                />
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm space-y-5">
+          <h2 className="text-base font-bold text-gray-900">Cost & Tickets</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="cost" className="mb-1.5 block text-sm font-semibold text-gray-700">Cost</label>
+              <input id="cost" type="text" value={form.cost} onChange={(e) => update("cost", e.target.value)} className={inputCls} placeholder="Free / $10 / Donation" />
+            </div>
+            <div>
+              <label htmlFor="ticketUrl" className="mb-1.5 block text-sm font-semibold text-gray-700">Ticket URL</label>
+              <input id="ticketUrl" type="url" value={form.ticketUrl} onChange={(e) => update("ticketUrl", e.target.value)} className={inputCls} placeholder="https://tickets.example.com" />
             </div>
           </div>
         </section>
 
-        {/* Image */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
-          <h2 className="text-base font-semibold text-gray-900">Image</h2>
-
+        <section className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm space-y-5">
+          <h2 className="text-base font-bold text-gray-900">Image</h2>
+          <ImageUpload
+            value={form.imageUrl}
+            onChange={(url) => update("imageUrl", url)}
+          />
           <div>
-            <label
-              htmlFor="imageUrl"
-              className="block text-sm font-medium text-gray-700 mb-1.5"
-            >
-              Image URL
-            </label>
+            <label htmlFor="imageUrl" className="mb-1.5 block text-sm font-semibold text-gray-700">Image URL</label>
             <input
               id="imageUrl"
-              type="url"
+              type="text"
               value={form.imageUrl}
               onChange={(e) => update("imageUrl", e.target.value)}
               className={inputCls}
               placeholder="https://example.com/event-photo.jpg"
             />
-            <p className="text-xs text-gray-400 mt-1.5">
-              Direct link to an image. Upload support coming soon.
-            </p>
           </div>
-
-          {form.imageUrl && (
-            <img
-              src={form.imageUrl}
-              alt="Preview"
-              className="w-full h-48 object-cover rounded-lg border border-gray-200"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
-          )}
-
-          {!form.imageUrl && (
-            <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
-              <ImagePlus className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-400">
-                Paste an image URL above to preview
-              </p>
-            </div>
-          )}
         </section>
 
-        {/* Categories */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
-          <h2 className="text-base font-semibold text-gray-900">Categories</h2>
-
+        <section className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm space-y-5">
+          <h2 className="text-base font-bold text-gray-900">Categories</h2>
           {categories.length === 0 ? (
             <p className="text-sm text-gray-400">No categories available.</p>
           ) : (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {categories.map((cat) => (
                 <label
                   key={cat.id}
-                  className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
+                  className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-all ${
                     selectedCats.includes(cat.id)
-                      ? "border-blue-300 bg-blue-50 text-blue-700"
-                      : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                      ? "border-transparent text-white shadow-md"
+                      : "border-gray-200/80 bg-white/60 text-gray-600 hover:bg-white hover:shadow"
                   }`}
+                  style={selectedCats.includes(cat.id) ? { backgroundColor: cat.color ?? "#4f46e5", boxShadow: `0 4px 14px -3px ${cat.color ?? "#4f46e5"}50` } : undefined}
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedCats.includes(cat.id)}
-                    onChange={() => toggleCat(cat.id)}
-                    className="sr-only"
-                  />
+                  <input type="checkbox" checked={selectedCats.includes(cat.id)} onChange={() => toggleCat(cat.id)} className="sr-only" />
                   {cat.icon && <span>{cat.icon}</span>}
                   {cat.name}
                 </label>
@@ -403,20 +248,97 @@ export default function CreateEventPage() {
           )}
         </section>
 
-        {/* Submit */}
+        {/* Facebook Integration */}
+        <section className={clsx(
+          "rounded-2xl border p-6 shadow-sm backdrop-blur-sm space-y-5 transition-all",
+          form.publishToFacebook
+            ? "border-blue-200/60 bg-blue-50/30"
+            : "border-gray-200/60 bg-white/80"
+        )}>
+          <div className="flex items-start gap-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1877F2] text-white shadow-md shadow-blue-500/20">
+              <Facebook className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-base font-bold text-gray-900">Facebook Event</h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Automatically create a matching event on your connected Facebook Page.
+              </p>
+            </div>
+            <label className="relative inline-flex cursor-pointer items-center">
+              <input
+                type="checkbox"
+                checked={form.publishToFacebook}
+                onChange={(e) => update("publishToFacebook", e.target.checked)}
+                className="peer sr-only"
+                disabled={fbConnected === false}
+              />
+              <div className={clsx(
+                "h-6 w-11 rounded-full transition-colors after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-transform",
+                "peer-checked:bg-[#1877F2] peer-checked:after:translate-x-5",
+                fbConnected === false ? "bg-gray-200 cursor-not-allowed" : "bg-gray-300",
+              )} />
+            </label>
+          </div>
+
+          {fbConnected === false && (
+            <div className="rounded-xl bg-amber-50 px-4 py-3 border border-amber-200/60">
+              <p className="text-sm text-amber-700 font-medium">
+                No Facebook Page connected.
+              </p>
+              <p className="text-xs text-amber-600 mt-1">
+                Go to <Link to="/dashboard/embed" className="font-bold underline">Settings</Link> to connect your Facebook Page first.
+              </p>
+            </div>
+          )}
+
+          {form.publishToFacebook && fbConnected && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="rounded-xl bg-blue-50/80 border border-blue-100 px-4 py-3">
+                <p className="text-sm text-blue-700">
+                  When you create this event, we'll also create it on your Facebook Page with the same details.
+                  The following fields from your event will be sent to Facebook:
+                </p>
+                <ul className="mt-2 space-y-1 text-xs text-blue-600">
+                  <li className="flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-blue-400" /> <strong>Title</strong> &rarr; Event name
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-blue-400" /> <strong>Description</strong> &rarr; Event description
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-blue-400" /> <strong>Date/Time</strong> &rarr; Start &amp; end time
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-blue-400" /> <strong>Venue</strong> &rarr; Event location / place
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-blue-400" /> <strong>Image</strong> &rarr; Cover photo
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-blue-400" /> <strong>Ticket URL</strong> &rarr; Ticket link
+                  </li>
+                  {form.isOnline && (
+                    <li className="flex items-center gap-2">
+                      <span className="h-1 w-1 rounded-full bg-blue-400" /> <strong>Online URL</strong> &rarr; Virtual event link
+                    </li>
+                  )}
+                </ul>
+              </div>
+              <p className="text-[11px] text-gray-400 italic">
+                Requires the <code className="font-mono bg-gray-100 px-1 rounded">pages_manage_events</code> permission from Facebook.
+                If this permission isn't approved yet, the Casper Events listing will still be created but the Facebook Event creation will be skipped.
+              </p>
+            </div>
+          )}
+        </section>
+
         <div className="flex items-center justify-end gap-3 pt-2">
-          <Link
-            to="/dashboard"
-            className="px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-          >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-6 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
-          >
-            {loading ? "Creating…" : "Create Event"}
+          <Link to="/dashboard" className="rounded-xl px-5 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:text-gray-700">Cancel</Link>
+          <button type="submit" disabled={loading} className="rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary-500/25 transition-all hover:shadow-xl hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed">
+            {loading ? (
+              <span className="inline-flex items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />Creating...</span>
+            ) : form.publishToFacebook ? "Create Event + Facebook" : "Create Event"}
           </button>
         </div>
       </form>

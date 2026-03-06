@@ -6,7 +6,6 @@ import {
   eachDayOfInterval,
   format,
   isSameMonth,
-  isSameDay,
   isToday,
   parseISO,
 } from "date-fns";
@@ -17,11 +16,13 @@ interface MonthViewProps {
   events: EventWithDetails[];
   currentDate: Date;
   onDateClick: (date: Date) => void;
+  onEventClick?: (eventId: string) => void;
+  selectedEventId?: string | null;
 }
 
 const DAY_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function MonthView({ events, currentDate, onDateClick }: MonthViewProps) {
+export function MonthView({ events, currentDate, onDateClick, onEventClick, selectedEventId }: MonthViewProps) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calendarStart = startOfWeek(monthStart);
@@ -37,10 +38,10 @@ export function MonthView({ events, currentDate, onDateClick }: MonthViewProps) 
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
+    <div className="overflow-hidden rounded-2xl border border-gray-200/60 bg-white/70 shadow-sm backdrop-blur-sm">
+      <div className="grid grid-cols-7 border-b border-gray-100">
         {DAY_HEADERS.map((day) => (
-          <div key={day} className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
+          <div key={day} className="px-2 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-gray-400">
             {day}
           </div>
         ))}
@@ -58,16 +59,17 @@ export function MonthView({ events, currentDate, onDateClick }: MonthViewProps) 
               key={key}
               onClick={() => onDateClick(day)}
               className={clsx(
-                "group relative flex min-h-24 flex-col border-b border-r border-gray-100 p-2 text-left transition-colors hover:bg-primary-50/50",
-                !inMonth && "bg-gray-50/50",
+                "group relative flex min-h-24 flex-col border-b border-r border-gray-100/80 p-2 text-left transition-colors",
+                !inMonth && "bg-gray-50/30",
+                inMonth && "hover:bg-primary-50/40",
               )}
             >
               <span
                 className={clsx(
-                  "mb-1 inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
-                  today && "bg-primary-600 text-white",
-                  !today && inMonth && "text-gray-900",
-                  !today && !inMonth && "text-gray-400",
+                  "mb-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold transition-colors",
+                  today && "bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-md shadow-primary-500/30",
+                  !today && inMonth && "text-gray-800 group-hover:text-primary-600",
+                  !today && !inMonth && "text-gray-300",
                 )}
               >
                 {format(day, "d")}
@@ -77,19 +79,33 @@ export function MonthView({ events, currentDate, onDateClick }: MonthViewProps) 
                 {dayEvents.slice(0, 3).map((event) => (
                   <div
                     key={event.id}
-                    className="truncate rounded px-1.5 py-0.5 text-[11px] font-medium leading-tight"
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEventClick?.(event.id);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.stopPropagation(); onEventClick?.(event.id); }
+                    }}
+                    className={clsx(
+                      "truncate rounded-md px-1.5 py-0.5 text-[11px] font-semibold leading-tight transition-all",
+                      selectedEventId === event.id
+                        ? "ring-2 ring-primary-400 ring-offset-1"
+                        : "hover:opacity-80",
+                    )}
                     style={{
                       backgroundColor: event.categories[0]?.color
-                        ? `${event.categories[0].color}20`
-                        : "#2563eb20",
-                      color: event.categories[0]?.color ?? "#2563eb",
+                        ? `${event.categories[0].color}18`
+                        : "#4f46e518",
+                      color: event.categories[0]?.color ?? "#4f46e5",
                     }}
                   >
                     {event.title}
                   </div>
                 ))}
                 {dayEvents.length > 3 && (
-                  <span className="text-[11px] font-medium text-gray-400">
+                  <span className="text-[10px] font-bold text-gray-400">
                     +{dayEvents.length - 3} more
                   </span>
                 )}

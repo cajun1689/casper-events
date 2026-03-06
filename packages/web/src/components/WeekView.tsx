@@ -3,20 +3,20 @@ import {
   endOfWeek,
   eachDayOfInterval,
   format,
-  isSameDay,
   isToday,
   parseISO,
 } from "date-fns";
 import clsx from "clsx";
-import { Link } from "react-router-dom";
 import type { EventWithDetails } from "@cyh/shared";
 
 interface WeekViewProps {
   events: EventWithDetails[];
   currentDate: Date;
+  onEventClick?: (eventId: string) => void;
+  selectedEventId?: string | null;
 }
 
-export function WeekView({ events, currentDate }: WeekViewProps) {
+export function WeekView({ events, currentDate, onEventClick, selectedEventId }: WeekViewProps) {
   const weekStart = startOfWeek(currentDate);
   const weekEnd = endOfWeek(currentDate);
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -30,7 +30,7 @@ export function WeekView({ events, currentDate }: WeekViewProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-gray-200/60 bg-white/70 shadow-sm backdrop-blur-sm">
       <div className="grid grid-cols-7">
         {days.map((day) => {
           const key = format(day, "yyyy-MM-dd");
@@ -38,55 +38,64 @@ export function WeekView({ events, currentDate }: WeekViewProps) {
           const today = isToday(day);
 
           return (
-            <div key={key} className="flex flex-col border-r border-gray-100 last:border-r-0">
+            <div key={key} className="flex flex-col border-r border-gray-100/80 last:border-r-0">
               <div
                 className={clsx(
-                  "flex flex-col items-center border-b border-gray-200 px-2 py-3",
-                  today ? "bg-primary-50" : "bg-gray-50",
+                  "flex flex-col items-center border-b border-gray-100 px-2 py-3",
+                  today && "bg-primary-50/60",
                 )}
               >
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
                   {format(day, "EEE")}
                 </span>
                 <span
                   className={clsx(
                     "mt-1 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold",
-                    today ? "bg-primary-600 text-white" : "text-gray-900",
+                    today ? "bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-md shadow-primary-500/30" : "text-gray-800",
                   )}
                 >
                   {format(day, "d")}
                 </span>
               </div>
 
-              <div className="flex min-h-48 flex-col gap-1.5 p-2">
+              <div className="flex min-h-48 flex-col gap-2 p-2">
                 {dayEvents.map((event) => {
                   const start = parseISO(event.startAt);
-                  const primaryColor = event.categories[0]?.color ?? "#2563eb";
+                  const primaryColor = event.categories[0]?.color ?? "#4f46e5";
+                  const isSelected = selectedEventId === event.id;
 
                   return (
-                    <Link
+                    <button
                       key={event.id}
-                      to={`/events/${event.id}`}
-                      className="group block rounded-lg border-l-[3px] bg-gray-50 p-2 transition-all hover:bg-gray-100 hover:shadow-sm"
-                      style={{ borderLeftColor: primaryColor }}
+                      onClick={() => onEventClick?.(event.id)}
+                      className={clsx(
+                        "group block w-full rounded-xl border bg-white/80 p-2.5 text-left transition-all hover:shadow-md hover:-translate-y-px",
+                        isSelected
+                          ? "border-primary-300 ring-2 ring-primary-200 shadow-md"
+                          : "border-gray-100/80",
+                      )}
+                      style={{ borderLeftWidth: "3px", borderLeftColor: primaryColor }}
                     >
-                      <p className="text-xs font-semibold text-gray-900 group-hover:text-primary-600">
+                      <p className={clsx(
+                        "text-xs font-bold transition-colors",
+                        isSelected ? "text-primary-600" : "text-gray-800 group-hover:text-primary-600",
+                      )}>
                         {event.title}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-gray-500">
+                      <p className="mt-0.5 text-[11px] font-medium text-gray-400">
                         {event.allDay ? "All day" : format(start, "h:mm a")}
                       </p>
                       {event.venueName && (
-                        <p className="mt-0.5 truncate text-[11px] text-gray-400">
+                        <p className="mt-0.5 truncate text-[11px] text-gray-300">
                           {event.venueName}
                         </p>
                       )}
-                    </Link>
+                    </button>
                   );
                 })}
 
                 {dayEvents.length === 0 && (
-                  <p className="py-4 text-center text-xs text-gray-300">No events</p>
+                  <p className="flex flex-1 items-center justify-center text-[11px] font-medium text-gray-300">No events</p>
                 )}
               </div>
             </div>

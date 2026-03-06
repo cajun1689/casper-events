@@ -47,21 +47,21 @@ export function EventModal({ event, onClose }: EventModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm sm:items-center sm:p-6"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md sm:items-center sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-2xl animate-in fade-in zoom-in-95 rounded-2xl bg-white shadow-2xl">
+      <div className="relative w-full max-w-2xl animate-fade-in-scale rounded-3xl bg-white shadow-2xl shadow-gray-900/10">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-gray-500 backdrop-blur-sm transition-colors hover:bg-gray-100 hover:text-gray-700"
+          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-400 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:text-gray-700 hover:shadow"
         >
           <X className="h-5 w-5" />
         </button>
 
         {event.imageUrl && (
-          <div className="aspect-[2/1] overflow-hidden rounded-t-2xl bg-gray-100">
+          <div className="aspect-[2/1] overflow-hidden rounded-t-3xl bg-gradient-to-br from-gray-100 to-gray-50">
             <img
               src={event.imageUrl}
               alt={event.title}
@@ -72,14 +72,14 @@ export function EventModal({ event, onClose }: EventModalProps) {
 
         <div className="p-6 sm:p-8">
           {event.categories.length > 0 && (
-            <div className="mb-3 flex flex-wrap gap-1.5">
+            <div className="mb-4 flex flex-wrap gap-1.5">
               {event.categories.map((cat) => (
                 <span
                   key={cat.id}
-                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium"
+                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold"
                   style={{
-                    backgroundColor: cat.color ? `${cat.color}18` : "#2563eb18",
-                    color: cat.color ?? "#2563eb",
+                    backgroundColor: cat.color ? `${cat.color}14` : "#4f46e514",
+                    color: cat.color ?? "#4f46e5",
                   }}
                 >
                   {cat.icon && <span>{cat.icon}</span>}
@@ -89,17 +89,19 @@ export function EventModal({ event, onClose }: EventModalProps) {
             </div>
           )}
 
-          <h2 className="mb-4 text-2xl font-bold text-gray-900">{event.title}</h2>
+          <h2 className="mb-5 text-2xl font-extrabold tracking-tight text-gray-900">{event.title}</h2>
 
           <div className="mb-6 space-y-3">
-            <div className="flex items-start gap-3 text-sm text-gray-600">
-              <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+            <div className="flex items-start gap-3 text-sm">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50">
+                <CalendarDays className="h-4 w-4 text-primary-500" />
+              </div>
               <div>
-                <p className="font-medium text-gray-900">{format(start, "EEEE, MMMM d, yyyy")}</p>
+                <p className="font-semibold text-gray-900">{format(start, "EEEE, MMMM d, yyyy")}</p>
                 {event.allDay ? (
-                  <p>All day</p>
+                  <p className="text-gray-500">All day</p>
                 ) : (
-                  <p className="flex items-center gap-1">
+                  <p className="flex items-center gap-1 text-gray-500">
                     <Clock className="h-3.5 w-3.5" />
                     {format(start, "h:mm a")}
                     {end && ` – ${format(end, "h:mm a")}`}
@@ -109,11 +111,13 @@ export function EventModal({ event, onClose }: EventModalProps) {
             </div>
 
             {(event.venueName || event.address) && (
-              <div className="flex items-start gap-3 text-sm text-gray-600">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+              <div className="flex items-start gap-3 text-sm">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50">
+                  <MapPin className="h-4 w-4 text-primary-500" />
+                </div>
                 <div>
                   {event.venueName && (
-                    <p className="font-medium text-gray-900">{event.venueName}</p>
+                    <p className="font-semibold text-gray-900">{event.venueName}</p>
                   )}
                   {event.address && (
                     mapUrl ? (
@@ -127,7 +131,7 @@ export function EventModal({ event, onClose }: EventModalProps) {
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     ) : (
-                      <p>{event.address}</p>
+                      <p className="text-gray-500">{event.address}</p>
                     )
                   )}
                 </div>
@@ -135,15 +139,17 @@ export function EventModal({ event, onClose }: EventModalProps) {
             )}
 
             {event.cost && (
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <DollarSign className="h-4 w-4 shrink-0 text-gray-400" />
-                <span>{event.cost}</span>
+              <div className="flex items-center gap-3 text-sm">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50">
+                  <DollarSign className="h-4 w-4 text-primary-500" />
+                </div>
+                <span className="font-medium text-gray-700">{event.cost}</span>
               </div>
             )}
           </div>
 
           {event.description && (
-            <div className="mb-6 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
+            <div className="mb-6 whitespace-pre-wrap text-sm leading-relaxed text-gray-600">
               {event.description}
             </div>
           )}
@@ -153,7 +159,7 @@ export function EventModal({ event, onClose }: EventModalProps) {
               href={event.ticketUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="mb-6 inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-700"
+              className="mb-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary-500/25 transition-all hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-px"
             >
               <Ticket className="h-4 w-4" />
               Get Tickets
@@ -164,23 +170,24 @@ export function EventModal({ event, onClose }: EventModalProps) {
             <Link
               to={`/organizations/${event.organization.slug}`}
               className="group flex items-center gap-3"
+              onClick={onClose}
             >
               {event.organization.logoUrl ? (
                 <img
                   src={event.organization.logoUrl}
                   alt={event.organization.name}
-                  className="h-10 w-10 rounded-full object-cover"
+                  className="h-10 w-10 rounded-xl object-cover ring-2 ring-gray-100"
                 />
               ) : (
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-600">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white shadow-md shadow-primary-500/20">
                   {event.organization.name.charAt(0)}
                 </span>
               )}
               <div>
-                <p className="text-sm font-semibold text-gray-900 transition-colors group-hover:text-primary-600">
+                <p className="text-sm font-bold text-gray-900 transition-colors group-hover:text-primary-600">
                   {event.organization.name}
                 </p>
-                <p className="flex items-center gap-1 text-xs text-gray-500">
+                <p className="flex items-center gap-1 text-xs font-medium text-gray-400">
                   <Building2 className="h-3 w-3" />
                   Organized by
                 </p>

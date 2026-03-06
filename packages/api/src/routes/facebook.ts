@@ -8,6 +8,22 @@ import { resolveUserOrg } from "../services/user-org.js";
 const FB_APP_ID = process.env.FACEBOOK_APP_ID || "";
 const FB_APP_SECRET = process.env.FACEBOOK_APP_SECRET || "";
 const FB_REDIRECT_URI = process.env.FACEBOOK_REDIRECT_URI || "";
+const FB_API_VERSION = "v21.0";
+
+async function fbApi(path: string, token: string, method = "GET", body?: Record<string, unknown>) {
+  const url = `https://graph.facebook.com/${FB_API_VERSION}${path}`;
+  const opts: RequestInit = {
+    method,
+    headers: { "Content-Type": "application/json" },
+  };
+  if (method === "POST" && body) {
+    opts.body = JSON.stringify({ ...body, access_token: token });
+  } else if (method === "GET") {
+    const sep = path.includes("?") ? "&" : "?";
+    return fetch(`${url}${sep}access_token=${token}`).then((r) => r.json());
+  }
+  return fetch(url, opts).then((r) => r.json());
+}
 
 export async function facebookRoutes(app: FastifyInstance) {
   // Initiate Facebook OAuth
@@ -19,10 +35,13 @@ export async function facebookRoutes(app: FastifyInstance) {
         "pages_show_list",
         "pages_read_engagement",
         "pages_manage_posts",
+        "pages_manage_engagement",
+        "pages_manage_events",
+        "business_management",
       ].join(",");
 
       const url =
-        `https://www.facebook.com/v21.0/dialog/oauth?` +
+        `https://www.facebook.com/${FB_API_VERSION}/dialog/oauth?` +
         `client_id=${FB_APP_ID}` +
         `&redirect_uri=${encodeURIComponent(FB_REDIRECT_URI)}` +
         `&scope=${scopes}` +
@@ -39,16 +58,14 @@ export async function facebookRoutes(app: FastifyInstance) {
       state: string;
     };
 
-    // Exchange code for access token
     const tokenUrl =
-      `https://graph.facebook.com/v21.0/oauth/access_token?` +
+      `https://graph.facebook.com/${FB_API_VERSION}/oauth/access_token?` +
       `client_id=${FB_APP_ID}` +
       `&client_secret=${FB_APP_SECRET}` +
       `&redirect_uri=${encodeURIComponent(FB_REDIRECT_URI)}` +
       `&code=${code}`;
 
-    const tokenRes = await fetch(tokenUrl);
-    const tokenData = (await tokenRes.json()) as {
+    const tokenData = (await fetch(tokenUrl).then((r) => r.json())) as {
       access_token: string;
       error?: { message: string };
     };
@@ -59,30 +76,27 @@ export async function facebookRoutes(app: FastifyInstance) {
 
     // Exchange for long-lived user token
     const longLivedUrl =
-      `https://graph.facebook.com/v21.0/oauth/access_token?` +
+      `https://graph.facebook.com/${FB_API_VERSION}/oauth/access_token?` +
       `grant_type=fb_exchange_token` +
       `&client_id=${FB_APP_ID}` +
       `&client_secret=${FB_APP_SECRET}` +
       `&fb_exchange_token=${tokenData.access_token}`;
 
-    const longLivedRes = await fetch(longLivedUrl);
-    const longLivedData = (await longLivedRes.json()) as {
+    const longLivedData = (await fetch(longLivedUrl).then((r) => r.json())) as {
       access_token: string;
     };
 
     // Get pages the user manages
-    const pagesRes = await fetch(
-      `https://graph.facebook.com/v21.0/me/accounts?access_token=${longLivedData.access_token}`
-    );
-    const pagesData = (await pagesRes.json()) as {
+    const pagesData = (await fbApi("/me/accounts", longLivedData.access_token)) as {
       data: { id: string; name: string; access_token: string }[];
     };
 
     if (!pagesData.data || pagesData.data.length === 0) {
-      return reply.status(400).send({ error: "No Facebook Pages found" });
+      return reply.status(400).send({ error: "No Facebook Pages found. Make sure your Facebook account manages at least one Page." });
     }
 
-    // For now, use the first page. In production, let the user pick.
+    // If user manages multiple pages, use the first one for now.
+    // The page selection UI can be added later.
     const page = pagesData.data[0];
 
     const db = await getDb();
@@ -97,16 +111,126 @@ export async function facebookRoutes(app: FastifyInstance) {
       .set({
         facebookPageId: page.id,
         facebookPageToken: page.access_token,
-        fbTokenExpiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // ~60 days
+        fbTokenExpiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
         updatedAt: new Date(),
       })
       .where(eq(schema.organizations.id, userOrg.orgId));
 
-    // Redirect back to the dashboard
-    return reply.redirect("/dashboard/settings?facebook=connected");
+    const frontendUrl = process.env.CORS_ORIGIN || "https://casperevents.org";
+    return reply.redirect(`${frontendUrl}/dashboard/facebook?facebook=connected`);
   });
 
-  // Post event to Facebook Page
+  // Create Facebook Event for an existing event
+  app.post(
+    "/events/:id/facebook/create-event",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const db = await getDb();
+      const userOrg = await resolveUserOrg(db, request.user!.sub);
+
+      if (!userOrg) {
+        return reply.status(403).send({ error: "Not authorized" });
+      }
+
+      const [event] = await db
+        .select()
+        .from(schema.events)
+        .where(eq(schema.events.id, id));
+
+      if (!event || event.orgId !== userOrg.orgId) {
+        return reply.status(404).send({ error: "Event not found" });
+      }
+
+      if (event.facebookEventId) {
+        return reply.status(400).send({ error: "Facebook Event already exists", facebookEventId: event.facebookEventId });
+      }
+
+      const [org] = await db
+        .select()
+        .from(schema.organizations)
+        .where(eq(schema.organizations.id, userOrg.orgId));
+
+      if (!org.facebookPageId || !org.facebookPageToken) {
+        return reply.status(400).send({ error: "Facebook Page not connected. Go to Settings to connect your Facebook Page." });
+      }
+
+      const fbPayload: Record<string, unknown> = {
+        name: event.title,
+        start_time: event.startAt.toISOString(),
+        description: event.description || undefined,
+      };
+
+      if (event.endAt) {
+        fbPayload.end_time = event.endAt.toISOString();
+      }
+
+      if (event.isOnline && event.onlineEventUrl) {
+        fbPayload.is_online = true;
+        fbPayload.online_event_format = "OTHER";
+        fbPayload.online_event_third_party_url = event.onlineEventUrl;
+      } else if (event.venueName || event.address) {
+        fbPayload.place = {
+          name: event.venueName || event.address || "",
+          location: event.address ? { street: event.address } : undefined,
+        };
+      }
+
+      if (event.ticketUrl) {
+        fbPayload.ticket_uri = event.ticketUrl;
+      }
+
+      const fbResult = (await fbApi(
+        `/${org.facebookPageId}/events`,
+        org.facebookPageToken,
+        "POST",
+        fbPayload,
+      )) as { id?: string; error?: { message: string; code: number; error_subcode?: number } };
+
+      if (fbResult.error) {
+        const msg = fbResult.error.message;
+        if (fbResult.error.code === 200 || msg.includes("permission")) {
+          return reply.status(403).send({
+            error: "Your app doesn't have the pages_manage_events permission yet. Complete the Facebook API approval process first.",
+            fbError: msg,
+          });
+        }
+        return reply.status(400).send({ error: `Facebook API error: ${msg}`, fbError: msg });
+      }
+
+      if (fbResult.id) {
+        await db
+          .update(schema.events)
+          .set({ facebookEventId: fbResult.id, updatedAt: new Date() })
+          .where(eq(schema.events.id, id));
+
+        if (event.imageUrl) {
+          try {
+            const imageFullUrl = event.imageUrl.startsWith("http")
+              ? event.imageUrl
+              : `https://casperevents.org${event.imageUrl}`;
+
+            await fbApi(
+              `/${fbResult.id}/picture`,
+              org.facebookPageToken,
+              "POST",
+              { url: imageFullUrl },
+            );
+          } catch {
+            // cover photo upload is best-effort
+          }
+        }
+      }
+
+      return reply.send({
+        success: true,
+        facebookEventId: fbResult.id,
+        facebookEventUrl: `https://www.facebook.com/events/${fbResult.id}`,
+      });
+    }
+  );
+
+  // Share event as a page feed post
   app.post(
     "/events/:id/facebook/share",
     { preHandler: requireAuth },
@@ -134,9 +258,7 @@ export async function facebookRoutes(app: FastifyInstance) {
         .where(eq(schema.organizations.id, userOrg.orgId));
 
       if (!org.facebookPageId || !org.facebookPageToken) {
-        return reply
-          .status(400)
-          .send({ error: "Facebook Page not connected" });
+        return reply.status(400).send({ error: "Facebook Page not connected" });
       }
 
       const eventDate = new Date(event.startAt).toLocaleDateString("en-US", {
@@ -148,67 +270,38 @@ export async function facebookRoutes(app: FastifyInstance) {
         minute: "2-digit",
       });
 
-      const message =
-        `${event.title}\n\n` +
-        `${eventDate}\n` +
-        (event.venueName ? `${event.venueName}\n` : "") +
-        (event.address ? `${event.address}\n` : "") +
-        `\n` +
-        (event.description ? `${event.description.substring(0, 500)}\n\n` : "");
+      const lines = [event.title, "", eventDate];
+      if (event.venueName) lines.push(event.venueName);
+      if (event.address) lines.push(event.address);
+      if (event.isOnline && event.onlineEventUrl) lines.push(`Online: ${event.onlineEventUrl}`);
+      lines.push("");
+      if (event.description) lines.push(event.description.substring(0, 500));
+      if (event.ticketUrl) lines.push("", `Tickets: ${event.ticketUrl}`);
+      if (event.cost) lines.push(`Cost: ${event.cost}`);
+      lines.push("", `More info: https://casperevents.org/events/${event.id}`);
 
-      const postUrl = `https://graph.facebook.com/v21.0/${org.facebookPageId}/feed`;
-      const postRes = await fetch(postUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          access_token: org.facebookPageToken,
-        }),
-      });
+      const postBody: Record<string, unknown> = { message: lines.join("\n") };
 
-      const postData = (await postRes.json()) as {
-        id?: string;
-        error?: { message: string };
-      };
-
-      if (postData.error) {
-        return reply.status(400).send({ error: postData.error.message });
+      if (event.facebookEventId) {
+        postBody.link = `https://www.facebook.com/events/${event.facebookEventId}`;
+      } else if (event.ticketUrl) {
+        postBody.link = event.ticketUrl;
+      } else {
+        postBody.link = `https://casperevents.org/events/${event.id}`;
       }
 
-      // Try to create a Facebook Event (may fail if permission not granted)
-      try {
-        const fbEventUrl = `https://graph.facebook.com/v21.0/${org.facebookPageId}/events`;
-        const fbEventRes = await fetch(fbEventUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: event.title,
-            description: event.description || "",
-            start_time: event.startAt.toISOString(),
-            end_time: event.endAt?.toISOString(),
-            place: event.venueName
-              ? { name: event.venueName }
-              : undefined,
-            access_token: org.facebookPageToken,
-          }),
-        });
+      const postResult = (await fbApi(
+        `/${org.facebookPageId}/feed`,
+        org.facebookPageToken,
+        "POST",
+        postBody,
+      )) as { id?: string; error?: { message: string } };
 
-        const fbEventData = (await fbEventRes.json()) as { id?: string };
-
-        if (fbEventData.id) {
-          await db
-            .update(schema.events)
-            .set({ facebookEventId: fbEventData.id })
-            .where(eq(schema.events.id, id));
-        }
-      } catch {
-        // Facebook Event creation is best-effort
+      if (postResult.error) {
+        return reply.status(400).send({ error: postResult.error.message });
       }
 
-      return reply.send({
-        success: true,
-        postId: postData.id,
-      });
+      return reply.send({ success: true, postId: postResult.id });
     }
   );
 
@@ -261,4 +354,74 @@ export async function facebookRoutes(app: FastifyInstance) {
       return reply.send({ success: true });
     }
   );
+
+  // Facebook Deauthorize callback — called when a user removes the app
+  app.post("/auth/facebook/deauthorize", async (request, reply) => {
+    const { signed_request } = request.body as { signed_request?: string };
+    if (!signed_request) {
+      return reply.status(400).send({ error: "Missing signed_request" });
+    }
+
+    try {
+      const [, payload] = signed_request.split(".");
+      const decoded = JSON.parse(
+        Buffer.from(payload.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString(),
+      );
+      const userId = decoded.user_id as string;
+
+      if (userId) {
+        const db = await getDb();
+        await db
+          .update(schema.organizations)
+          .set({
+            facebookPageId: null,
+            facebookPageToken: null,
+            fbTokenExpiresAt: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.organizations.facebookPageId, userId));
+      }
+    } catch {
+      // best-effort cleanup
+    }
+
+    return reply.send({ success: true });
+  });
+
+  // Facebook Data Deletion callback — GDPR compliance
+  app.post("/auth/facebook/data-deletion", async (request, reply) => {
+    const { signed_request } = request.body as { signed_request?: string };
+    if (!signed_request) {
+      return reply.status(400).send({ error: "Missing signed_request" });
+    }
+
+    try {
+      const [, payload] = signed_request.split(".");
+      const decoded = JSON.parse(
+        Buffer.from(payload.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString(),
+      );
+      const userId = decoded.user_id as string;
+
+      if (userId) {
+        const db = await getDb();
+        await db
+          .update(schema.organizations)
+          .set({
+            facebookPageId: null,
+            facebookPageToken: null,
+            fbTokenExpiresAt: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.organizations.facebookPageId, userId));
+      }
+    } catch {
+      // best-effort cleanup
+    }
+
+    const confirmationCode = `del_${Date.now()}`;
+    return reply.send({
+      url: "https://casperevents.org/privacy",
+      confirmation_code: confirmationCode,
+    });
+  });
 }

@@ -16,14 +16,16 @@ export function createApiClient(apiUrl: string) {
     const url = `${base}/embed/events/${orgId}?includeConnected=${includeConnected}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to fetch events: ${res.status}`);
-    return res.json();
+    const json = await res.json();
+    return json.data ?? json;
   }
 
   async function fetchConfig(orgId: string): Promise<EmbedConfig> {
     const url = `${base}/embed/config/${orgId}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to fetch config: ${res.status}`);
-    return res.json();
+    const json = await res.json();
+    return json.data ?? json;
   }
 
   return { fetchEvents, fetchConfig };
