@@ -8,6 +8,7 @@ import type { EventWithDetails } from "@cyh/shared";
 import { MonthView } from "@/components/MonthView";
 import { WeekView } from "@/components/WeekView";
 import { ListView } from "@/components/ListView";
+import { PosterView } from "@/components/PosterView";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { ViewToggle } from "@/components/ViewToggle";
 import { EventCardGrid } from "@/components/EventCardGrid";
@@ -80,7 +81,7 @@ export default function HomePage() {
   }
 
   function handleViewChange(mode: string) {
-    const m = mode as "month" | "week" | "list";
+    const m = mode as "month" | "week" | "list" | "poster";
     setViewMode(m);
     setExpandedEventId(null);
   }
@@ -98,7 +99,7 @@ export default function HomePage() {
       ? `Week of ${format(currentDate, "MMM d, yyyy")}`
       : format(currentDate, "MMMM yyyy");
 
-  const showCardGrid = viewMode !== "list";
+  const showCardGrid = viewMode !== "list" && viewMode !== "poster";
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
@@ -123,23 +124,25 @@ export default function HomePage() {
       <div className="flex flex-col gap-5">
         {/* Controls row */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={navigatePrev}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200/80 bg-white/60 text-gray-500 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow"
-              aria-label="Previous"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <h2 className="min-w-[180px] text-center text-base font-bold text-gray-800">{navLabel}</h2>
-            <button
-              onClick={navigateNext}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200/80 bg-white/60 text-gray-500 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow"
-              aria-label="Next"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+          {viewMode !== "poster" && (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={navigatePrev}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200/80 bg-white/60 text-gray-500 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow"
+                aria-label="Previous"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <h2 className="min-w-[180px] text-center text-base font-bold text-gray-800">{navLabel}</h2>
+              <button
+                onClick={navigateNext}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200/80 bg-white/60 text-gray-500 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow"
+                aria-label="Next"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <button
               onClick={() => printCalendar({
@@ -198,6 +201,9 @@ export default function HomePage() {
               )}
               {viewMode === "list" && (
                 <ListView events={filteredEvents} />
+              )}
+              {viewMode === "poster" && (
+                <PosterView events={filteredEvents} />
               )}
             </div>
 

@@ -1,4 +1,4 @@
-import { Calendar, CalendarDays, List } from "lucide-react";
+import { Calendar, CalendarDays, List, LayoutGrid } from "lucide-react";
 import clsx from "clsx";
 
 interface ViewToggleProps {
@@ -10,6 +10,7 @@ const views = [
   { key: "month", label: "Month", icon: Calendar },
   { key: "week", label: "Week", icon: CalendarDays },
   { key: "list", label: "List", icon: List },
+  { key: "poster", label: "Poster", icon: LayoutGrid },
 ] as const;
 
 export function ViewToggle({ current, onChange }: ViewToggleProps) {

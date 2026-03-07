@@ -7,14 +7,14 @@ interface AppState {
   organization: { id: string; name: string; slug: string; status?: string } | null;
   categories: CategoryPublic[];
   selectedCategories: string[];
-  viewMode: "month" | "week" | "list";
+  viewMode: "month" | "week" | "list" | "poster";
 
   setAuth: (token: string, user: AppState["user"], org: AppState["organization"]) => void;
   logout: () => void;
   setCategories: (cats: CategoryPublic[]) => void;
   toggleCategory: (slug: string) => void;
   clearCategoryFilter: () => void;
-  setViewMode: (mode: "month" | "week" | "list") => void;
+  setViewMode: (mode: "month" | "week" | "list" | "poster") => void;
 }
 
 export const useStore = create<AppState>((set) => ({
