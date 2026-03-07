@@ -169,5 +169,35 @@ export class ApiStack extends cdk.Stack {
       value: `https://${apiDomainName}`,
       description: "API URL",
     });
+
+    // Migration Lambda: runs DB migrations inside the VPC
+    const migrateHandler = new lambda.Function(this, "MigrateHandler", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "migrate-handler.handler",
+      code: lambda.Code.fromAsset("../api/dist"),
+      memorySize: 256,
+      timeout: cdk.Duration.minutes(2),
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [lambdaSg],
+      environment: {
+        NODE_ENV: "production",
+        DB_SECRET_ARN: props.dbSecretArn,
+        DB_HOST: props.dbClusterEndpoint,
+        DB_NAME: "cyhcalendar",
+      },
+    });
+
+    migrateHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["secretsmanager:GetSecretValue"],
+        resources: [props.dbSecretArn],
+      })
+    );
+
+    new cdk.CfnOutput(this, "MigrateFunctionName", {
+      value: migrateHandler.functionName,
+      description: "Lambda function name for running DB migrations",
+    });
   }
 }

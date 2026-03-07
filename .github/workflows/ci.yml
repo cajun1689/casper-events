@@ -78,6 +78,17 @@ jobs:
           FACEBOOK_APP_SECRET: ${{ secrets.FACEBOOK_APP_SECRET }}
           FACEBOOK_REDIRECT_URI: ${{ secrets.FACEBOOK_REDIRECT_URI }}
 
+      - name: Run database migrations
+        run: |
+          FUNC=$(aws cloudformation describe-stacks --stack-name CyhApi --query "Stacks[0].Outputs[?OutputKey=='MigrateFunctionName'].OutputValue" --output text)
+          if [ -n "$FUNC" ] && [ "$FUNC" != "None" ]; then
+            echo "Invoking migration Lambda: $FUNC"
+            aws lambda invoke --function-name "$FUNC" --payload '{}' /tmp/migrate-response.json --log-type Tail --query 'LogResult' --output text | base64 -d
+            cat /tmp/migrate-response.json
+          else
+            echo "Migration Lambda not found, skipping (deploy CDK first)"
+          fi
+
       - name: Deploy web to S3
         run: |
           BUCKET=$(aws cloudformation describe-stacks --stack-name CyhStorage --query "Stacks[0].Outputs[?OutputKey=='StaticBucketName'].OutputValue" --output text)
