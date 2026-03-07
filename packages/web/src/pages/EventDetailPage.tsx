@@ -170,39 +170,13 @@ export default function EventDetailPage() {
             </div>
           )}
 
-          {/* Sponsor logos in poster area */}
+          {/* Sponsor logos in poster area - grouped by level */}
           {sponsors.length > 0 && (
-            <div className="border-t border-white/20 px-6 py-4">
-              <p className="mb-3 text-[10px] font-extrabold uppercase tracking-[0.15em]" style={{ opacity: 0.9 }}>
+            <div className="border-t border-white/20 px-6 py-5">
+              <p className="mb-4 text-[10px] font-extrabold uppercase tracking-[0.15em]" style={{ opacity: 0.9 }}>
                 Brought to you by
               </p>
-              <div className="flex flex-wrap items-center gap-6">
-                {sponsors.map((s) => (
-                  <a
-                    key={s.id}
-                    href={s.websiteUrl || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex flex-col items-start gap-1 transition-opacity hover:opacity-80"
-                  >
-                    {s.logoUrl ? (
-                      <img
-                        src={s.logoUrl}
-                        alt={s.name}
-                        className="max-h-12 object-contain"
-                        style={{
-                          maxWidth: s.level === "presenting" ? "160px" : s.level === "gold" ? "120px" : s.level === "silver" ? "90px" : s.level === "bronze" ? "70px" : "50px",
-                        }}
-                      />
-                    ) : (
-                      <span className="text-sm font-bold">{s.name}</span>
-                    )}
-                    <span className="text-[10px] font-semibold" style={{ opacity: 0.85 }}>
-                      {s.name}
-                    </span>
-                  </a>
-                ))}
-              </div>
+              <SponsorGrid sponsors={sponsors} variant="poster" />
             </div>
           )}
         </div>
@@ -243,47 +217,61 @@ export default function EventDetailPage() {
             />
           )}
 
-          {/* WHEN section */}
-          <div className="mb-8">
-            <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.15em] text-gray-700">When</p>
-            <p className="font-semibold text-gray-900">{format(start, "EEEE, MMMM d, yyyy")}</p>
-            <p className="mt-1 text-gray-600">{timeLabel}</p>
-            <button
-              onClick={handleAddToCalendar}
-              className="mt-3 text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline"
-            >
-              Add to Calendar
-            </button>
+          {/* WHEN / WHERE side-by-side */}
+          <div className="mb-8 grid gap-8 sm:grid-cols-2">
+            {/* WHEN */}
+            <div>
+              <div className="mb-3 flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-gray-900" />
+                <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-gray-900">When</p>
+              </div>
+              <p className="font-semibold text-gray-900">
+                {format(start, "EEEE, MMMM d")} {timeLabel}
+              </p>
+              <button
+                onClick={handleAddToCalendar}
+                className="mt-3 text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline"
+              >
+                Add to Calendar
+              </button>
+            </div>
+
+            {/* WHERE */}
+            {(event.venueName || event.address) && (
+              <div>
+                <div className="mb-3 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-gray-900" />
+                  <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-gray-900">Where</p>
+                </div>
+                {event.venueName && (
+                  <p className="font-bold uppercase tracking-wide text-gray-900">{event.venueName}</p>
+                )}
+                {event.address && <p className="mt-1 text-gray-600">{event.address}</p>}
+                {mapUrl && (
+                  <a
+                    href={mapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-block text-sm font-bold uppercase tracking-wide text-primary-600 hover:text-primary-700 hover:underline"
+                  >
+                    Get Directions
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* WHERE section */}
-          {(event.venueName || event.address) && (
-            <div className="mb-8">
-              <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.15em] text-gray-700">Where</p>
-              {event.venueName && <p className="font-semibold text-gray-900">{event.venueName}</p>}
-              {event.address && <p className="mt-1 text-gray-600">{event.address}</p>}
-              {mapUrl && (
-                <a
-                  href={mapUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-flex items-center gap-2 rounded-lg border-2 border-gray-800 bg-white px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-gray-900 transition-all hover:bg-gray-50"
-                >
-                  <MapPin className="h-4 w-4" /> Get Directions
-                </a>
-              )}
-              {event.address && (
-                <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
-                  <iframe
-                    title="Event location"
-                    src={`https://maps.google.com/maps?q=${encodeURIComponent(event.address)}&z=15&output=embed`}
-                    className="h-64 w-full border-0"
-                    allowFullScreen
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
-                </div>
-              )}
+          {/* Map - full width below WHEN/WHERE */}
+          {event.address && (
+            <div className="mb-8 overflow-hidden rounded-xl border border-gray-200">
+              <iframe
+                title="Event location"
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(event.address)}&z=15&output=embed`}
+                className="h-72 w-full border-0"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
             </div>
           )}
 
@@ -341,6 +329,68 @@ export default function EventDetailPage() {
           </div>
         </div>
       </article>
+    </div>
+  );
+}
+
+const SPONSOR_LEVELS = ["presenting", "gold", "silver", "bronze", "community"] as const;
+
+const LEVEL_CONFIG: Record<string, { maxW: string; maxH: string; textSize: string; gap: string }> = {
+  presenting: { maxW: "220px", maxH: "80px", textSize: "text-base", gap: "gap-8" },
+  gold:       { maxW: "160px", maxH: "60px", textSize: "text-sm",  gap: "gap-6" },
+  silver:     { maxW: "120px", maxH: "48px", textSize: "text-sm",  gap: "gap-5" },
+  bronze:     { maxW: "90px",  maxH: "36px", textSize: "text-xs",  gap: "gap-4" },
+  community:  { maxW: "64px",  maxH: "28px", textSize: "text-xs",  gap: "gap-3" },
+};
+
+function SponsorGrid({
+  sponsors,
+  variant,
+}: {
+  sponsors: EventWithDetails["sponsors"];
+  variant: "poster" | "detail";
+}) {
+  const grouped = SPONSOR_LEVELS
+    .map((level) => ({ level, items: sponsors.filter((s) => s.level === level) }))
+    .filter((g) => g.items.length > 0);
+
+  return (
+    <div className="space-y-4">
+      {grouped.map(({ level, items }) => {
+        const cfg = LEVEL_CONFIG[level];
+        return (
+          <div key={level} className={`flex flex-wrap items-center ${cfg.gap}`}>
+            {items.map((s) => (
+              <a
+                key={s.id}
+                href={s.websiteUrl || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-1 transition-opacity hover:opacity-80"
+              >
+                {s.logoUrl ? (
+                  <img
+                    src={s.logoUrl}
+                    alt={s.name}
+                    className="object-contain"
+                    style={{ maxWidth: cfg.maxW, maxHeight: cfg.maxH }}
+                  />
+                ) : (
+                  <span className={`font-bold ${cfg.textSize} ${variant === "poster" ? "" : "text-gray-800"}`}>
+                    {s.name}
+                  </span>
+                )}
+                <span
+                  className={`font-semibold ${variant === "poster" ? "" : "text-gray-500"}`}
+                  style={{ fontSize: "10px", opacity: variant === "poster" ? 0.85 : 1 }}
+                >
+                  {s.name}
+                </span>
+              </a>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }

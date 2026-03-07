@@ -248,39 +248,7 @@ export function EmbedPosterDetail({ event, onClose }: EmbedPosterDetailProps) {
               <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.15em", marginBottom: "12px", color: "var(--cyh-text)" }}>
                 BROUGHT TO YOU BY
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center" }}>
-                {sponsors.map((s, i) => (
-                  <a
-                    key={i}
-                    href={s.websiteUrl || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: "4px",
-                      textDecoration: "none",
-                      color: "var(--cyh-text)",
-                    }}
-                  >
-                    {s.logoUrl ? (
-                      <img
-                        src={s.logoUrl}
-                        alt={s.name}
-                        style={{
-                          maxWidth: s.level === "presenting" ? "180px" : s.level === "gold" ? "130px" : s.level === "silver" ? "100px" : s.level === "bronze" ? "75px" : "55px",
-                          maxHeight: "60px",
-                          objectFit: "contain",
-                        }}
-                      />
-                    ) : (
-                      <span style={{ fontSize: "14px", fontWeight: 700 }}>{s.name}</span>
-                    )}
-                    <span style={{ fontSize: "11px", fontWeight: 600, opacity: 0.8 }}>{s.name}</span>
-                  </a>
-                ))}
-              </div>
+              <EmbedSponsorGrid sponsors={sponsors} />
             </div>
           )}
 
@@ -327,6 +295,60 @@ export function EmbedPosterDetail({ event, onClose }: EmbedPosterDetailProps) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+const LEVEL_ORDER = ["presenting", "gold", "silver", "bronze", "community"];
+const LEVEL_SIZES: Record<string, { maxW: string; maxH: string; textSize: string; gap: string }> = {
+  presenting: { maxW: "220px", maxH: "80px", textSize: "16px", gap: "24px" },
+  gold:       { maxW: "160px", maxH: "60px", textSize: "14px", gap: "20px" },
+  silver:     { maxW: "120px", maxH: "48px", textSize: "13px", gap: "16px" },
+  bronze:     { maxW: "90px",  maxH: "36px", textSize: "12px", gap: "12px" },
+  community:  { maxW: "64px",  maxH: "28px", textSize: "11px", gap: "10px" },
+};
+
+function EmbedSponsorGrid({ sponsors }: { sponsors: EmbedPosterDetailProps["event"]["sponsors"] }) {
+  const grouped = LEVEL_ORDER
+    .map((level) => ({ level, items: (sponsors ?? []).filter((s) => s.level === level) }))
+    .filter((g) => g.items.length > 0);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      {grouped.map(({ level, items }) => {
+        const cfg = LEVEL_SIZES[level] ?? LEVEL_SIZES.community;
+        return (
+          <div key={level} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: cfg.gap }}>
+            {items.map((s, i) => (
+              <a
+                key={i}
+                href={s.websiteUrl || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "4px",
+                  textDecoration: "none",
+                  color: "var(--cyh-text)",
+                }}
+              >
+                {s.logoUrl ? (
+                  <img
+                    src={s.logoUrl}
+                    alt={s.name}
+                    style={{ maxWidth: cfg.maxW, maxHeight: cfg.maxH, objectFit: "contain" }}
+                  />
+                ) : (
+                  <span style={{ fontSize: cfg.textSize, fontWeight: 700 }}>{s.name}</span>
+                )}
+                <span style={{ fontSize: "10px", fontWeight: 600, opacity: 0.8 }}>{s.name}</span>
+              </a>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }

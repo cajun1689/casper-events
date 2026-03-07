@@ -275,7 +275,7 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, style }: PosterC
         </div>
       )}
 
-      {/* Sponsor logos - compact row */}
+      {/* Sponsor logos - compact row, sized by level */}
       {(event.sponsors ?? []).length > 0 && (
         <div
           style={{
@@ -283,25 +283,27 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, style }: PosterC
             display: "flex",
             flexWrap: "wrap",
             alignItems: "center",
-            gap: "8px",
+            gap: "10px",
             opacity: 0.9,
           }}
         >
-          {(event.sponsors ?? []).slice(0, 4).map((s: { id?: string; name: string; logoUrl: string | null }) =>
-            s.logoUrl ? (
+          {(event.sponsors ?? []).slice(0, 4).map((s: { id?: string; name: string; logoUrl: string | null; level?: string }) => {
+            const mh = s.level === "presenting" ? "32px" : s.level === "gold" ? "28px" : s.level === "silver" ? "24px" : "20px";
+            const mw = s.level === "presenting" ? "80px" : s.level === "gold" ? "70px" : s.level === "silver" ? "55px" : "45px";
+            return s.logoUrl ? (
               <img
                 key={s.id ?? s.name}
                 src={s.logoUrl}
                 alt={s.name}
                 title={s.name}
-                style={{ maxHeight: "24px", maxWidth: "60px", objectFit: "contain" }}
+                style={{ maxHeight: mh, maxWidth: mw, objectFit: "contain" }}
               />
             ) : (
               <span key={s.id ?? s.name} style={{ fontSize: "10px", fontWeight: 700, opacity: 0.85 }}>
                 {s.name}
               </span>
-            )
-          )}
+            );
+          })}
         </div>
       )}
 

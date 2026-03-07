@@ -173,24 +173,26 @@ function PosterCard({ event }: { event: EventWithDetails }) {
         </div>
       )}
 
-      {/* Sponsor logos - compact row */}
+      {/* Sponsor logos - compact row, sized by level */}
       {sponsors.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 pl-20 pr-4 py-2" style={{ opacity: 0.9 }}>
-          {sponsors.slice(0, 4).map((s) =>
-            s.logoUrl ? (
+        <div className="flex flex-wrap items-center gap-2.5 pl-20 pr-4 py-2" style={{ opacity: 0.9 }}>
+          {sponsors.slice(0, 4).map((s) => {
+            const h = s.level === "presenting" ? "h-8" : s.level === "gold" ? "h-7" : s.level === "silver" ? "h-6" : "h-5";
+            const mw = s.level === "presenting" ? "max-w-[80px]" : s.level === "gold" ? "max-w-[70px]" : s.level === "silver" ? "max-w-[55px]" : "max-w-[45px]";
+            return s.logoUrl ? (
               <img
                 key={s.id}
                 src={s.logoUrl}
                 alt={s.name}
-                className="h-6 max-w-[60px] object-contain"
+                className={`${h} ${mw} object-contain`}
                 title={s.name}
               />
             ) : (
               <span key={s.id} className="text-[10px] font-bold" style={{ opacity: 0.85 }}>
                 {s.name}
               </span>
-            )
-          )}
+            );
+          })}
         </div>
       )}
 
