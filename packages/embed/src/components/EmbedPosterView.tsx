@@ -324,57 +324,35 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, style }: PosterC
         {event.venueName && <span>• {event.venueName}</span>}
       </div>
 
-      {/* CTA - default: click opens event detail. When ctaOpensExternal: opens external URL */}
+      {/* CTA - button always opens external link; rest of card opens event detail */}
       {event.externalUrl && (
-        <div style={{ padding: "0 16px 16px 72px" }}>
-          {ctaOpensExternal ? (
-            <a
-              href={event.externalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "10px 16px",
-                borderRadius: "12px",
-                backgroundColor: "rgba(255,255,255,0.9)",
-                border: "2px solid rgba(255,255,255,0.6)",
-                fontSize: "12px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                color: "#1a1a1a",
-                textDecoration: "none",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              }}
-            >
-              {event.externalUrlText || "Learn More"}
-            </a>
-          ) : (
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "10px 16px",
-                borderRadius: "12px",
-                backgroundColor: "rgba(255,255,255,0.9)",
-                border: "2px solid rgba(255,255,255,0.6)",
-                fontSize: "12px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                color: "#1a1a1a",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              }}
-            >
-              {event.externalUrlText || "Learn More"}
-            </span>
-          )}
+        <div style={{ padding: "0 16px 16px 16px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <a
+            href={event.externalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "10px 16px",
+              borderRadius: "12px",
+              backgroundColor: "rgba(255,255,255,0.9)",
+              border: "2px solid rgba(255,255,255,0.6)",
+              fontSize: "12px",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              color: "#1a1a1a",
+              textDecoration: "none",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            }}
+          >
+            {event.externalUrlText || "Learn More"}
+          </a>
           {event.externalUrlCaption && (
-            <span style={{ display: "block", marginTop: "4px", fontSize: "10px", fontWeight: 600, opacity: 0.9 }}>
+            <span style={{ display: "block", marginTop: "4px", fontSize: "10px", fontWeight: 600, opacity: 0.9, textAlign: "center" }}>
               {event.externalUrlCaption}
             </span>
           )}

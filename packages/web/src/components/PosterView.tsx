@@ -206,17 +206,21 @@ function PosterCard({ event }: { event: EventWithDetails }) {
         )}
       </div>
 
-      {/* CTA - visual only by default; click goes to event page */}
+      {/* CTA - button opens external link; rest of card goes to event page */}
       {event.externalUrl && (
-        <div className="pl-20 pr-4 pb-4">
-          <span
-            className="inline-flex items-center gap-2 rounded-xl border-2 border-white/60 bg-white/90 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-gray-900 shadow-sm"
+        <div className="flex flex-col items-center px-4 pb-4" onClick={(e) => e.stopPropagation()}>
+          <a
+            href={event.externalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-2 rounded-xl border-2 border-white/60 bg-white/90 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-gray-900 shadow-sm transition-all hover:bg-white hover:shadow"
           >
             <ExternalLink className="h-3.5 w-3.5" />
             {event.externalUrlText || "Learn More"}
-          </span>
+          </a>
           {event.externalUrlCaption && (
-            <span className="mt-1 block text-[10px] font-semibold" style={{ opacity: 0.9 }}>
+            <span className="mt-1 block text-center text-[10px] font-semibold" style={{ opacity: 0.9 }}>
               {event.externalUrlCaption}
             </span>
           )}
