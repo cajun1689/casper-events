@@ -15,6 +15,13 @@
       "when": 1772860300000,
       "tag": "0002_poster_board_sponsors",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772860500000,
+      "tag": "0003_cta_opens_external",
+      "breakpoints": true
     }
   ]
 }

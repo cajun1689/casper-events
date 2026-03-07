@@ -145,6 +145,7 @@ function LivePreview({ config, orgId }: { config: EmbedConfigPublic; orgId: stri
       orgId,
       apiUrl: import.meta.env.VITE_API_URL || "/api",
       showConnectedOrgs: config.showConnectedOrgs,
+      ctaOpensExternal: config.ctaOpensExternal ?? false,
       theme: {
         primaryColor: config.primaryColor,
         backgroundColor: config.backgroundColor,
@@ -248,7 +249,7 @@ export default function EmbedSettingsPage() {
 
   const hiddenCats = activeConfig?.categoryFilter?.length ? activeConfig.categoryFilter : [];
   const embedCode = activeConfig
-    ? `<div id="cyh-calendar"></div>\n<script src="https://casperevents.org/embed.js"></script>\n<script>\n  CYHCalendar.init({\n    container: '#cyh-calendar',\n    orgId: '${organization?.id}',\n    showConnectedOrgs: ${activeConfig.showConnectedOrgs},\n    theme: {\n      primaryColor: '${activeConfig.primaryColor}',\n      backgroundColor: '${activeConfig.backgroundColor}',\n      textColor: '${activeConfig.textColor}',\n      accentColor: '${activeConfig.accentColor}',\n      fontFamily: '${activeConfig.fontFamily}',\n      borderRadius: '${activeConfig.borderRadius}'\n    },\n    defaultView: '${activeConfig.defaultView}'${hiddenCats.length > 0 ? `,\n    hiddenCategories: ${JSON.stringify(hiddenCats)}` : ""}\n  });\n</script>`
+    ? `<div id="cyh-calendar"></div>\n<script src="https://casperevents.org/embed.js"></script>\n<script>\n  CYHCalendar.init({\n    container: '#cyh-calendar',\n    orgId: '${organization?.id}',\n    showConnectedOrgs: ${activeConfig.showConnectedOrgs},\n    ctaOpensExternal: ${activeConfig.ctaOpensExternal ?? false},\n    theme: {\n      primaryColor: '${activeConfig.primaryColor}',\n      backgroundColor: '${activeConfig.backgroundColor}',\n      textColor: '${activeConfig.textColor}',\n      accentColor: '${activeConfig.accentColor}',\n      fontFamily: '${activeConfig.fontFamily}',\n      borderRadius: '${activeConfig.borderRadius}'\n    },\n    defaultView: '${activeConfig.defaultView}'${hiddenCats.length > 0 ? `,\n    hiddenCategories: ${JSON.stringify(hiddenCats)}` : ""}\n  });\n</script>`
     : "";
 
   const copyEmbed = () => { navigator.clipboard.writeText(embedCode); setCopied(true); setTimeout(() => setCopied(false), 2000); };
@@ -331,6 +332,15 @@ export default function EmbedSettingsPage() {
                   <label className="text-sm font-semibold text-gray-700">Show Connected Orgs</label>
                   <button onClick={() => updateConfig("showConnectedOrgs", !activeConfig.showConnectedOrgs)} className={clsx("relative inline-flex h-7 w-12 items-center rounded-full transition-colors", activeConfig.showConnectedOrgs ? "bg-primary-600" : "bg-gray-300")}>
                     <span className={clsx("inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform", activeConfig.showConnectedOrgs ? "translate-x-6" : "translate-x-1")} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-gray-700" title="When on, poster CTA opens external link directly. When off, click goes to event detail.">
+                    Poster CTA opens external link
+                  </label>
+                  <button onClick={() => updateConfig("ctaOpensExternal", !(activeConfig.ctaOpensExternal ?? false))} className={clsx("relative inline-flex h-7 w-12 items-center rounded-full transition-colors", (activeConfig.ctaOpensExternal ?? false) ? "bg-primary-600" : "bg-gray-300")}>
+                    <span className={clsx("inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform", (activeConfig.ctaOpensExternal ?? false) ? "translate-x-6" : "translate-x-1")} />
                   </button>
                 </div>
 

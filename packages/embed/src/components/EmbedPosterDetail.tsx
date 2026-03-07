@@ -145,20 +145,25 @@ export function EmbedPosterDetail({ event, onClose }: EmbedPosterDetailProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  display: "inline-block",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
                   padding: "12px 24px",
-                  borderRadius: "10px",
-                  backgroundColor: "var(--cyh-primary, #4f46e5)",
-                  color: "#fff",
-                  fontSize: "14px",
+                  borderRadius: "12px",
+                  backgroundColor: "#e8ecf0",
+                  border: "2px solid #374151",
+                  color: "#1a1a1a",
+                  fontSize: "13px",
                   fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
                   textDecoration: "none",
                 }}
               >
                 {event.externalUrlText || "Learn More"}
               </a>
               {event.externalUrlCaption && (
-                <div style={{ fontSize: "12px", color: "color-mix(in srgb, var(--cyh-text) 60%, transparent)", marginTop: "4px" }}>
+                <div style={{ fontSize: "12px", color: "color-mix(in srgb, var(--cyh-text) 60%, transparent)", marginTop: "6px" }}>
                   {event.externalUrlCaption}
                 </div>
               )}
@@ -191,15 +196,15 @@ export function EmbedPosterDetail({ event, onClose }: EmbedPosterDetailProps) {
             <button
               onClick={handleAddToCalendar}
               style={{
-                marginTop: "6px",
-                padding: "6px 12px",
-                borderRadius: "8px",
-                border: "1px solid var(--cyh-border)",
+                marginTop: "8px",
+                padding: 0,
+                border: "none",
                 backgroundColor: "transparent",
                 color: "var(--cyh-primary)",
-                fontSize: "12px",
+                fontSize: "13px",
                 fontWeight: 600,
                 cursor: "pointer",
+                textDecoration: "underline",
               }}
             >
               Add to Calendar
@@ -216,11 +221,19 @@ export function EmbedPosterDetail({ event, onClose }: EmbedPosterDetailProps) {
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
-                    display: "inline-block",
-                    marginTop: "6px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    marginTop: "10px",
+                    padding: "10px 20px",
+                    borderRadius: "10px",
+                    border: "2px solid #374151",
+                    backgroundColor: "#fff",
                     fontSize: "12px",
-                    fontWeight: 600,
-                    color: "var(--cyh-primary)",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    color: "#1a1a1a",
                     textDecoration: "none",
                   }}
                 >
@@ -232,8 +245,8 @@ export function EmbedPosterDetail({ event, onClose }: EmbedPosterDetailProps) {
 
           {sponsors.length > 0 && (
             <div style={{ marginBottom: "20px" }}>
-              <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.05em", marginBottom: "12px", color: "var(--cyh-text)" }}>
-                SPONSORED BY
+              <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.15em", marginBottom: "12px", color: "var(--cyh-text)" }}>
+                BROUGHT TO YOU BY
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center" }}>
                 {sponsors.map((s, i) => (
@@ -272,18 +285,21 @@ export function EmbedPosterDetail({ event, onClose }: EmbedPosterDetailProps) {
           )}
 
           <div>
-            <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.05em", marginBottom: "8px", color: "var(--cyh-text)" }}>SHARE</div>
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.05em", marginBottom: "10px", color: "var(--cyh-text)" }}>SHARE</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
               <button
                 onClick={handleCopyLink}
                 style={{
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--cyh-border)",
-                  backgroundColor: "transparent",
-                  color: "var(--cyh-text)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "10px 18px",
+                  borderRadius: "10px",
+                  border: "2px solid #d1d5db",
+                  backgroundColor: "#f9fafb",
+                  color: "#1a1a1a",
                   fontSize: "12px",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   cursor: "pointer",
                 }}
               >
@@ -292,13 +308,16 @@ export function EmbedPosterDetail({ event, onClose }: EmbedPosterDetailProps) {
               <a
                 href={`mailto:?subject=${encodeURIComponent(event.title)}&body=${encodeURIComponent(window.location.href)}`}
                 style={{
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--cyh-border)",
-                  backgroundColor: "transparent",
-                  color: "var(--cyh-text)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "10px 18px",
+                  borderRadius: "10px",
+                  border: "2px solid #d1d5db",
+                  backgroundColor: "#f9fafb",
+                  color: "#1a1a1a",
                   fontSize: "12px",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   textDecoration: "none",
                 }}
               >

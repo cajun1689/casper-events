@@ -3,6 +3,8 @@ export interface CYHCalendarConfig {
   orgId: string;
   apiUrl?: string;
   showConnectedOrgs?: boolean;
+  /** When true, poster CTA opens external URL directly. Default: false (click goes to event detail) */
+  ctaOpensExternal?: boolean;
   theme?: {
     primaryColor?: string;
     backgroundColor?: string;

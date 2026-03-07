@@ -257,7 +257,7 @@ export function EmbedApp({ config }: EmbedAppProps) {
             {view === "month" ? (
               <EmbedMonthView events={filteredEvents} onMonthChange={handleMonthChange} />
             ) : view === "poster" ? (
-              <EmbedPosterView events={filteredEvents} categories={allCategories} />
+              <EmbedPosterView events={filteredEvents} categories={allCategories} ctaOpensExternal={config.ctaOpensExternal} />
             ) : (
               <EmbedListView events={filteredEvents} />
             )}

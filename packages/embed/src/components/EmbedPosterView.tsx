@@ -9,6 +9,8 @@ interface EmbedPosterViewProps {
   events: EmbedEvent[];
   categories: { id: string; name: string; slug: string; color: string | null }[];
   onEventClick?: (event: EmbedEvent) => void;
+  /** When true, poster CTA opens external URL. Default: false (click opens event detail) */
+  ctaOpensExternal?: boolean;
 }
 
 function groupEventsByMonth(events: EmbedEvent[]): Map<string, EmbedEvent[]> {
@@ -27,6 +29,7 @@ export function EmbedPosterView({
   events,
   categories,
   onEventClick,
+  ctaOpensExternal = false,
 }: EmbedPosterViewProps) {
   const [selectedEvent, setSelectedEvent] = useState<EmbedEvent | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
@@ -110,6 +113,7 @@ export function EmbedPosterView({
                   key={event.id}
                   event={event}
                   onClick={() => handleCardClick(event)}
+                  ctaOpensExternal={ctaOpensExternal}
                   style={{ animationDelay: `${idx * 50}ms` }}
                 />
               ))}
@@ -130,10 +134,11 @@ export function EmbedPosterView({
 interface PosterCardProps {
   event: EmbedEvent;
   onClick: () => void;
+  ctaOpensExternal?: boolean;
   style?: React.CSSProperties;
 }
 
-function PosterCard({ event, onClick, style }: PosterCardProps) {
+function PosterCard({ event, onClick, ctaOpensExternal = false, style }: PosterCardProps) {
   const bgColor = resolveEventColor(event);
   const textColor = getTextColor(bgColor);
   const start = parseISO(event.startAt);
@@ -162,6 +167,7 @@ function PosterCard({ event, onClick, style }: PosterCardProps) {
         color: textColor,
         cursor: "pointer",
         overflow: "hidden",
+        minHeight: "180px",
         boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
         transition: "transform 0.2s ease, box-shadow 0.2s ease",
         animation: "cyh-fade-in 0.3s ease-out both",
@@ -203,8 +209,8 @@ function PosterCard({ event, onClick, style }: PosterCardProps) {
         </div>
       </div>
 
-      {/* Card content - padding left for badge overlap */}
-      <div style={{ padding: "12px 12px 16px 72px", minHeight: "80px" }}>
+      {/* Card content - padding left clears the badge */}
+      <div style={{ padding: "12px 12px 8px 72px", minHeight: "72px" }}>
         {primaryCat && (
           <div
             style={{
@@ -236,6 +242,10 @@ function PosterCard({ event, onClick, style }: PosterCardProps) {
               fontWeight: 600,
               opacity: 0.9,
               marginBottom: "8px",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
           >
             {event.subtitle}
@@ -265,10 +275,41 @@ function PosterCard({ event, onClick, style }: PosterCardProps) {
         </div>
       )}
 
-      {/* Time and location */}
+      {/* Sponsor logos - compact row */}
+      {(event.sponsors ?? []).length > 0 && (
+        <div
+          style={{
+            padding: "8px 16px 8px 72px",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "8px",
+            opacity: 0.9,
+          }}
+        >
+          {(event.sponsors ?? []).slice(0, 4).map((s: { id?: string; name: string; logoUrl: string | null }) =>
+            s.logoUrl ? (
+              <img
+                key={s.id ?? s.name}
+                src={s.logoUrl}
+                alt={s.name}
+                title={s.name}
+                style={{ maxHeight: "24px", maxWidth: "60px", objectFit: "contain" }}
+              />
+            ) : (
+              <span key={s.id ?? s.name} style={{ fontSize: "10px", fontWeight: 700, opacity: 0.85 }}>
+                {s.name}
+              </span>
+            )
+          )}
+        </div>
+      )}
+
+      {/* Time and location - padding left clears the badge */}
       <div
         style={{
-          padding: "12px 16px",
+          padding: "12px 16px 12px 72px",
+          marginTop: "auto",
           display: "flex",
           flexDirection: "column",
           gap: "4px",
@@ -281,22 +322,60 @@ function PosterCard({ event, onClick, style }: PosterCardProps) {
         {event.venueName && <span>• {event.venueName}</span>}
       </div>
 
-      {/* CTA button if external URL */}
+      {/* CTA - default: click opens event detail. When ctaOpensExternal: opens external URL */}
       {event.externalUrl && (
-        <div style={{ padding: "0 16px 16px" }}>
-          <span
-            style={{
-              display: "inline-block",
-              padding: "8px 16px",
-              borderRadius: "8px",
-              backgroundColor: "rgba(255,255,255,0.25)",
-              fontSize: "12px",
-              fontWeight: 700,
-              border: "1px solid rgba(255,255,255,0.4)",
-            }}
-          >
-            {event.externalUrlText || "Learn More"}
-          </span>
+        <div style={{ padding: "0 16px 16px 72px" }}>
+          {ctaOpensExternal ? (
+            <a
+              href={event.externalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "10px 16px",
+                borderRadius: "12px",
+                backgroundColor: "rgba(255,255,255,0.9)",
+                border: "2px solid rgba(255,255,255,0.6)",
+                fontSize: "12px",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                color: "#1a1a1a",
+                textDecoration: "none",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              }}
+            >
+              {event.externalUrlText || "Learn More"}
+            </a>
+          ) : (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "10px 16px",
+                borderRadius: "12px",
+                backgroundColor: "rgba(255,255,255,0.9)",
+                border: "2px solid rgba(255,255,255,0.6)",
+                fontSize: "12px",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                color: "#1a1a1a",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              }}
+            >
+              {event.externalUrlText || "Learn More"}
+            </span>
+          )}
+          {event.externalUrlCaption && (
+            <span style={{ display: "block", marginTop: "4px", fontSize: "10px", fontWeight: 600, opacity: 0.9 }}>
+              {event.externalUrlCaption}
+            </span>
+          )}
         </div>
       )}
     </button>

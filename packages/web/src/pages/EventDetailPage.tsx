@@ -1,10 +1,59 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { MapPin, Clock, CalendarDays, ExternalLink, Ticket, DollarSign, Building2, ArrowLeft, Share2 } from "lucide-react";
+import { MapPin, Clock, CalendarDays, ExternalLink, Ticket, DollarSign, Building2, ArrowLeft, Link2, Mail } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import DOMPurify from "dompurify";
 import { eventsApi } from "@/lib/api";
 import type { EventWithDetails } from "@cyh/shared";
+
+function escapeICS(str: string): string {
+  return str.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+}
+
+function parseColor(hex: string): { r: number; g: number; b: number } | null {
+  const m = hex.match(/^#?([0-9a-f]{6})$/i);
+  if (!m) return null;
+  return {
+    r: parseInt(m[1].slice(0, 2), 16),
+    g: parseInt(m[1].slice(2, 4), 16),
+    b: parseInt(m[1].slice(4, 6), 16),
+  };
+}
+
+function getTextColor(bg: string): string {
+  const c = parseColor(bg);
+  if (!c) return "#1a1a1a";
+  const lum = (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
+  return lum > 0.55 ? "#1a1a1a" : "#ffffff";
+}
+
+function resolveColor(event: EventWithDetails): string {
+  if (event.color) return event.color;
+  if (event.categories.length > 0 && event.categories[0].color) return event.categories[0].color;
+  return "#4f46e5";
+}
+
+function generateICS(event: EventWithDetails): string {
+  const start = format(parseISO(event.startAt), "yyyyMMdd") + "T" + format(parseISO(event.startAt), "HHmmss");
+  const end = event.endAt ? format(parseISO(event.endAt), "yyyyMMdd") + "T" + format(parseISO(event.endAt), "HHmmss") : start;
+  const location = [event.venueName, event.address].filter(Boolean).join(", ");
+  const desc = event.description ? event.description.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 500) : "";
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//CYH Calendar//EN",
+    "BEGIN:VEVENT",
+    `DTSTART:${start}`,
+    `DTEND:${end}`,
+    `SUMMARY:${escapeICS(event.title)}`,
+    desc ? `DESCRIPTION:${escapeICS(desc)}` : "",
+    location ? `LOCATION:${escapeICS(location)}` : "",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ]
+    .filter(Boolean)
+    .join("\r\n");
+}
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +89,19 @@ export default function EventDetailPage() {
   const start = parseISO(event.startAt);
   const end = event.endAt ? parseISO(event.endAt) : null;
   const mapUrl = event.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address)}` : null;
+  const timeLabel = event.allDay ? "All day" : end ? `${format(start, "h:mm a")} – ${format(end, "h:mm a")}` : format(start, "h:mm a");
+  const sponsors = event.sponsors ?? [];
+
+  const handleAddToCalendar = () => {
+    const ics = generateICS(event);
+    const blob = new Blob([ics], { type: "text/calendar" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${event.title.replace(/[^a-z0-9]/gi, "-")}.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 animate-fade-in">
@@ -48,11 +110,102 @@ export default function EventDetailPage() {
       </Link>
 
       <article className="overflow-hidden rounded-3xl border border-gray-200/60 bg-white/80 shadow-xl shadow-gray-200/30 backdrop-blur-sm">
-        {event.imageUrl && (
-          <div className="aspect-[2.2/1] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50">
-            <img src={event.imageUrl} alt={event.title} className="h-full w-full object-cover" />
+        {/* Full poster display - matches poster card style */}
+        <div
+          className="relative overflow-hidden"
+          style={{ backgroundColor: resolveColor(event), color: getTextColor(resolveColor(event)) }}
+        >
+          <div className="p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-6">
+              {/* Date badge */}
+              <div className="flex w-20 shrink-0 flex-col items-center rounded-xl bg-white/95 py-3 shadow-lg">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500">
+                  {format(start, "MMM")}
+                </span>
+                <span className="text-2xl font-extrabold leading-tight text-gray-900">
+                  {format(start, "d")}
+                </span>
+                <span className="text-[10px] font-bold text-gray-400">
+                  {format(start, "EEE")}
+                </span>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                {event.categories[0] && (
+                  <span
+                    className="mb-2 inline-block text-[10px] font-extrabold uppercase tracking-widest"
+                    style={{ opacity: 0.9 }}
+                  >
+                    {event.categories[0].name}
+                  </span>
+                )}
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                  {event.title}
+                </h1>
+                {event.subtitle && (
+                  <p className="mt-1 text-base font-semibold" style={{ opacity: 0.9 }}>
+                    {event.subtitle}
+                  </p>
+                )}
+                <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm font-semibold" style={{ opacity: 0.95 }}>
+                  <span>• {timeLabel}</span>
+                  {event.venueName && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5" /> {event.venueName}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* Full poster image - object-contain so entire image is visible */}
+          {event.imageUrl && (
+            <div className="w-full bg-black/10">
+              <img
+                src={event.imageUrl}
+                alt={event.title}
+                className="mx-auto max-h-[480px] w-full object-contain"
+              />
+            </div>
+          )}
+
+          {/* Sponsor logos in poster area */}
+          {sponsors.length > 0 && (
+            <div className="border-t border-white/20 px-6 py-4">
+              <p className="mb-3 text-[10px] font-extrabold uppercase tracking-[0.15em]" style={{ opacity: 0.9 }}>
+                Brought to you by
+              </p>
+              <div className="flex flex-wrap items-center gap-6">
+                {sponsors.map((s) => (
+                  <a
+                    key={s.id}
+                    href={s.websiteUrl || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-start gap-1 transition-opacity hover:opacity-80"
+                  >
+                    {s.logoUrl ? (
+                      <img
+                        src={s.logoUrl}
+                        alt={s.name}
+                        className="max-h-12 object-contain"
+                        style={{
+                          maxWidth: s.level === "presenting" ? "160px" : s.level === "gold" ? "120px" : s.level === "silver" ? "90px" : s.level === "bronze" ? "70px" : "50px",
+                        }}
+                      />
+                    ) : (
+                      <span className="text-sm font-bold">{s.name}</span>
+                    )}
+                    <span className="text-[10px] font-semibold" style={{ opacity: 0.85 }}>
+                      {s.name}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="p-6 sm:p-10">
           {event.categories.length > 0 && (
@@ -65,51 +218,112 @@ export default function EventDetailPage() {
             </div>
           )}
 
-          <h1 className="mb-6 text-3xl font-extrabold tracking-tight text-gray-900">{event.title}</h1>
-
-          <div className="mb-8 space-y-4">
-            <div className="flex items-start gap-3 text-sm">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50"><CalendarDays className="h-4 w-4 text-primary-500" /></div>
-              <div>
-                <p className="font-semibold text-gray-900">{format(start, "EEEE, MMMM d, yyyy")}</p>
-                {event.allDay ? <p className="text-gray-500">All day</p> : (
-                  <p className="flex items-center gap-1 text-gray-500"><Clock className="h-3.5 w-3.5" />{format(start, "h:mm a")}{end && ` – ${format(end, "h:mm a")}`}</p>
-                )}
-              </div>
+          {/* External CTA - prominent button like David Street Station */}
+          {event.externalUrl && (
+            <div className="mb-8">
+              <a
+                href={event.externalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl border-2 border-gray-800 bg-[#e8ecf0] px-6 py-3.5 text-sm font-bold uppercase tracking-wide text-gray-900 shadow-sm transition-all hover:bg-gray-100"
+              >
+                <ExternalLink className="h-4 w-4" />
+                {event.externalUrlText || "Learn More"}
+              </a>
+              {event.externalUrlCaption && (
+                <p className="mt-2 text-sm text-gray-500">{event.externalUrlCaption}</p>
+              )}
             </div>
-            {(event.venueName || event.address) && (
-              <div className="flex items-start gap-3 text-sm">
-                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50"><MapPin className="h-4 w-4 text-primary-500" /></div>
-                <div>
-                  {event.venueName && <p className="font-semibold text-gray-900">{event.venueName}</p>}
-                  {event.address && (mapUrl ? <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary-600 hover:underline">{event.address}<ExternalLink className="h-3 w-3" /></a> : <p className="text-gray-500">{event.address}</p>)}
-                </div>
-              </div>
-            )}
-            {event.cost && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50"><DollarSign className="h-4 w-4 text-primary-500" /></div>
-                <span className="font-medium text-gray-700">{event.cost}</span>
-              </div>
-            )}
-          </div>
+          )}
 
           {event.description && (
             <div
-              className="prose prose-sm max-w-none mb-8 text-gray-600 border-t border-gray-100 pt-6"
+              className="prose prose-sm max-w-none mb-8 text-gray-600"
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(event.description) }}
             />
           )}
 
-          <div className="flex flex-wrap gap-3">
-            {event.ticketUrl && (
-              <a href={event.ticketUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary-500/25 transition-all hover:shadow-xl hover:-translate-y-px">
+          {/* WHEN section */}
+          <div className="mb-8">
+            <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.15em] text-gray-700">When</p>
+            <p className="font-semibold text-gray-900">{format(start, "EEEE, MMMM d, yyyy")}</p>
+            <p className="mt-1 text-gray-600">{timeLabel}</p>
+            <button
+              onClick={handleAddToCalendar}
+              className="mt-3 text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline"
+            >
+              Add to Calendar
+            </button>
+          </div>
+
+          {/* WHERE section */}
+          {(event.venueName || event.address) && (
+            <div className="mb-8">
+              <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.15em] text-gray-700">Where</p>
+              {event.venueName && <p className="font-semibold text-gray-900">{event.venueName}</p>}
+              {event.address && <p className="mt-1 text-gray-600">{event.address}</p>}
+              {mapUrl && (
+                <a
+                  href={mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center gap-2 rounded-lg border-2 border-gray-800 bg-white px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-gray-900 transition-all hover:bg-gray-50"
+                >
+                  <MapPin className="h-4 w-4" /> Get Directions
+                </a>
+              )}
+              {event.address && (
+                <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
+                  <iframe
+                    title="Event location"
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(event.address)}&z=15&output=embed`}
+                    className="h-64 w-full border-0"
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {event.cost && (
+            <div className="mb-8 flex items-center gap-3">
+              <DollarSign className="h-5 w-5 text-gray-500" />
+              <span className="font-semibold text-gray-700">{event.cost}</span>
+            </div>
+          )}
+
+          {event.ticketUrl && (
+            <div className="mb-8">
+              <a
+                href={event.ticketUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-6 py-3 text-sm font-bold text-white shadow-lg transition-all hover:bg-primary-700"
+              >
                 <Ticket className="h-4 w-4" /> Get Tickets
               </a>
-            )}
-            <button onClick={() => navigator.clipboard.writeText(window.location.href)} className="inline-flex items-center gap-2 rounded-xl border border-gray-200/80 bg-white/60 px-5 py-3 text-sm font-semibold text-gray-600 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow">
-              <Share2 className="h-4 w-4" /> Share
-            </button>
+            </div>
+          )}
+
+          {/* SHARE section - David Street Station style */}
+          <div className="border-t border-gray-200 pt-8">
+            <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.15em] text-gray-700">Share</p>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => navigator.clipboard.writeText(window.location.href)}
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-5 py-2.5 text-sm font-bold text-gray-800 transition-all hover:bg-gray-100"
+              >
+                <Link2 className="h-4 w-4" /> Copy Link
+              </button>
+              <a
+                href={`mailto:?subject=${encodeURIComponent(event.title)}&body=${encodeURIComponent(window.location.href)}`}
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-5 py-2.5 text-sm font-bold text-gray-800 transition-all hover:bg-gray-100"
+              >
+                <Mail className="h-4 w-4" /> Invite via Email
+              </a>
+            </div>
           </div>
 
           <div className="mt-8 border-t border-gray-100 pt-6">

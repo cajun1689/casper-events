@@ -124,6 +124,7 @@ export const createEmbedConfigSchema = z.object({
   defaultView: z.enum(["month", "week", "list", "poster"]).default("month"),
   categoryFilter: z.array(z.string()).default([]),
   showConnectedOrgs: z.boolean().default(true),
+  ctaOpensExternal: z.boolean().default(false),
 });
 
 export const updateEmbedConfigSchema = createEmbedConfigSchema.partial();

@@ -94,6 +94,7 @@ export interface EmbedConfigPublic {
   defaultView: string;
   categoryFilter: string[];
   showConnectedOrgs: boolean;
+  ctaOpensExternal: boolean;
 }
 
 export interface PaginatedResponse<T> {

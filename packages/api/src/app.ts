@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import sensible from "@fastify/sensible";
+import { ZodError } from "zod";
 import { eventRoutes } from "./routes/events.js";
 import { organizationRoutes } from "./routes/organizations.js";
 import { adminRoutes } from "./routes/admin.js";
@@ -24,6 +25,22 @@ export function buildApp() {
   });
 
   app.register(sensible);
+
+  app.setErrorHandler((error, request, reply) => {
+    if (error instanceof ZodError) {
+      const messages = error.issues.map(
+        (i) => `${i.path.join(".")}: ${i.message}`,
+      );
+      return reply.status(400).send({
+        error: "Validation failed",
+        details: messages,
+      });
+    }
+    request.log.error(error);
+    return reply.status(error.statusCode ?? 500).send({
+      error: error.message || "Internal server error",
+    });
+  });
 
   app.get("/health", async () => ({ status: "ok", timestamp: new Date().toISOString() }));
 

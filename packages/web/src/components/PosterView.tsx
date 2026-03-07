@@ -121,11 +121,12 @@ function PosterCard({ event }: { event: EventWithDetails }) {
       ? `${format(start, "h:mm a")} – ${format(end, "h:mm a")}`
       : format(start, "h:mm a");
   const primaryCat = event.categories[0];
+  const sponsors = event.sponsors ?? [];
 
   return (
     <Link
       to={`/events/${event.id}`}
-      className="group relative flex flex-col overflow-hidden rounded-2xl shadow-md transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+      className="group relative flex min-h-[180px] flex-col overflow-hidden rounded-2xl shadow-md transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
       style={{ backgroundColor: bgColor, color: textColor }}
     >
       {/* Date badge */}
@@ -142,7 +143,7 @@ function PosterCard({ event }: { event: EventWithDetails }) {
       </div>
 
       {/* Content area */}
-      <div className="pl-20 pr-4 pt-4 pb-2">
+      <div className="min-h-[72px] pl-20 pr-4 pt-4 pb-2">
         {primaryCat && (
           <span
             className="mb-1 inline-block text-[9px] font-extrabold uppercase tracking-widest"
@@ -155,7 +156,7 @@ function PosterCard({ event }: { event: EventWithDetails }) {
           {event.title}
         </h3>
         {event.subtitle && (
-          <p className="mt-0.5 text-xs font-semibold" style={{ opacity: 0.9 }}>
+          <p className="mt-0.5 line-clamp-2 text-xs font-semibold" style={{ opacity: 0.9 }}>
             {event.subtitle}
           </p>
         )}
@@ -172,8 +173,29 @@ function PosterCard({ event }: { event: EventWithDetails }) {
         </div>
       )}
 
+      {/* Sponsor logos - compact row */}
+      {sponsors.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 pl-20 pr-4 py-2" style={{ opacity: 0.9 }}>
+          {sponsors.slice(0, 4).map((s) =>
+            s.logoUrl ? (
+              <img
+                key={s.id}
+                src={s.logoUrl}
+                alt={s.name}
+                className="h-6 max-w-[60px] object-contain"
+                title={s.name}
+              />
+            ) : (
+              <span key={s.id} className="text-[10px] font-bold" style={{ opacity: 0.85 }}>
+                {s.name}
+              </span>
+            )
+          )}
+        </div>
+      )}
+
       {/* Time and location */}
-      <div className="flex flex-col gap-1 px-4 py-3 text-xs font-semibold" style={{ opacity: 0.95 }}>
+      <div className="mt-auto flex flex-col gap-1 pl-20 pr-4 py-3 text-xs font-semibold" style={{ opacity: 0.95 }}>
         <span>• {timeLabel}</span>
         {event.venueName && (
           <span className="flex items-center gap-1">
@@ -182,19 +204,20 @@ function PosterCard({ event }: { event: EventWithDetails }) {
         )}
       </div>
 
-      {/* CTA button */}
+      {/* CTA - visual only by default; click goes to event page */}
       {event.externalUrl && (
-        <div className="px-4 pb-4">
+        <div className="pl-20 pr-4 pb-4">
           <span
-            className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold"
-            style={{
-              backgroundColor: "rgba(255,255,255,0.25)",
-              border: "1px solid rgba(255,255,255,0.4)",
-            }}
+            className="inline-flex items-center gap-2 rounded-xl border-2 border-white/60 bg-white/90 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-gray-900 shadow-sm"
           >
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLink className="h-3.5 w-3.5" />
             {event.externalUrlText || "Learn More"}
           </span>
+          {event.externalUrlCaption && (
+            <span className="mt-1 block text-[10px] font-semibold" style={{ opacity: 0.9 }}>
+              {event.externalUrlCaption}
+            </span>
+          )}
         </div>
       )}
     </Link>

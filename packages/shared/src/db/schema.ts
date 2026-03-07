@@ -231,6 +231,7 @@ export const embedConfigs = pgTable("embed_configs", {
   defaultView: varchar("default_view", { length: 20 }).default("month").notNull(),
   categoryFilter: jsonb("category_filter").$type<string[]>().default([]),
   showConnectedOrgs: boolean("show_connected_orgs").default(true).notNull(),
+  ctaOpensExternal: boolean("cta_opens_external").default(false).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
