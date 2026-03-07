@@ -11,6 +11,7 @@ interface EmbedPosterViewProps {
   onEventClick?: (event: EmbedEvent) => void;
   /** When true, poster CTA opens external URL. Default: false (click opens event detail) */
   ctaOpensExternal?: boolean;
+  api?: ReturnType<typeof import("../api").createApiClient>;
 }
 
 function groupEventsByMonth(events: EmbedEvent[]): Map<string, EmbedEvent[]> {
@@ -30,6 +31,7 @@ export function EmbedPosterView({
   categories,
   onEventClick,
   ctaOpensExternal = false,
+  api,
 }: EmbedPosterViewProps) {
   const [selectedEvent, setSelectedEvent] = useState<EmbedEvent | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
@@ -125,6 +127,7 @@ export function EmbedPosterView({
         <EmbedPosterDetail
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
+          api={api}
         />
       )}
     </div>
@@ -225,15 +228,35 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, style }: PosterC
             {primaryCat.name}
           </div>
         )}
-        <div
-          style={{
-            fontSize: "15px",
-            fontWeight: 800,
-            lineHeight: 1.25,
-            marginBottom: event.subtitle ? "4px" : 0,
-          }}
-        >
-          {event.title}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginBottom: event.subtitle ? "4px" : 0 }}>
+          <div
+            style={{
+              flex: 1,
+              fontSize: "15px",
+              fontWeight: 800,
+              lineHeight: 1.25,
+            }}
+          >
+            {event.title}
+          </div>
+          {event.featured && (
+            <span
+              style={{
+                flexShrink: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "2px 8px",
+                borderRadius: "6px",
+                backgroundColor: "rgba(245, 158, 11, 0.2)",
+                color: "#b45309",
+                fontSize: "10px",
+                fontWeight: 700,
+              }}
+            >
+              ★ Featured
+            </span>
+          )}
         </div>
         {event.subtitle && (
           <div
@@ -322,6 +345,11 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, style }: PosterC
       >
         <span>• {timeLabel}</span>
         {event.venueName && <span>• {event.venueName}</span>}
+        {event.recurrenceRule && (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "2px", fontSize: "11px", opacity: 0.9 }}>
+            ↻ Recurring
+          </span>
+        )}
       </div>
 
       {/* CTA - button always opens external link; rest of card opens event detail */}

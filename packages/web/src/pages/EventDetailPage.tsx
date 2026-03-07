@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { MapPin, Clock, CalendarDays, ExternalLink, Ticket, DollarSign, Building2, ArrowLeft, Link2, Mail } from "lucide-react";
+import { MapPin, Clock, CalendarDays, ExternalLink, Ticket, DollarSign, Building2, ArrowLeft, Link2, Mail, Users } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import DOMPurify from "dompurify";
+import { useStore } from "@/lib/store";
 import { eventsApi } from "@/lib/api";
 import type { EventWithDetails } from "@cyh/shared";
+import { formatRecurrenceRule } from "@cyh/shared";
 
 function escapeICS(str: string): string {
   return str.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
@@ -55,15 +57,72 @@ function generateICS(event: EventWithDetails): string {
     .join("\r\n");
 }
 
+function getGoogleCalendarUrl(event: EventWithDetails): string {
+  const start = parseISO(event.startAt);
+  const end = event.endAt ? parseISO(event.endAt) : start;
+  const location = [event.venueName, event.address].filter(Boolean).join(", ");
+  const desc = event.description ? event.description.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 500) : "";
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: event.title,
+    dates: event.allDay
+      ? `${format(start, "yyyyMMdd")}/${format(end, "yyyyMMdd")}`
+      : `${start.toISOString().replace(/[-:]/g, "").slice(0, 15)}Z/${end.toISOString().replace(/[-:]/g, "").slice(0, 15)}Z`,
+  });
+  if (desc) params.set("details", desc);
+  if (location) params.set("location", location);
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function getOutlookCalendarUrl(event: EventWithDetails): string {
+  const start = parseISO(event.startAt);
+  const end = event.endAt ? parseISO(event.endAt) : start;
+  const location = [event.venueName, event.address].filter(Boolean).join(", ");
+  const desc = event.description ? event.description.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 500) : "";
+  const params = new URLSearchParams({
+    path: "/calendar/action/compose",
+    rru: "addevent",
+    startdt: start.toISOString(),
+    enddt: end.toISOString(),
+    subject: event.title,
+  });
+  if (desc) params.set("body", desc);
+  if (location) params.set("location", location);
+  if (event.allDay) params.set("allday", "true");
+  return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
+}
+
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { token } = useStore();
   const [event, setEvent] = useState<EventWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rsvp, setRsvp] = useState<{ count: number; userRsvped: boolean } | null>(null);
+  const [rsvpLoading, setRsvpLoading] = useState(false);
+  const [rsvpEmail, setRsvpEmail] = useState("");
 
   useEffect(() => {
     if (!id) return;
     eventsApi.get(id).then((data) => { setEvent(data); setLoading(false); }).catch(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    eventsApi.getRsvp(id).then(setRsvp).catch(() => setRsvp({ count: 0, userRsvped: false }));
+  }, [id]);
+
+  async function handleRsvp() {
+    if (!id) return;
+    setRsvpLoading(true);
+    try {
+      const res = await eventsApi.rsvp(id, rsvpEmail ? { email: rsvpEmail } : undefined);
+      setRsvp(res);
+    } catch {
+      // Error handled by API
+    } finally {
+      setRsvpLoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -228,12 +287,35 @@ export default function EventDetailPage() {
               <p className="font-semibold text-gray-900">
                 {format(start, "EEEE, MMMM d")} {timeLabel}
               </p>
-              <button
-                onClick={handleAddToCalendar}
-                className="mt-3 text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline"
-              >
-                Add to Calendar
-              </button>
+              {event.recurrenceRule && (
+                <p className="mt-1 text-sm text-gray-600">
+                  Repeats: {formatRecurrenceRule(event.recurrenceRule) ?? event.recurrenceRule}
+                </p>
+              )}
+              <div className="mt-3 flex flex-wrap gap-3">
+                <a
+                  href={getGoogleCalendarUrl(event)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline"
+                >
+                  Google Calendar
+                </a>
+                <a
+                  href={getOutlookCalendarUrl(event)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline"
+                >
+                  Outlook
+                </a>
+                <button
+                  onClick={handleAddToCalendar}
+                  className="text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline"
+                >
+                  Apple Calendar / Download (.ics)
+                </button>
+              </div>
             </div>
 
             {/* WHERE */}
@@ -294,6 +376,42 @@ export default function EventDetailPage() {
               </a>
             </div>
           )}
+
+          {/* RSVP / Interested */}
+          <div className="mb-8">
+            <div className="flex flex-wrap items-center gap-3">
+              {rsvp?.userRsvped ? (
+                <span className="inline-flex items-center gap-2 rounded-xl border-2 border-green-200 bg-green-50 px-5 py-2.5 text-sm font-bold text-green-800">
+                  <Users className="h-4 w-4" /> You&apos;re going
+                </span>
+              ) : (
+                <>
+                  {!token && (
+                    <input
+                      type="email"
+                      placeholder="Your email"
+                      value={rsvpEmail}
+                      onChange={(e) => setRsvpEmail(e.target.value)}
+                      className="rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100"
+                    />
+                  )}
+                  <button
+                    onClick={handleRsvp}
+                    disabled={rsvpLoading || (!token && !rsvpEmail.trim())}
+                    className="inline-flex items-center gap-2 rounded-xl border-2 border-primary-600 bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-primary-700 disabled:opacity-50"
+                  >
+                    <Users className="h-4 w-4" />
+                    {rsvpLoading ? "..." : "I'm going"}
+                  </button>
+                </>
+              )}
+              {rsvp && rsvp.count > 0 && (
+                <span className="text-sm font-semibold text-gray-600">
+                  {rsvp.count} {rsvp.count === 1 ? "person" : "people"} interested
+                </span>
+              )}
+            </div>
+          </div>
 
           {/* SHARE section - David Street Station style */}
           <div className="border-t border-gray-200 pt-8">

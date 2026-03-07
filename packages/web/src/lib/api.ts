@@ -57,12 +57,20 @@ export interface EventSponsor {
   createdAt: string;
 }
 
+export interface RsvpResponse {
+  count: number;
+  userRsvped: boolean;
+}
+
 export const eventsApi = {
   list: (params?: Record<string, string>) => {
     const qs = params ? "?" + new URLSearchParams(params).toString() : "";
     return api.get<PaginatedResponse<EventWithDetails>>(`/events${qs}`);
   },
   get: (id: string) => api.get<EventWithDetails>(`/events/${id}`),
+  getRsvp: (id: string) => api.get<RsvpResponse>(`/events/${id}/rsvp`),
+  rsvp: (id: string, body?: { email?: string }) =>
+    api.post<RsvpResponse>(`/events/${id}/rsvp`, body ?? {}),
   create: (data: unknown) => api.post<EventWithDetails>("/events", data),
   update: (id: string, data: unknown) =>
     api.put<EventWithDetails>(`/events/${id}`, data),
@@ -144,6 +152,28 @@ export const googleCalendarApi = {
     api.put<{ success: boolean }>("/google-calendar/calendar", { calendarId }),
   sync: () => api.post<{ success: boolean }>("/google-calendar/sync"),
   disconnect: () => api.delete("/google-calendar/disconnect"),
+};
+
+export const digestApi = {
+  subscribe: (data: { email: string; categories?: string[] }) =>
+    api.post<{ success: boolean; message: string }>("/digest/subscribe", data),
+};
+
+export const publicEventsApi = {
+  submit: (data: {
+    title: string;
+    description?: string | null;
+    startAt: string;
+    endAt?: string | null;
+    allDay?: boolean;
+    venueName?: string | null;
+    address?: string | null;
+    cost?: string | null;
+    ticketUrl?: string | null;
+    categoryIds?: string[];
+    submitterName: string;
+    submitterEmail: string;
+  }) => api.post<{ success: boolean; message: string; eventId: string }>("/public/events", data),
 };
 
 export const adminApi = {

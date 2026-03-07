@@ -28,5 +28,24 @@ export function createApiClient(apiUrl: string) {
     return json.data ?? json;
   }
 
-  return { fetchEvents, fetchConfig };
+  async function fetchRsvp(eventId: string): Promise<{ count: number; userRsvped: boolean }> {
+    const res = await fetch(`${base}/events/${eventId}/rsvp`);
+    if (!res.ok) throw new Error(`Failed to fetch RSVP: ${res.status}`);
+    return res.json();
+  }
+
+  async function rsvp(eventId: string, email?: string): Promise<{ count: number; userRsvped: boolean }> {
+    const res = await fetch(`${base}/events/${eventId}/rsvp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(email ? { email } : {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to RSVP: ${res.status}`);
+    }
+    return res.json();
+  }
+
+  return { fetchEvents, fetchConfig, fetchRsvp, rsvp };
 }

@@ -1,10 +1,12 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
+import { formatRecurrenceRule } from "@cyh/shared";
 import type { EmbedEvent } from "../types";
 
 interface EmbedPosterDetailProps {
   event: EmbedEvent;
   onClose: () => void;
+  api?: ReturnType<typeof import("../api").createApiClient>;
 }
 
 function escapeICS(str: string): string {
@@ -40,8 +42,69 @@ function generateICS(event: EmbedEvent): string {
     .join("\r\n");
 }
 
-export function EmbedPosterDetail({ event, onClose }: EmbedPosterDetailProps) {
+function getGoogleCalendarUrl(event: EmbedEvent): string {
+  const start = parseISO(event.startAt);
+  const end = event.endAt ? parseISO(event.endAt) : start;
+  const location = [event.venueName, event.address].filter(Boolean).join(", ");
+  const desc = event.description
+    ? event.description.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 500)
+    : "";
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: event.title,
+    dates: event.allDay
+      ? `${format(start, "yyyyMMdd")}/${format(end, "yyyyMMdd")}`
+      : `${start.toISOString().replace(/[-:]/g, "").slice(0, 15)}Z/${end.toISOString().replace(/[-:]/g, "").slice(0, 15)}Z`,
+  });
+  if (desc) params.set("details", desc);
+  if (location) params.set("location", location);
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function getOutlookCalendarUrl(event: EmbedEvent): string {
+  const start = parseISO(event.startAt);
+  const end = event.endAt ? parseISO(event.endAt) : start;
+  const location = [event.venueName, event.address].filter(Boolean).join(", ");
+  const desc = event.description
+    ? event.description.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 500)
+    : "";
+  const params = new URLSearchParams({
+    path: "/calendar/action/compose",
+    rru: "addevent",
+    startdt: start.toISOString(),
+    enddt: end.toISOString(),
+    subject: event.title,
+  });
+  if (desc) params.set("body", desc);
+  if (location) params.set("location", location);
+  if (event.allDay) params.set("allday", "true");
+  return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
+}
+
+export function EmbedPosterDetail({ event, onClose, api }: EmbedPosterDetailProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const [rsvp, setRsvp] = useState<{ count: number; userRsvped: boolean } | null>(null);
+  const [rsvpLoading, setRsvpLoading] = useState(false);
+  const [rsvpEmail, setRsvpEmail] = useState("");
+
+  useEffect(() => {
+    if (api) {
+      api.fetchRsvp(event.id).then(setRsvp).catch(() => setRsvp({ count: 0, userRsvped: false }));
+    }
+  }, [api, event.id]);
+
+  async function handleRsvp() {
+    if (!api) return;
+    setRsvpLoading(true);
+    try {
+      const res = await api.rsvp(event.id, rsvpEmail.trim() || undefined);
+      setRsvp(res);
+    } catch {
+      // Error - could show toast
+    } finally {
+      setRsvpLoading(false);
+    }
+  }
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -193,23 +256,102 @@ export function EmbedPosterDetail({ event, onClose }: EmbedPosterDetailProps) {
           <div style={{ marginBottom: "20px" }}>
             <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.05em", marginBottom: "8px", color: "var(--cyh-text)" }}>WHEN</div>
             <div style={{ fontSize: "14px", fontWeight: 600 }}>{dateLabel} {timeLabel}</div>
-            <button
-              onClick={handleAddToCalendar}
-              style={{
-                marginTop: "8px",
-                padding: 0,
-                border: "none",
-                backgroundColor: "transparent",
-                color: "var(--cyh-primary)",
-                fontSize: "13px",
-                fontWeight: 600,
-                cursor: "pointer",
-                textDecoration: "underline",
-              }}
-            >
-              Add to Calendar
-            </button>
+            {event.recurrenceRule && (
+              <div style={{ fontSize: "13px", color: "color-mix(in srgb, var(--cyh-text) 75%, transparent)", marginTop: "4px" }}>
+                Repeats: {formatRecurrenceRule(event.recurrenceRule) ?? event.recurrenceRule}
+              </div>
+            )}
+            <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "12px" }}>
+              <a
+                href={getGoogleCalendarUrl(event)}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: "var(--cyh-primary)",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  textDecoration: "underline",
+                }}
+              >
+                Google Calendar
+              </a>
+              <a
+                href={getOutlookCalendarUrl(event)}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: "var(--cyh-primary)",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  textDecoration: "underline",
+                }}
+              >
+                Outlook
+              </a>
+              <button
+                onClick={handleAddToCalendar}
+                style={{
+                  padding: 0,
+                  border: "none",
+                  backgroundColor: "transparent",
+                  color: "var(--cyh-primary)",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+              >
+                Apple Calendar / Download (.ics)
+              </button>
+            </div>
           </div>
+
+          {api && (
+            <div style={{ marginBottom: "20px" }}>
+              <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.05em", marginBottom: "8px", color: "var(--cyh-text)" }}>RSVP</div>
+              {rsvp?.userRsvped ? (
+                <div style={{ fontSize: "14px", fontWeight: 600, color: "#059669" }}>You&apos;re going</div>
+              ) : (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+                  <input
+                    type="email"
+                    placeholder="Your email"
+                    value={rsvpEmail}
+                    onChange={(e) => setRsvpEmail(e.target.value)}
+                    style={{
+                      padding: "10px 14px",
+                      borderRadius: "10px",
+                      border: "2px solid var(--cyh-border)",
+                      fontSize: "13px",
+                      minWidth: "180px",
+                    }}
+                  />
+                  <button
+                    onClick={handleRsvp}
+                    disabled={rsvpLoading || !rsvpEmail.trim()}
+                    style={{
+                      padding: "10px 20px",
+                      borderRadius: "10px",
+                      border: "2px solid var(--cyh-primary)",
+                      backgroundColor: "var(--cyh-primary)",
+                      color: "#fff",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      cursor: rsvpLoading ? "wait" : "pointer",
+                      opacity: rsvpLoading || !rsvpEmail.trim() ? 0.6 : 1,
+                    }}
+                  >
+                    {rsvpLoading ? "..." : "I'm going"}
+                  </button>
+                </div>
+              )}
+              {rsvp && rsvp.count > 0 && (
+                <div style={{ fontSize: "13px", fontWeight: 600, color: "color-mix(in srgb, var(--cyh-text) 70%, transparent)", marginTop: "6px" }}>
+                  {rsvp.count} {rsvp.count === 1 ? "person" : "people"} interested
+                </div>
+              )}
+            </div>
+          )}
 
           {(event.venueName || event.address) && (
             <div style={{ marginBottom: "20px" }}>

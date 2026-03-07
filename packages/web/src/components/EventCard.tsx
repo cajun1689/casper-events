@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin, Clock, CalendarDays } from "lucide-react";
+import { MapPin, Clock, CalendarDays, Repeat, Star } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import type { EventWithDetails } from "@cyh/shared";
 
@@ -28,17 +28,38 @@ export function EventCard({ event }: EventCardProps) {
       )}
 
       <div className="p-5">
-        <div className="mb-3 flex items-center gap-2 text-xs font-medium text-gray-400">
-          <CalendarDays className="h-3.5 w-3.5" />
-          <span>{dateDisplay}</span>
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-medium text-gray-400">
+          <span className="flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5" />
+            {dateDisplay}
+          </span>
           <span className="text-gray-200">·</span>
-          <Clock className="h-3.5 w-3.5" />
-          <span>{timeDisplay}</span>
+          <span className="flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" />
+            {timeDisplay}
+          </span>
+          {event.recurrenceRule && (
+            <>
+              <span className="text-gray-200">·</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2 py-0.5 text-primary-700">
+                <Repeat className="h-3 w-3" />
+                Recurring
+              </span>
+            </>
+          )}
         </div>
 
-        <h3 className="mb-1.5 text-base font-bold text-gray-900 transition-colors group-hover:text-primary-600">
-          {event.title}
-        </h3>
+        <div className="mb-1.5 flex items-start gap-2">
+          <h3 className="flex-1 text-base font-bold text-gray-900 transition-colors group-hover:text-primary-600">
+            {event.title}
+          </h3>
+          {event.featured && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+              <Star className="h-3 w-3" />
+              Featured
+            </span>
+          )}
+        </div>
 
         <p className="mb-3 flex items-center gap-1.5 text-sm text-gray-500">
           {event.organization.logoUrl ? (

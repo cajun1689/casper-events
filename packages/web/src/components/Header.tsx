@@ -35,6 +35,7 @@ export function Header() {
             {[
               { to: "/", label: "Calendar" },
               { to: "/organizations", label: "Organizations" },
+              { to: "/submit", label: "Submit Event" },
               { to: "/about", label: "About" },
             ].map((link) => (
               <Link
@@ -109,6 +110,7 @@ export function Header() {
           {[
             { to: "/", label: "Calendar" },
             { to: "/organizations", label: "Organizations" },
+            { to: "/submit", label: "Submit Event" },
             { to: "/about", label: "About" },
             ...(!user ? [{ to: "/login", label: "Login" }] : []),
           ].map((link) => (

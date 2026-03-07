@@ -47,6 +47,8 @@ export interface EmbedEvent {
   externalUrl: string | null;
   externalUrlText: string | null;
   externalUrlCaption: string | null;
+  recurrenceRule: string | null;
+  featured: boolean;
   sponsors: {
     name: string;
     logoUrl: string | null;

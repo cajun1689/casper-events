@@ -24,6 +24,7 @@ export interface EventWithDetails {
   externalUrl: string | null;
   externalUrlText: string | null;
   externalUrlCaption: string | null;
+  featured: boolean;
   createdAt: string;
   updatedAt: string;
   organization: {

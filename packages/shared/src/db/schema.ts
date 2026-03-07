@@ -126,6 +126,9 @@ export const events = pgTable(
     externalUrl: varchar("external_url", { length: 500 }),
     externalUrlText: varchar("external_url_text", { length: 100 }),
     externalUrlCaption: varchar("external_url_caption", { length: 255 }),
+    featured: boolean("featured").default(false).notNull(),
+    submitterEmail: varchar("submitter_email", { length: 255 }),
+    submitterName: varchar("submitter_name", { length: 255 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -278,6 +281,43 @@ export const adminReviews = pgTable(
   (table) => [index("admin_reviews_event_idx").on(table.eventId)]
 );
 
+export const digestSubscribers = pgTable(
+  "digest_subscribers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    email: varchar("email", { length: 255 }).notNull(),
+    preferences: jsonb("preferences").$type<{ categories?: string[] }>().default({}),
+    active: boolean("active").default(true).notNull(),
+    unsubscribeToken: varchar("unsubscribe_token", { length: 64 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("digest_subscribers_email_idx").on(table.email),
+    index("digest_subscribers_active_idx").on(table.active),
+  ]
+);
+
+export const eventRsvps = pgTable(
+  "event_rsvps",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    email: varchar("email", { length: 255 }).notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("event_rsvps_event_id_idx").on(table.eventId),
+    uniqueIndex("event_rsvps_event_email_idx").on(table.eventId, table.email),
+  ]
+);
+
 export const eventSponsors = pgTable(
   "event_sponsors",
   {
@@ -315,6 +355,18 @@ export const eventsRelations = relations(events, ({ one, many }) => ({
   eventCategories: many(eventCategories),
   reviews: many(adminReviews),
   sponsors: many(eventSponsors),
+  rsvps: many(eventRsvps),
+}));
+
+export const eventRsvpsRelations = relations(eventRsvps, ({ one }) => ({
+  event: one(events, {
+    fields: [eventRsvps.eventId],
+    references: [events.id],
+  }),
+  user: one(users, {
+    fields: [eventRsvps.userId],
+    references: [users.id],
+  }),
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({

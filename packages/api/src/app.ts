@@ -13,6 +13,8 @@ import { icalRoutes } from "./routes/ical.js";
 import { uploadRoutes } from "./routes/upload.js";
 import { venueRoutes } from "./routes/venues.js";
 import { sponsorRoutes } from "./routes/sponsors.js";
+import { publicEventRoutes } from "./routes/public-events.js";
+import { digestRoutes } from "./routes/digest.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -55,6 +57,8 @@ export function buildApp() {
   app.register(icalRoutes);
   app.register(uploadRoutes);
   app.register(venueRoutes);
+  app.register(publicEventRoutes);
+  app.register(digestRoutes);
 
   return app;
 }

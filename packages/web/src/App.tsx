@@ -18,6 +18,8 @@ import EmbedSettingsPage from "@/pages/EmbedSettingsPage";
 import FacebookSettingsPage from "@/pages/FacebookSettingsPage";
 import GoogleCalendarSettingsPage from "@/pages/GoogleCalendarSettingsPage";
 import AboutPage from "@/pages/AboutPage";
+import SubmitEventPage from "@/pages/SubmitEventPage";
+import UnsubscribedPage from "@/pages/UnsubscribedPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 
@@ -47,6 +49,8 @@ export default function App() {
             <Route path="/admin/organizations" element={<AdminOrgsPage />} />
             <Route path="/admin/categories" element={<AdminCategoriesPage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/submit" element={<SubmitEventPage />} />
+            <Route path="/unsubscribed" element={<UnsubscribedPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/terms" element={<TermsPage />} />
           </Routes>

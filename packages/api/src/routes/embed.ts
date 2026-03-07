@@ -143,6 +143,8 @@ export async function embedRoutes(app: FastifyInstance) {
       externalUrl: e.externalUrl ?? null,
       externalUrlText: e.externalUrlText ?? null,
       externalUrlCaption: e.externalUrlCaption ?? null,
+      recurrenceRule: e.recurrenceRule ?? null,
+      featured: e.featured ?? false,
       sponsors: sponsorsMap[e.id] || [],
     }));
 

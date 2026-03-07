@@ -1,25 +1,74 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { addMonths, subMonths, format, addWeeks, subWeeks } from "date-fns";
+import { addMonths, subMonths, format, addWeeks, subWeeks, startOfDay, endOfDay, addDays } from "date-fns";
 import { ChevronLeft, ChevronRight, Sparkles, Printer } from "lucide-react";
-import { useStore } from "@/lib/store";
+import { useStore, type DatePreset } from "@/lib/store";
 import { eventsApi, categoriesApi } from "@/lib/api";
+
+function getDateRangeForPreset(preset: DatePreset): { startAfter: string; startBefore: string } | null {
+  const now = new Date();
+  if (preset === "all") return null;
+  if (preset === "today") {
+    return {
+      startAfter: startOfDay(now).toISOString(),
+      startBefore: endOfDay(now).toISOString(),
+    };
+  }
+  if (preset === "tomorrow") {
+    const t = addDays(now, 1);
+    return {
+      startAfter: startOfDay(t).toISOString(),
+      startBefore: endOfDay(t).toISOString(),
+    };
+  }
+  if (preset === "weekend") {
+    const day = now.getDay(); // 0=Sun, 6=Sat
+    let start: Date;
+    let end: Date;
+    if (day === 0) {
+      start = startOfDay(now);
+      end = endOfDay(now);
+    } else if (day === 6) {
+      start = startOfDay(now);
+      end = endOfDay(addDays(now, 1));
+    } else {
+      const daysUntilSat = 6 - day;
+      start = startOfDay(addDays(now, daysUntilSat));
+      end = endOfDay(addDays(now, daysUntilSat + 1));
+    }
+    return {
+      startAfter: start.toISOString(),
+      startBefore: end.toISOString(),
+    };
+  }
+  if (preset === "next7") {
+    return {
+      startAfter: startOfDay(now).toISOString(),
+      startBefore: endOfDay(addDays(now, 7)).toISOString(),
+    };
+  }
+  return null;
+}
 import { printCalendar } from "@/lib/print-calendar";
 import type { EventWithDetails } from "@cyh/shared";
 import { MonthView } from "@/components/MonthView";
 import { WeekView } from "@/components/WeekView";
 import { ListView } from "@/components/ListView";
 import { PosterView } from "@/components/PosterView";
+import { MapView } from "@/components/MapView";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { ViewToggle } from "@/components/ViewToggle";
 import { EventCardGrid } from "@/components/EventCardGrid";
+import { DigestSignup } from "@/components/DigestSignup";
 
 export default function HomePage() {
   const {
     categories,
     selectedCategories,
     viewMode,
+    datePreset,
     setCategories,
     setViewMode,
+    setDatePreset,
     toggleCategory,
     clearCategoryFilter,
   } = useStore();
@@ -33,8 +82,12 @@ export default function HomePage() {
   useEffect(() => {
     async function load() {
       try {
+        const range = getDateRangeForPreset(datePreset);
+        const params = range
+          ? { startAfter: range.startAfter, startBefore: range.startBefore }
+          : undefined;
         const [eventsRes, catsRes] = await Promise.all([
-          eventsApi.list(),
+          eventsApi.list(params),
           categoriesApi.list(),
         ]);
         setEvents(eventsRes.data);
@@ -46,7 +99,7 @@ export default function HomePage() {
       }
     }
     load();
-  }, [setCategories]);
+  }, [setCategories, datePreset]);
 
   const filteredEvents = useMemo(() => {
     if (selectedCategories.length === 0) return events;
@@ -81,7 +134,7 @@ export default function HomePage() {
   }
 
   function handleViewChange(mode: string) {
-    const m = mode as "month" | "week" | "list" | "poster";
+    const m = mode as "month" | "week" | "list" | "poster" | "map";
     setViewMode(m);
     setExpandedEventId(null);
   }
@@ -99,7 +152,7 @@ export default function HomePage() {
       ? `Week of ${format(currentDate, "MMM d, yyyy")}`
       : format(currentDate, "MMMM yyyy");
 
-  const showCardGrid = viewMode !== "list" && viewMode !== "poster";
+  const showCardGrid = viewMode !== "list" && viewMode !== "poster" && viewMode !== "map";
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
@@ -124,7 +177,7 @@ export default function HomePage() {
       <div className="flex flex-col gap-5">
         {/* Controls row */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          {viewMode !== "poster" && (
+          {(viewMode !== "poster" && viewMode !== "map") && (
             <div className="flex items-center gap-3">
               <button
                 onClick={navigatePrev}
@@ -159,6 +212,23 @@ export default function HomePage() {
             </button>
             <ViewToggle current={viewMode} onChange={handleViewChange} />
           </div>
+        </div>
+
+        {/* Date presets */}
+        <div className="flex flex-wrap gap-2">
+          {(["all", "today", "tomorrow", "weekend", "next7"] as const).map((preset) => (
+            <button
+              key={preset}
+              onClick={() => setDatePreset(preset)}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                datePreset === preset
+                  ? "bg-primary-600 text-white shadow-md"
+                  : "bg-white/60 text-gray-600 shadow-sm hover:bg-white hover:text-gray-800"
+              }`}
+            >
+              {preset === "all" ? "All events" : preset === "today" ? "Today" : preset === "tomorrow" ? "Tomorrow" : preset === "weekend" ? "This weekend" : "Next 7 days"}
+            </button>
+          ))}
         </div>
 
         {/* Category filter */}
@@ -205,6 +275,9 @@ export default function HomePage() {
               {viewMode === "poster" && (
                 <PosterView events={filteredEvents} />
               )}
+              {viewMode === "map" && (
+                <MapView events={filteredEvents} onEventClick={handleEventClick} />
+              )}
             </div>
 
             {/* Event cards below calendar */}
@@ -220,6 +293,11 @@ export default function HomePage() {
                 />
               </div>
             )}
+
+            {/* Digest signup */}
+            <div className="mt-12">
+              <DigestSignup />
+            </div>
           </>
         )}
       </div>

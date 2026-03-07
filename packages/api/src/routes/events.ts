@@ -5,6 +5,7 @@ import {
   createEventSchema,
   updateEventSchema,
   listEventsSchema,
+  rsvpEventSchema,
 } from "@cyh/shared";
 import { getDb } from "../db/connection.js";
 import { requireAuth, optionalAuth } from "../middleware/auth.js";
@@ -53,6 +54,10 @@ export async function eventRoutes(app: FastifyInstance) {
       conditions.push(ilike(schema.events.title, `%${query.search}%`));
     }
 
+    if (query.featured === true) {
+      conditions.push(eq(schema.events.featured, true));
+    }
+
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
     const offset = (query.page - 1) * query.limit;
@@ -62,7 +67,7 @@ export async function eventRoutes(app: FastifyInstance) {
         .select()
         .from(schema.events)
         .where(where)
-        .orderBy(asc(schema.events.startAt))
+        .orderBy(desc(schema.events.featured), asc(schema.events.startAt))
         .limit(query.limit)
         .offset(offset),
       db
@@ -166,6 +171,7 @@ export async function eventRoutes(app: FastifyInstance) {
       externalUrl: event.externalUrl ?? null,
       externalUrlText: event.externalUrlText ?? null,
       externalUrlCaption: event.externalUrlCaption ?? null,
+      featured: event.featured ?? false,
       sponsors: sponsorsMap[event.id] || [],
     }));
 
@@ -175,6 +181,90 @@ export async function eventRoutes(app: FastifyInstance) {
       limit: query.limit,
       total,
       totalPages: Math.ceil(total / query.limit),
+    });
+  });
+
+  // Get RSVP count and user status (public)
+  app.get("/events/:id/rsvp", { preHandler: optionalAuth }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const db = await getDb();
+
+    const [event] = await db
+      .select()
+      .from(schema.events)
+      .where(eq(schema.events.id, id));
+
+    if (!event) {
+      return reply.status(404).send({ error: "Event not found" });
+    }
+
+    const [countRow] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.eventRsvps)
+      .where(eq(schema.eventRsvps.eventId, id));
+
+    let userRsvped = false;
+    if (request.user?.email) {
+      const [existing] = await db
+        .select()
+        .from(schema.eventRsvps)
+        .where(
+          and(
+            eq(schema.eventRsvps.eventId, id),
+            eq(schema.eventRsvps.email, request.user.email)
+          )
+        );
+      userRsvped = !!existing;
+    }
+
+    return reply.send({
+      count: Number(countRow?.count ?? 0),
+      userRsvped,
+    });
+  });
+
+  // RSVP to event (public, idempotent)
+  app.post("/events/:id/rsvp", { preHandler: optionalAuth }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = rsvpEventSchema.parse(request.body ?? {});
+    const db = await getDb();
+
+    const [event] = await db
+      .select()
+      .from(schema.events)
+      .where(eq(schema.events.id, id));
+
+    if (!event) {
+      return reply.status(404).send({ error: "Event not found" });
+    }
+
+    const email = request.user?.email ?? body.email;
+    if (!email || !email.trim()) {
+      return reply.status(400).send({ error: "Email is required to RSVP (or sign in)" });
+    }
+
+    const userOrg = request.user?.sub ? await resolveUserOrg(db, request.user.sub) : null;
+
+    await db
+      .insert(schema.eventRsvps)
+      .values({
+        eventId: id,
+        email: email.trim().toLowerCase(),
+        userId: userOrg?.userId ?? null,
+      })
+      .onConflictDoUpdate({
+        target: [schema.eventRsvps.eventId, schema.eventRsvps.email],
+        set: { createdAt: new Date() },
+      });
+
+    const [countRow] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.eventRsvps)
+      .where(eq(schema.eventRsvps.eventId, id));
+
+    return reply.send({
+      count: Number(countRow?.count ?? 0),
+      userRsvped: true,
     });
   });
 

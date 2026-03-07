@@ -24,6 +24,7 @@ export default function CreateEventPage() {
     allDay: false, venueName: "", address: "", cost: "", ticketUrl: "", imageUrl: "",
     isOnline: false, onlineEventUrl: "", publishToFacebook: false,
     color: "", subtitle: "", externalUrl: "", externalUrlText: "", externalUrlCaption: "",
+    featured: false,
   });
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
   const [fbConnected, setFbConnected] = useState<boolean | null>(null);
@@ -71,6 +72,7 @@ export default function CreateEventPage() {
         color: form.color || null, subtitle: form.subtitle || null,
         externalUrl: form.externalUrl || null, externalUrlText: form.externalUrlText || null,
         externalUrlCaption: form.externalUrlCaption || null,
+        featured: form.featured,
       });
       navigate("/dashboard");
     } catch (err) {
@@ -266,6 +268,11 @@ export default function CreateEventPage() {
         <section className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm space-y-5">
           <h2 className="text-base font-bold text-gray-900">Appearance & Promotion</h2>
           <p className="text-xs text-gray-400 -mt-3">Optional fields for the poster board embed view.</p>
+
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+            <input type="checkbox" checked={form.featured} onChange={(e) => update("featured", e.target.checked)} className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+            Feature this event (show at top of calendar)
+          </label>
 
           <div>
             <label className="mb-1.5 block text-sm font-semibold text-gray-700">Card Color</label>

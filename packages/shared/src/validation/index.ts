@@ -44,6 +44,7 @@ export const createEventSchema = z
     externalUrl: z.string().max(500).nullish(),
     externalUrlText: z.string().max(100).nullish(),
     externalUrlCaption: z.string().max(255).nullish(),
+    featured: z.boolean().default(false),
   })
   .refine(
     (data) => {
@@ -57,6 +58,38 @@ export const createEventSchema = z
 
 export const updateEventSchema = createEventSchema.innerType().partial();
 
+export const publicEventSubmissionSchema = z.object({
+  title: z.string().min(2).max(500),
+  description: z.string().max(5000).nullish(),
+  startAt: z.string().min(1),
+  endAt: z.string().nullish(),
+  allDay: z.boolean().default(false),
+  venueName: z.string().max(255).nullish(),
+  address: z.string().max(500).nullish(),
+  cost: z.string().max(100).nullish(),
+  ticketUrl: z.string().url().max(500).nullish(),
+  categoryIds: z.array(z.string().uuid()).default([]),
+  submitterName: z.string().min(1).max(255),
+  submitterEmail: z.string().email(),
+}).refine(
+  (data) => {
+    if (data.endAt && data.startAt) {
+      return new Date(data.endAt) > new Date(data.startAt);
+    }
+    return true;
+  },
+  { message: "End time must be after start time", path: ["endAt"] }
+);
+
+export const digestSubscribeSchema = z.object({
+  email: z.string().email(),
+  categories: z.array(z.string()).optional(),
+});
+
+export const rsvpEventSchema = z.object({
+  email: z.string().email().max(255).optional(),
+});
+
 export const listEventsSchema = z.object({
   orgId: z.string().uuid().optional(),
   categories: z
@@ -66,6 +99,10 @@ export const listEventsSchema = z.object({
   status: z.enum(["draft", "published", "approved", "rejected", "cancelled"]).optional(),
   startAfter: z.string().datetime().optional(),
   startBefore: z.string().datetime().optional(),
+  featured: z
+    .string()
+    .optional()
+    .transform((v) => v === "true"),
   search: z.string().max(200).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(25),

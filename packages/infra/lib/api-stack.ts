@@ -165,6 +165,50 @@ export class ApiStack extends cdk.Stack {
       targets: [new targets.LambdaFunction(scheduledHandler)],
     });
 
+    // Weekly digest: Monday 6am UTC
+    const digestHandler = new lambda.Function(this, "DigestHandler", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "digest-handler.handler",
+      code: lambda.Code.fromAsset("../api/dist"),
+      memorySize: 256,
+      timeout: cdk.Duration.minutes(2),
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [lambdaSg],
+      environment: {
+        NODE_ENV: "production",
+        DB_SECRET_ARN: props.dbSecretArn,
+        DB_HOST: props.dbClusterEndpoint,
+        DB_NAME: "cyhcalendar",
+        WEB_URL: `https://${props.domainName}`,
+        API_URL: `https://api.${props.domainName}/v1`,
+        DIGEST_FROM_EMAIL: `noreply@${props.domainName}`,
+      },
+    });
+
+    digestHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["secretsmanager:GetSecretValue"],
+        resources: [props.dbSecretArn],
+      })
+    );
+
+    digestHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ses:SendEmail", "ses:SendRawEmail"],
+        resources: ["*"],
+      })
+    );
+
+    new events.Rule(this, "DigestSchedule", {
+      schedule: events.Schedule.cron({
+        weekDay: "MON",
+        hour: "6",
+        minute: "0",
+      }),
+      targets: [new targets.LambdaFunction(digestHandler)],
+    });
+
     new cdk.CfnOutput(this, "ApiUrl", {
       value: `https://${apiDomainName}`,
       description: "API URL",

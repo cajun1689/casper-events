@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "@cyh/shared/db";
@@ -24,6 +25,20 @@ const DEFAULT_CATEGORIES = [
 async function seed() {
   const sql = postgres(process.env.DATABASE_URL!);
   const db = drizzle(sql, { schema });
+
+  console.log("Seeding Community org...");
+  const existing = await db
+    .select()
+    .from(schema.organizations)
+    .where(eq(schema.organizations.slug, "community"));
+  if (existing.length === 0) {
+    await db.insert(schema.organizations).values({
+      name: "Community Submissions",
+      slug: "community",
+      status: "active",
+    });
+    console.log("Created Community org for public submissions");
+  }
 
   console.log("Seeding categories...");
 
