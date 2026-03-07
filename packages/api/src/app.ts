@@ -11,6 +11,7 @@ import { googleCalendarRoutes } from "./routes/google-calendar.js";
 import { icalRoutes } from "./routes/ical.js";
 import { uploadRoutes } from "./routes/upload.js";
 import { venueRoutes } from "./routes/venues.js";
+import { sponsorRoutes } from "./routes/sponsors.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -28,6 +29,7 @@ export function buildApp() {
 
   app.register(authRoutes);
   app.register(eventRoutes);
+  app.register(sponsorRoutes, { prefix: "/events" });
   app.register(organizationRoutes);
   app.register(adminRoutes);
   app.register(embedRoutes);

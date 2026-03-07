@@ -39,6 +39,11 @@ export const createEventSchema = z
     publishToFacebook: z.boolean().default(false),
     categoryIds: z.array(z.string().uuid()).default([]),
     recurrenceRule: z.string().max(255).nullish(),
+    color: z.string().max(25).nullish(),
+    subtitle: z.string().max(255).nullish(),
+    externalUrl: z.string().max(500).nullish(),
+    externalUrlText: z.string().max(100).nullish(),
+    externalUrlCaption: z.string().max(255).nullish(),
   })
   .refine(
     (data) => {
@@ -116,12 +121,24 @@ export const createEmbedConfigSchema = z.object({
     .default("#f59e0b"),
   fontFamily: z.string().max(100).default("inherit"),
   borderRadius: z.string().max(10).default("8px"),
-  defaultView: z.enum(["month", "week", "list"]).default("month"),
+  defaultView: z.enum(["month", "week", "list", "poster"]).default("month"),
   categoryFilter: z.array(z.string()).default([]),
   showConnectedOrgs: z.boolean().default(true),
 });
 
 export const updateEmbedConfigSchema = createEmbedConfigSchema.partial();
+
+// ── Sponsor Schemas ──────────────────────────────────────────────────
+
+export const createSponsorSchema = z.object({
+  name: z.string().min(1).max(255),
+  logoUrl: z.string().max(500).nullish(),
+  websiteUrl: z.string().max(500).nullish(),
+  level: z.enum(["presenting", "gold", "silver", "bronze", "community"]).default("community"),
+  sortOrder: z.number().int().default(0),
+});
+
+export const updateSponsorSchema = createSponsorSchema.partial();
 
 // ── Org Connection Schemas ──────────────────────────────────────────
 
@@ -160,5 +177,7 @@ export type CreateCategory = z.infer<typeof createCategorySchema>;
 export type CreateEmbedConfig = z.infer<typeof createEmbedConfigSchema>;
 export type UpdateEmbedConfig = z.infer<typeof updateEmbedConfigSchema>;
 export type CreateConnection = z.infer<typeof createConnectionSchema>;
+export type CreateSponsor = z.infer<typeof createSponsorSchema>;
+export type UpdateSponsor = z.infer<typeof updateSponsorSchema>;
 export type SignUp = z.infer<typeof signUpSchema>;
 export type SignIn = z.infer<typeof signInSchema>;

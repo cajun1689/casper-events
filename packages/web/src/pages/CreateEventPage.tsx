@@ -1,4 +1,10 @@
 import { useState, useEffect, type FormEvent } from "react";
+
+const COLOR_PALETTE = [
+  "#4f46e5", "#7c3aed", "#6366f1", "#ec4899", "#f43f5e", "#ef4444",
+  "#f97316", "#eab308", "#22c55e", "#14b8a6", "#06b6d4", "#0ea5e9",
+  "#3b82f6", "#8b5cf6", "#a855f7", "#d946ef",
+];
 import { useNavigate, Navigate, Link } from "react-router-dom";
 import { ArrowLeft, Facebook, Globe, Video, ChevronDown } from "lucide-react";
 import clsx from "clsx";
@@ -17,6 +23,7 @@ export default function CreateEventPage() {
     title: "", description: "", startDate: "", startTime: "", endDate: "", endTime: "",
     allDay: false, venueName: "", address: "", cost: "", ticketUrl: "", imageUrl: "",
     isOnline: false, onlineEventUrl: "", publishToFacebook: false,
+    color: "", subtitle: "", externalUrl: "", externalUrlText: "", externalUrlCaption: "",
   });
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
   const [fbConnected, setFbConnected] = useState<boolean | null>(null);
@@ -61,6 +68,9 @@ export default function CreateEventPage() {
         isOnline: form.isOnline, onlineEventUrl: form.onlineEventUrl || null,
         publishToFacebook: form.publishToFacebook,
         categoryIds: selectedCats,
+        color: form.color || null, subtitle: form.subtitle || null,
+        externalUrl: form.externalUrl || null, externalUrlText: form.externalUrlText || null,
+        externalUrlCaption: form.externalUrlCaption || null,
       });
       navigate("/dashboard");
     } catch (err) {
@@ -251,6 +261,60 @@ export default function CreateEventPage() {
               ))}
             </div>
           )}
+        </section>
+
+        <section className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm space-y-5">
+          <h2 className="text-base font-bold text-gray-900">Appearance & Promotion</h2>
+          <p className="text-xs text-gray-400 -mt-3">Optional fields for the poster board embed view.</p>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-gray-700">Card Color</label>
+            <p className="mb-2 text-xs text-gray-500">Optional — sets the card color in poster view. If empty, uses the category color.</p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {COLOR_PALETTE.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => update("color", form.color === c ? "" : c)}
+                  className={`h-8 w-8 rounded-lg border-2 transition-all ${
+                    form.color === c ? "border-gray-900 scale-110" : "border-gray-200 hover:border-gray-400"
+                  }`}
+                  style={{ backgroundColor: c }}
+                  title={c}
+                />
+              ))}
+            </div>
+            <input
+              type="text"
+              value={form.color}
+              onChange={(e) => update("color", e.target.value)}
+              className={inputCls}
+              placeholder="#4f46e5 or leave empty"
+              maxLength={25}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="subtitle" className="mb-1.5 block text-sm font-semibold text-gray-700">Subtitle</label>
+            <p className="mb-1 text-xs text-gray-500">Short tagline shown under the title, e.g. &quot;Happy St. Patrick&apos;s Day!&quot;</p>
+            <input id="subtitle" type="text" maxLength={255} value={form.subtitle} onChange={(e) => update("subtitle", e.target.value)} className={inputCls} placeholder="Optional tagline" />
+          </div>
+
+          <div>
+            <label htmlFor="externalUrl" className="mb-1.5 block text-sm font-semibold text-gray-700">External Link URL</label>
+            <p className="mb-1 text-xs text-gray-500">This is separate from your Ticket URL. Use it for sponsor pages, partner links, or registration forms.</p>
+            <input id="externalUrl" type="url" value={form.externalUrl} onChange={(e) => update("externalUrl", e.target.value)} className={inputCls} placeholder="https://example.com" />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="externalUrlText" className="mb-1.5 block text-sm font-semibold text-gray-700">Button Text</label>
+              <input id="externalUrlText" type="text" maxLength={100} value={form.externalUrlText} onChange={(e) => update("externalUrlText", e.target.value)} className={inputCls} placeholder="Learn More" />
+            </div>
+            <div>
+              <label htmlFor="externalUrlCaption" className="mb-1.5 block text-sm font-semibold text-gray-700">Button Caption</label>
+              <input id="externalUrlCaption" type="text" maxLength={255} value={form.externalUrlCaption} onChange={(e) => update("externalUrlCaption", e.target.value)} className={inputCls} placeholder="Check out our sponsor!" />
+            </div>
+          </div>
         </section>
 
         {/* Facebook Integration */}

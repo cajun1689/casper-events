@@ -107,6 +107,24 @@ export async function embedRoutes(app: FastifyInstance) {
       for (const org of orgs) orgsMap[org.id] = { name: org.name, slug: org.slug, logoUrl: org.logoUrl, status: org.status };
     }
 
+    let sponsorsMap: Record<string, { name: string; logoUrl: string | null; websiteUrl: string | null; level: string }[]> = {};
+    if (eventIds.length > 0) {
+      const sponsorRows = await db
+        .select()
+        .from(schema.eventSponsors)
+        .where(inArray(schema.eventSponsors.eventId, eventIds))
+        .orderBy(asc(schema.eventSponsors.sortOrder));
+      for (const row of sponsorRows) {
+        if (!sponsorsMap[row.eventId]) sponsorsMap[row.eventId] = [];
+        sponsorsMap[row.eventId].push({
+          name: row.name,
+          logoUrl: row.logoUrl,
+          websiteUrl: row.websiteUrl,
+          level: row.level,
+        });
+      }
+    }
+
     const activeEvents = events.filter((e) => {
       const org = orgsMap[e.orgId];
       return org && org.status === "active";
@@ -120,6 +138,12 @@ export async function embedRoutes(app: FastifyInstance) {
       updatedAt: e.updatedAt.toISOString(),
       categories: categoriesMap[e.id] || [],
       organization: orgsMap[e.orgId] ? { name: orgsMap[e.orgId].name, slug: orgsMap[e.orgId].slug, logoUrl: orgsMap[e.orgId].logoUrl } : null,
+      color: e.color ?? null,
+      subtitle: e.subtitle ?? null,
+      externalUrl: e.externalUrl ?? null,
+      externalUrlText: e.externalUrlText ?? null,
+      externalUrlCaption: e.externalUrlCaption ?? null,
+      sponsors: sponsorsMap[e.id] || [],
     }));
 
     if (catFilter) {

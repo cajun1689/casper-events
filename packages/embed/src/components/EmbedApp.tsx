@@ -3,9 +3,10 @@ import type { CYHCalendarConfig, EmbedEvent } from "../types";
 import { createApiClient } from "../api";
 import { EmbedMonthView } from "./EmbedMonthView";
 import { EmbedListView } from "./EmbedListView";
+import { EmbedPosterView } from "./EmbedPosterView";
 import { printEmbedCalendar } from "../lib/print-calendar";
 
-type View = "month" | "list";
+type View = "month" | "list" | "poster";
 
 interface EmbedAppProps {
   config: CYHCalendarConfig;
@@ -16,7 +17,7 @@ export function EmbedApp({ config }: EmbedAppProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<View>(
-    config.defaultView === "list" ? "list" : "month",
+    config.defaultView === "list" ? "list" : config.defaultView === "poster" ? "poster" : "month",
   );
   const [disabledCategories, setDisabledCategories] = useState<Set<string>>(new Set());
   const [printDate, setPrintDate] = useState(() => new Date());
@@ -171,6 +172,7 @@ export function EmbedApp({ config }: EmbedAppProps) {
           }}>
             <ViewToggle label="Month" active={view === "month"} onClick={() => setView("month")} />
             <ViewToggle label="List" active={view === "list"} onClick={() => setView("list")} />
+            <ViewToggle label="Poster" active={view === "poster"} onClick={() => setView("poster")} />
           </div>
         </div>
       </div>
@@ -252,9 +254,13 @@ export function EmbedApp({ config }: EmbedAppProps) {
 
         {!loading && !error && (
           <div style={{ animation: "cyh-fade-in 0.3s ease-out" }}>
-            {view === "month"
-              ? <EmbedMonthView events={filteredEvents} onMonthChange={handleMonthChange} />
-              : <EmbedListView events={filteredEvents} />}
+            {view === "month" ? (
+              <EmbedMonthView events={filteredEvents} onMonthChange={handleMonthChange} />
+            ) : view === "poster" ? (
+              <EmbedPosterView events={filteredEvents} categories={allCategories} />
+            ) : (
+              <EmbedListView events={filteredEvents} />
+            )}
           </div>
         )}
       </div>

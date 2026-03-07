@@ -11,7 +11,7 @@ export interface CYHCalendarConfig {
     fontFamily?: string;
     borderRadius?: string;
   };
-  defaultView?: "month" | "week" | "list";
+  defaultView?: "month" | "week" | "list" | "poster";
   categories?: string[];
   hiddenCategories?: string[];
 }
@@ -40,4 +40,15 @@ export interface EmbedEvent {
     slug: string;
     logoUrl: string | null;
   } | null;
+  color: string | null;
+  subtitle: string | null;
+  externalUrl: string | null;
+  externalUrlText: string | null;
+  externalUrlCaption: string | null;
+  sponsors: {
+    name: string;
+    logoUrl: string | null;
+    websiteUrl: string | null;
+    level: string;
+  }[];
 }

@@ -48,6 +48,14 @@ export const reviewDecisionEnum = pgEnum("review_decision", [
   "rejected",
 ]);
 
+export const sponsorLevelEnum = pgEnum("sponsor_level", [
+  "presenting",
+  "gold",
+  "silver",
+  "bronze",
+  "community",
+]);
+
 // ── Tables ──────────────────────────────────────────────────────────
 
 export const organizations = pgTable(
@@ -113,6 +121,11 @@ export const events = pgTable(
     source: eventSourceEnum("source").default("manual").notNull(),
     recurrenceRule: varchar("recurrence_rule", { length: 255 }),
     recurrenceParentId: uuid("recurrence_parent_id"),
+    color: varchar("color", { length: 25 }),
+    subtitle: varchar("subtitle", { length: 255 }),
+    externalUrl: varchar("external_url", { length: 500 }),
+    externalUrlText: varchar("external_url_text", { length: 100 }),
+    externalUrlCaption: varchar("external_url_caption", { length: 255 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -264,6 +277,25 @@ export const adminReviews = pgTable(
   (table) => [index("admin_reviews_event_idx").on(table.eventId)]
 );
 
+export const eventSponsors = pgTable(
+  "event_sponsors",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(),
+    logoUrl: varchar("logo_url", { length: 500 }),
+    websiteUrl: varchar("website_url", { length: 500 }),
+    level: sponsorLevelEnum("level").default("community").notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("event_sponsors_event_id_idx").on(table.eventId)]
+);
+
 // ── Relations ───────────────────────────────────────────────────────
 
 export const organizationsRelations = relations(organizations, ({ many }) => ({
@@ -281,6 +313,7 @@ export const eventsRelations = relations(events, ({ one, many }) => ({
   }),
   eventCategories: many(eventCategories),
   reviews: many(adminReviews),
+  sponsors: many(eventSponsors),
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
@@ -333,5 +366,12 @@ export const adminReviewsRelations = relations(adminReviews, ({ one }) => ({
   reviewer: one(users, {
     fields: [adminReviews.reviewedBy],
     references: [users.id],
+  }),
+}));
+
+export const eventSponsorsRelations = relations(eventSponsors, ({ one }) => ({
+  event: one(events, {
+    fields: [eventSponsors.eventId],
+    references: [events.id],
   }),
 }));

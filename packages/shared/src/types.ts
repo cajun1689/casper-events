@@ -19,6 +19,11 @@ export interface EventWithDetails {
   facebookEventId: string | null;
   source: "manual" | "facebook_import" | "ical_import" | "google_calendar_import";
   recurrenceRule: string | null;
+  color: string | null;
+  subtitle: string | null;
+  externalUrl: string | null;
+  externalUrlText: string | null;
+  externalUrlCaption: string | null;
   createdAt: string;
   updatedAt: string;
   organization: {
@@ -34,6 +39,23 @@ export interface EventWithDetails {
     icon: string | null;
     color: string | null;
   }[];
+  sponsors: {
+    id: string;
+    name: string;
+    logoUrl: string | null;
+    websiteUrl: string | null;
+    level: "presenting" | "gold" | "silver" | "bronze" | "community";
+  }[];
+}
+
+export interface EventSponsorPublic {
+  id: string;
+  eventId: string;
+  name: string;
+  logoUrl: string | null;
+  websiteUrl: string | null;
+  level: "presenting" | "gold" | "silver" | "bronze" | "community";
+  sortOrder: number;
 }
 
 export interface OrganizationPublic {

@@ -24,7 +24,7 @@ import {
   Palette,
   RemoveFormatting,
 } from "lucide-react";
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useMemo } from "react";
 import clsx from "clsx";
 
 interface RichTextEditorProps {
@@ -49,7 +49,10 @@ function ToolbarButton({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        onClick();
+      }}
       disabled={disabled}
       title={title}
       className={clsx(
@@ -76,6 +79,23 @@ const COLORS = [
 
 function Toolbar({ editor }: { editor: Editor }) {
   const colorRef = useRef<HTMLInputElement>(null);
+
+  const applyColor = useCallback(
+    (color: string) => {
+      const { from, to } = editor.state.selection;
+      if (from === to) {
+        editor.chain().focus().setMark("textStyle", { color }).run();
+        return;
+      }
+      const mark = editor.state.schema.marks.textStyle?.create({ color });
+      if (!mark) return;
+      editor.view.dispatch(
+        editor.state.tr.addMark(from, to, mark),
+      );
+      editor.commands.focus();
+    },
+    [editor],
+  );
 
   const setLink = useCallback(() => {
     const prev = editor.getAttributes("link").href as string | undefined;
@@ -198,7 +218,8 @@ function Toolbar({ editor }: { editor: Editor }) {
           ref={colorRef}
           type="color"
           className="invisible absolute left-0 top-full h-0 w-0"
-          onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onChange={(e) => applyColor(e.target.value)}
         />
       </div>
 
@@ -208,7 +229,10 @@ function Toolbar({ editor }: { editor: Editor }) {
             key={color}
             type="button"
             title={color}
-            onClick={() => editor.chain().focus().setColor(color).run()}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              applyColor(color);
+            }}
             className="h-4 w-4 rounded-full border border-gray-200/60 transition-transform hover:scale-125"
             style={{ backgroundColor: color }}
           />
@@ -255,8 +279,8 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
       TextAlign.configure({
         types: ["heading", "paragraph"],
       }),
-      TextStyle,
-      Color,
+      TextStyle.configure(),
+      Color.configure({ types: ["textStyle"] }),
     ],
     content: value || "",
     editorProps: {

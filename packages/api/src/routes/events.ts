@@ -76,6 +76,7 @@ export async function eventRoutes(app: FastifyInstance) {
 
     let categoriesMap: Record<string, typeof schema.categories.$inferSelect[]> = {};
     let orgsMap: Record<string, typeof schema.organizations.$inferSelect> = {};
+    let sponsorsMap: Record<string, { id: string; name: string; logoUrl: string | null; websiteUrl: string | null; level: string; sortOrder: number }[]> = {};
 
     if (eventIds.length > 0) {
       const ecRows = await db
@@ -103,6 +104,24 @@ export async function eventRoutes(app: FastifyInstance) {
 
       for (const org of orgs) {
         orgsMap[org.id] = org;
+      }
+
+      const sponsorRows = await db
+        .select()
+        .from(schema.eventSponsors)
+        .where(inArray(schema.eventSponsors.eventId, eventIds))
+        .orderBy(asc(schema.eventSponsors.sortOrder));
+
+      for (const row of sponsorRows) {
+        if (!sponsorsMap[row.eventId]) sponsorsMap[row.eventId] = [];
+        sponsorsMap[row.eventId].push({
+          id: row.id,
+          name: row.name,
+          logoUrl: row.logoUrl,
+          websiteUrl: row.websiteUrl,
+          level: row.level,
+          sortOrder: row.sortOrder,
+        });
       }
     }
 
@@ -142,6 +161,12 @@ export async function eventRoutes(app: FastifyInstance) {
         icon: c.icon,
         color: c.color,
       })),
+      color: event.color ?? null,
+      subtitle: event.subtitle ?? null,
+      externalUrl: event.externalUrl ?? null,
+      externalUrlText: event.externalUrlText ?? null,
+      externalUrlCaption: event.externalUrlCaption ?? null,
+      sponsors: sponsorsMap[event.id] || [],
     }));
 
     return reply.send({
@@ -172,14 +197,21 @@ export async function eventRoutes(app: FastifyInstance) {
       .from(schema.organizations)
       .where(eq(schema.organizations.id, event.orgId));
 
-    const ecRows = await db
-      .select({ category: schema.categories })
-      .from(schema.eventCategories)
-      .innerJoin(
-        schema.categories,
-        eq(schema.eventCategories.categoryId, schema.categories.id)
-      )
-      .where(eq(schema.eventCategories.eventId, id));
+    const [ecRows, sponsorRows] = await Promise.all([
+      db
+        .select({ category: schema.categories })
+        .from(schema.eventCategories)
+        .innerJoin(
+          schema.categories,
+          eq(schema.eventCategories.categoryId, schema.categories.id)
+        )
+        .where(eq(schema.eventCategories.eventId, id)),
+      db
+        .select()
+        .from(schema.eventSponsors)
+        .where(eq(schema.eventSponsors.eventId, id))
+        .orderBy(asc(schema.eventSponsors.sortOrder)),
+    ]);
 
     return reply.send({
       ...event,
@@ -196,6 +228,19 @@ export async function eventRoutes(app: FastifyInstance) {
         slug: r.category.slug,
         icon: r.category.icon,
         color: r.category.color,
+      })),
+      color: event.color ?? null,
+      subtitle: event.subtitle ?? null,
+      externalUrl: event.externalUrl ?? null,
+      externalUrlText: event.externalUrlText ?? null,
+      externalUrlCaption: event.externalUrlCaption ?? null,
+      sponsors: sponsorRows.map((s) => ({
+        id: s.id,
+        name: s.name,
+        logoUrl: s.logoUrl,
+        websiteUrl: s.websiteUrl,
+        level: s.level,
+        sortOrder: s.sortOrder,
       })),
     });
   });

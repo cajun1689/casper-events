@@ -46,6 +46,17 @@ import type {
   OrganizationPublic,
 } from "@cyh/shared";
 
+export interface EventSponsor {
+  id: string;
+  eventId: string;
+  name: string;
+  logoUrl: string | null;
+  websiteUrl: string | null;
+  level: "presenting" | "gold" | "silver" | "bronze" | "community";
+  sortOrder: number;
+  createdAt: string;
+}
+
 export const eventsApi = {
   list: (params?: Record<string, string>) => {
     const qs = params ? "?" + new URLSearchParams(params).toString() : "";
@@ -60,6 +71,19 @@ export const eventsApi = {
     api.post<{ success: boolean; postId?: string }>(
       `/events/${id}/facebook/share`
     ),
+};
+
+export const sponsorsApi = {
+  list: (eventId: string) =>
+    api.get<{ data: EventSponsor[] }>(`/events/${eventId}/sponsors`),
+  create: (eventId: string, data: { name: string; logoUrl?: string | null; websiteUrl?: string | null; level?: string; sortOrder?: number }) =>
+    api.post<EventSponsor>(`/events/${eventId}/sponsors`, data),
+  update: (eventId: string, id: string, data: Partial<{ name: string; logoUrl: string | null; websiteUrl: string | null; level: string; sortOrder: number }>) =>
+    api.put<EventSponsor>(`/events/${eventId}/sponsors/${id}`, data),
+  delete: (eventId: string, id: string) =>
+    api.delete(`/events/${eventId}/sponsors/${id}`),
+  reorder: (eventId: string, order: { id: string; sortOrder: number }[]) =>
+    api.put<{ data: EventSponsor[] }>(`/events/${eventId}/sponsors/reorder`, { order }),
 };
 
 export const categoriesApi = {

@@ -153,7 +153,7 @@ function LivePreview({ config, orgId }: { config: EmbedConfigPublic; orgId: stri
         fontFamily: config.fontFamily,
         borderRadius: config.borderRadius,
       },
-      defaultView: config.defaultView as "month" | "list",
+      defaultView: config.defaultView as "month" | "week" | "list" | "poster",
       hiddenCategories: config.categoryFilter ?? [],
     }),
     [config, orgId],
@@ -323,6 +323,7 @@ export default function EmbedSettingsPage() {
                     <option value="month">Month</option>
                     <option value="week">Week</option>
                     <option value="list">List</option>
+                    <option value="poster">Poster Board</option>
                   </select>
                 </div>
 
