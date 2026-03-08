@@ -166,6 +166,7 @@ export const createEmbedConfigSchema = z.object({
   borderColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   headerBgColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   linkColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  backgroundGradient: z.string().max(200).optional(),
   boxShadow: z.enum(["none", "subtle", "medium"]).default("subtle"),
   layoutDensity: z.enum(["compact", "comfortable"]).default("comfortable"),
   firstDayOfWeek: z.enum(["sunday", "monday"]).default("sunday"),

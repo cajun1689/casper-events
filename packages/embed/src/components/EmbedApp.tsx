@@ -126,6 +126,8 @@ export function EmbedApp({ config }: EmbedAppProps) {
   const showPoweredBy = config.showPoweredBy ?? true;
   const headerTitle = config.headerTitle ?? "Events";
 
+  const bgGradient = theme.backgroundGradient;
+
   return (
     <div
       style={{
@@ -133,6 +135,7 @@ export function EmbedApp({ config }: EmbedAppProps) {
         fontFamily: "var(--cyh-font)",
         color: "var(--cyh-text)",
         backgroundColor: "var(--cyh-bg)",
+        ...(bgGradient ? { background: bgGradient } : {}),
         borderRadius: "var(--cyh-radius)",
         border: "1px solid var(--cyh-border)",
         overflow: "hidden",

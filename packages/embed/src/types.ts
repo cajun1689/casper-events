@@ -32,6 +32,7 @@ export interface CYHCalendarConfig {
     borderColor?: string;
     headerBgColor?: string;
     linkColor?: string;
+    backgroundGradient?: string;
     boxShadow?: "none" | "subtle" | "medium";
   };
   defaultView?: "month" | "week" | "list" | "poster";

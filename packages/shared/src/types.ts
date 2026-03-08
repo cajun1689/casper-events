@@ -100,6 +100,7 @@ export interface EmbedConfigPublic {
   borderColor?: string | null;
   headerBgColor?: string | null;
   linkColor?: string | null;
+  backgroundGradient?: string | null;
   boxShadow: string;
   layoutDensity: string;
   firstDayOfWeek: string;

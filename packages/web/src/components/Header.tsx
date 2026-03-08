@@ -35,7 +35,7 @@ export function Header() {
             {[
               { to: "/", label: "Calendar" },
               { to: "/organizations", label: "Organizations" },
-              ...(user ? [{ to: "/submit", label: "Submit Event" }] : []),
+              ...(user ? [{ to: "/dashboard/events/new", label: "Submit Event" }] : []),
               { to: "/about", label: "About" },
             ].map((link) => (
               <Link
@@ -110,7 +110,7 @@ export function Header() {
           {[
             { to: "/", label: "Calendar" },
             { to: "/organizations", label: "Organizations" },
-            ...(user ? [{ to: "/submit", label: "Submit Event" }] : []),
+            ...(user ? [{ to: "/dashboard/events/new", label: "Submit Event" }] : []),
             { to: "/about", label: "About" },
             ...(!user ? [{ to: "/login", label: "Login" }] : []),
           ].map((link) => (

@@ -242,6 +242,7 @@ export const embedConfigs = pgTable("embed_configs", {
   borderColor: varchar("border_color", { length: 7 }),
   headerBgColor: varchar("header_bg_color", { length: 7 }),
   linkColor: varchar("link_color", { length: 7 }),
+  backgroundGradient: varchar("background_gradient", { length: 200 }),
   boxShadow: varchar("box_shadow", { length: 20 }).default("subtle").notNull(),
   layoutDensity: varchar("layout_density", { length: 20 }).default("comfortable").notNull(),
   firstDayOfWeek: varchar("first_day_of_week", { length: 10 }).default("sunday").notNull(),

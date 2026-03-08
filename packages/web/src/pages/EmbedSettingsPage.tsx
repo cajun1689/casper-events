@@ -3,12 +3,17 @@ import { useNavigate, Link } from "react-router-dom";
 import { Code2, Palette, Copy, Check, Eye, Link2, Unlink, ArrowLeft, ChevronDown, Globe, RefreshCw, Filter, Layout, FileText, Type, Plus, CopyPlus } from "lucide-react";
 import clsx from "clsx";
 
-const COLOR_PRESETS = [
+const COLOR_PRESETS: { name: string; primary: string; secondary: string; bg: string; text: string; accent: string; gradient?: string }[] = [
   { name: "Blue", primary: "#2563eb", secondary: "#64748b", bg: "#ffffff", text: "#1f2937", accent: "#f59e0b" },
   { name: "Green", primary: "#059669", secondary: "#64748b", bg: "#ffffff", text: "#1f2937", accent: "#f59e0b" },
   { name: "Purple", primary: "#7c3aed", secondary: "#64748b", bg: "#ffffff", text: "#1f2937", accent: "#f59e0b" },
   { name: "Slate", primary: "#475569", secondary: "#64748b", bg: "#f8fafc", text: "#1e293b", accent: "#0ea5e9" },
   { name: "Dark", primary: "#38bdf8", secondary: "#94a3b8", bg: "#0f172a", text: "#f1f5f9", accent: "#fbbf24" },
+  { name: "Ocean", primary: "#0284c7", secondary: "#64748b", bg: "#f0f9ff", text: "#0c4a6e", accent: "#f59e0b", gradient: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)" },
+  { name: "Sunset", primary: "#dc2626", secondary: "#78716c", bg: "#fffbeb", text: "#44403c", accent: "#f97316", gradient: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)" },
+  { name: "Forest", primary: "#15803d", secondary: "#6b7280", bg: "#f0fdf4", text: "#14532d", accent: "#eab308", gradient: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)" },
+  { name: "Midnight", primary: "#818cf8", secondary: "#a1a1aa", bg: "#18181b", text: "#e4e4e7", accent: "#facc15", gradient: "linear-gradient(135deg, #18181b 0%, #27272a 100%)" },
+  { name: "Rose", primary: "#e11d48", secondary: "#9ca3af", bg: "#fff1f2", text: "#4c0519", accent: "#f59e0b", gradient: "linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)" },
 ];
 
 const FONT_PRESETS = [
@@ -198,6 +203,7 @@ function LivePreview({ config, orgId }: { config: EmbedConfigPublic; orgId: stri
         borderColor: config.borderColor ?? undefined,
         headerBgColor: config.headerBgColor ?? undefined,
         linkColor: config.linkColor ?? undefined,
+        backgroundGradient: config.backgroundGradient ?? undefined,
         boxShadow: (config.boxShadow ?? "subtle") as "none" | "subtle" | "medium",
       },
       defaultView: config.defaultView as "month" | "week" | "list" | "poster",
@@ -289,10 +295,16 @@ export default function EmbedSettingsPage() {
 
   const updateConfig = useCallback(
     (field: string, value: string | boolean | string[] | number | null) => {
-      if (!activeConfig) return;
-      setActiveConfig({ ...activeConfig, [field]: value } as EmbedConfigPublic);
+      setActiveConfig((prev) => prev ? { ...prev, [field]: value } as EmbedConfigPublic : prev);
     },
-    [activeConfig],
+    [],
+  );
+
+  const applyPreset = useCallback(
+    (fields: Partial<Record<string, string | boolean | number | null>>) => {
+      setActiveConfig((prev) => prev ? { ...prev, ...fields } as EmbedConfigPublic : prev);
+    },
+    [],
   );
 
   const saveConfig = async () => {
@@ -320,6 +332,7 @@ export default function EmbedSettingsPage() {
     if (c.borderColor) theme.borderColor = c.borderColor;
     if (c.headerBgColor) theme.headerBgColor = c.headerBgColor;
     if (c.linkColor) theme.linkColor = c.linkColor;
+    if (c.backgroundGradient) theme.backgroundGradient = c.backgroundGradient;
     if (c.boxShadow && c.boxShadow !== "subtle") theme.boxShadow = c.boxShadow;
     const themeStr = Object.entries(theme)
       .map(([k, v]) => `      ${k}: '${String(v).replace(/'/g, "\\'")}'`)
@@ -459,16 +472,20 @@ export default function EmbedSettingsPage() {
                   {COLOR_PRESETS.map((p) => (
                     <button
                       key={p.name}
-                      onClick={() => {
-                        updateConfig("primaryColor", p.primary);
-                        updateConfig("secondaryColor", p.secondary);
-                        updateConfig("backgroundColor", p.bg);
-                        updateConfig("textColor", p.text);
-                        updateConfig("accentColor", p.accent);
-                      }}
+                      onClick={() => applyPreset({
+                        primaryColor: p.primary,
+                        secondaryColor: p.secondary,
+                        backgroundColor: p.bg,
+                        textColor: p.text,
+                        accentColor: p.accent,
+                        backgroundGradient: p.gradient ?? "",
+                      })}
                       className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold transition-all hover:border-primary-300 hover:bg-primary-50"
                     >
-                      <span className="h-4 w-4 rounded-full border border-gray-300" style={{ backgroundColor: p.primary }} />
+                      <span
+                        className="h-4 w-4 rounded-full border border-gray-300"
+                        style={{ background: p.gradient ?? p.primary }}
+                      />
                       {p.name}
                     </button>
                   ))}
@@ -494,6 +511,23 @@ export default function EmbedSettingsPage() {
                   </div>
                 </div>
               ))}
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Background gradient (optional)</label>
+                <input
+                  type="text"
+                  value={(activeConfig as unknown as Record<string, string>).backgroundGradient ?? ""}
+                  onChange={(e) => updateConfig("backgroundGradient", e.target.value)}
+                  placeholder="e.g. linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-xs font-mono transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100"
+                />
+                <p className="mt-1 text-xs text-gray-400">Overrides background color with a CSS gradient. Leave empty for solid color.</p>
+                {(activeConfig as unknown as Record<string, string>).backgroundGradient && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="h-6 w-full rounded-lg border border-gray-200" style={{ background: (activeConfig as unknown as Record<string, string>).backgroundGradient }} />
+                    <button onClick={() => updateConfig("backgroundGradient", "")} className="shrink-0 text-xs font-semibold text-red-500 hover:underline">Clear</button>
+                  </div>
+                )}
+              </div>
               <div>
                 <label className="mb-2 block text-xs font-semibold text-gray-500 uppercase tracking-wider">Font presets</label>
                 <select value={FONT_PRESETS.some((f) => f.value === activeConfig.fontFamily) ? activeConfig.fontFamily : "custom"} onChange={(e) => e.target.value !== "custom" && updateConfig("fontFamily", e.target.value)} className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100">
