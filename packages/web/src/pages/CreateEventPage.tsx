@@ -9,7 +9,7 @@ import { useNavigate, Navigate, Link } from "react-router-dom";
 import { ArrowLeft, Facebook, Globe, Video, ChevronDown, Clock } from "lucide-react";
 import clsx from "clsx";
 import { useStore } from "@/lib/store";
-import { eventsApi, categoriesApi, sponsorsApi, api } from "@/lib/api";
+import { eventsApi, categoriesApi, orgCategoriesApi, sponsorsApi, api } from "@/lib/api";
 import { ImageUpload } from "@/components/ImageUpload";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { RichTextEditor } from "@/components/RichTextEditor";
@@ -17,7 +17,7 @@ import { EventSponsorsCreateSection, type PendingSponsor } from "@/components/Ev
 
 export default function CreateEventPage() {
   const navigate = useNavigate();
-  const { token, categories, setCategories } = useStore();
+  const { token, organization, categories, setCategories } = useStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -31,6 +31,8 @@ export default function CreateEventPage() {
     publishAtDate: "", publishAtTime: "",
   });
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
+  const [selectedOrgCats, setSelectedOrgCats] = useState<string[]>([]);
+  const [orgCategories, setOrgCategories] = useState<{ id: string; name: string; slug: string; icon: string | null; color: string | null; parentCategoryId: string; parentCategory?: { name: string } }[]>([]);
   const [pendingSponsors, setPendingSponsors] = useState<PendingSponsor[]>([]);
   const [fbConnected, setFbConnected] = useState<boolean | null>(null);
 
@@ -39,6 +41,12 @@ export default function CreateEventPage() {
       categoriesApi.list().then((res) => setCategories(res.data)).catch(console.error);
     }
   }, [categories.length, setCategories]);
+
+  useEffect(() => {
+    if (organization?.id) {
+      orgCategoriesApi.list(organization.id).then((res) => setOrgCategories(res.data)).catch(() => setOrgCategories([]));
+    }
+  }, [organization?.id]);
 
   useEffect(() => {
     if (token) {
@@ -56,6 +64,10 @@ export default function CreateEventPage() {
 
   function toggleCat(id: string) {
     setSelectedCats((prev) => prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]);
+  }
+
+  function toggleOrgCat(id: string) {
+    setSelectedOrgCats((prev) => prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]);
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -78,6 +90,7 @@ export default function CreateEventPage() {
         isOnline: form.isOnline, onlineEventUrl: form.onlineEventUrl || null,
         publishToFacebook: form.publishToFacebook,
         categoryIds: selectedCats,
+        orgCategoryIds: selectedOrgCats,
         color: form.color || null, subtitle: form.subtitle || null,
         externalUrl: form.externalUrl || null, externalUrlText: form.externalUrlText || null,
         externalUrlCaption: form.externalUrlCaption || null,
@@ -309,6 +322,30 @@ export default function CreateEventPage() {
                 </label>
               ))}
             </div>
+          )}
+          {orgCategories.length > 0 && (
+            <>
+              <h3 className="text-sm font-bold text-gray-700 pt-2 border-t border-gray-100">Your sub-categories (optional)</h3>
+              <p className="text-xs text-gray-500 -mt-1">Create these in Embed Settings if you don&apos;t see any.</p>
+              <div className="flex flex-wrap gap-2">
+                {orgCategories.map((oc) => (
+                  <label
+                    key={oc.id}
+                    className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-all ${
+                      selectedOrgCats.includes(oc.id)
+                        ? "border-transparent text-white shadow-md"
+                        : "border-gray-200/80 bg-white/60 text-gray-600 hover:bg-white hover:shadow"
+                    }`}
+                    style={selectedOrgCats.includes(oc.id) ? { backgroundColor: oc.color ?? "#4f46e5", boxShadow: `0 4px 14px -3px ${oc.color ?? "#4f46e5"}50` } : undefined}
+                  >
+                    <input type="checkbox" checked={selectedOrgCats.includes(oc.id)} onChange={() => toggleOrgCat(oc.id)} className="sr-only" />
+                    {oc.icon && <span>{oc.icon}</span>}
+                    {oc.name}
+                    {oc.parentCategory && <span className="text-xs opacity-75">({oc.parentCategory.name})</span>}
+                  </label>
+                ))}
+              </div>
+            </>
           )}
         </section>
 

@@ -13,6 +13,7 @@ import { icalRoutes } from "./routes/ical.js";
 import { uploadRoutes } from "./routes/upload.js";
 import { venueRoutes } from "./routes/venues.js";
 import { sponsorRoutes } from "./routes/sponsors.js";
+import { orgCategoryRoutes } from "./routes/org-categories.js";
 import { publicEventRoutes } from "./routes/public-events.js";
 import { digestRoutes } from "./routes/digest.js";
 
@@ -50,6 +51,7 @@ export function buildApp() {
   app.register(eventRoutes);
   app.register(sponsorRoutes, { prefix: "/events" });
   app.register(organizationRoutes);
+  app.register(orgCategoryRoutes);
   app.register(adminRoutes);
   app.register(embedRoutes);
   app.register(facebookRoutes);

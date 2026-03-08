@@ -138,9 +138,9 @@ export function EmbedListView({ events, contentToggles, layoutOptions }: EmbedLi
                         </div>
                       )}
 
-                      {contentToggles?.showCategories !== false && event.categories.length > 0 && (
+                      {contentToggles?.showCategories !== false && (event.categories.length > 0 || (event.orgCategories?.length ?? 0) > 0) && (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                          {event.categories.map((cat) => (
+                          {(event.orgCategories?.length ? event.orgCategories : event.categories).map((cat) => (
                             <span
                               key={cat.id}
                               style={{

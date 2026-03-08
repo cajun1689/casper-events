@@ -33,6 +33,8 @@ export function EmbedApp({ config }: EmbedAppProps) {
     [config.hiddenCategories],
   );
 
+  const displayMode = config.categoryDisplayMode ?? {};
+
   const api = useMemo(() => createApiClient(config.apiUrl ?? "https://api.casperevents.org/v1"), [config.apiUrl]);
 
   useEffect(() => {
@@ -50,18 +52,26 @@ export function EmbedApp({ config }: EmbedAppProps) {
     const map = new Map<string, { id: string; name: string; slug: string; color: string | null }>();
     for (const event of events) {
       for (const cat of event.categories) {
-        if (!hiddenSlugs.has(cat.slug) && !map.has(cat.id))
-          map.set(cat.id, { id: cat.id, name: cat.name, slug: cat.slug, color: cat.color });
+        if (hiddenSlugs.has(cat.slug)) continue;
+        const mode = displayMode[cat.slug] ?? "both";
+        if (mode === "subs") continue;
+        if (!map.has(cat.id)) map.set(cat.id, { id: cat.id, name: cat.name, slug: cat.slug, color: cat.color });
+      }
+      for (const oc of event.orgCategories ?? []) {
+        const parentSlug = oc.parentCategorySlug ?? "";
+        if (hiddenSlugs.has(parentSlug)) continue;
+        const mode = displayMode[parentSlug] ?? "both";
+        if (mode === "parent") continue;
+        if (!map.has(oc.id)) map.set(oc.id, { id: oc.id, name: oc.name, slug: oc.slug, color: oc.color });
       }
     }
     return Array.from(map.values());
-  }, [events, hiddenSlugs]);
+  }, [events, hiddenSlugs, displayMode]);
 
   const filteredEvents = useMemo(() => {
     return events.filter((e) => {
-      if (e.categories.length === 0) return true;
-      const visibleCats = e.categories.filter((c) => !hiddenSlugs.has(c.slug));
-      if (visibleCats.length === 0) return false;
+      const visibleCats = [...e.categories.filter((c) => !hiddenSlugs.has(c.slug)), ...(e.orgCategories ?? []).filter((oc) => !hiddenSlugs.has(oc.parentCategorySlug ?? ""))];
+      if (visibleCats.length === 0) return true;
       if (disabledCategories.size === 0) return true;
       return visibleCats.some((c) => !disabledCategories.has(c.id));
     });

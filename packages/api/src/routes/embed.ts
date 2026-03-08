@@ -71,6 +71,7 @@ export async function embedRoutes(app: FastifyInstance) {
 
     const eventIds = events.map((e) => e.id);
     let categoriesMap: Record<string, { id: string; name: string; slug: string; icon: string | null; color: string | null }[]> = {};
+    let orgCategoriesMap: Record<string, { id: string; name: string; slug: string; icon: string | null; color: string | null; parentCategoryId: string; parentCategorySlug: string }[]> = {};
 
     if (eventIds.length > 0) {
       const ecRows = await db
@@ -93,6 +94,36 @@ export async function embedRoutes(app: FastifyInstance) {
           slug: row.category.slug,
           icon: row.category.icon,
           color: row.category.color,
+        });
+      }
+
+      const eocRows = await db
+        .select({
+          eventId: schema.eventOrgCategories.eventId,
+          orgCat: schema.orgCategories,
+          parentSlug: schema.categories.slug,
+        })
+        .from(schema.eventOrgCategories)
+        .innerJoin(
+          schema.orgCategories,
+          eq(schema.eventOrgCategories.orgCategoryId, schema.orgCategories.id)
+        )
+        .innerJoin(
+          schema.categories,
+          eq(schema.orgCategories.parentCategoryId, schema.categories.id)
+        )
+        .where(inArray(schema.eventOrgCategories.eventId, eventIds));
+
+      for (const row of eocRows) {
+        if (!orgCategoriesMap[row.eventId]) orgCategoriesMap[row.eventId] = [];
+        orgCategoriesMap[row.eventId].push({
+          id: row.orgCat.id,
+          name: row.orgCat.name,
+          slug: row.orgCat.slug,
+          icon: row.orgCat.icon,
+          color: row.orgCat.color,
+          parentCategoryId: row.orgCat.parentCategoryId,
+          parentCategorySlug: row.parentSlug,
         });
       }
     }
@@ -137,6 +168,7 @@ export async function embedRoutes(app: FastifyInstance) {
       createdAt: e.createdAt.toISOString(),
       updatedAt: e.updatedAt.toISOString(),
       categories: categoriesMap[e.id] || [],
+      orgCategories: orgCategoriesMap[e.id] || [],
       organization: orgsMap[e.orgId] ? { name: orgsMap[e.orgId].name, slug: orgsMap[e.orgId].slug, logoUrl: orgsMap[e.orgId].logoUrl } : null,
       color: e.color ?? null,
       subtitle: e.subtitle ?? null,
@@ -151,7 +183,8 @@ export async function embedRoutes(app: FastifyInstance) {
     if (catFilter) {
       const slugs = catFilter.split(",");
       result = result.filter((e) =>
-        e.categories.some((c) => slugs.includes(c.slug))
+        e.categories.some((c) => slugs.includes(c.slug)) ||
+        (e.orgCategories ?? []).some((oc) => slugs.includes(oc.slug))
       );
     }
 

@@ -8,7 +8,7 @@ const COLOR_PALETTE = [
 import { useNavigate, Navigate, Link, useParams } from "react-router-dom";
 import { ArrowLeft, Globe, Video, ChevronDown, Trash2, Clock } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { eventsApi, categoriesApi } from "@/lib/api";
+import { eventsApi, categoriesApi, orgCategoriesApi } from "@/lib/api";
 import { ImageUpload } from "@/components/ImageUpload";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { RichTextEditor } from "@/components/RichTextEditor";
@@ -17,7 +17,7 @@ import { EventSponsorsSection } from "@/components/EventSponsorsSection";
 export default function EditEventPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { token, user, categories, setCategories } = useStore();
+  const { token, user, organization, categories, setCategories } = useStore();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +34,8 @@ export default function EditEventPage() {
     publishAtDate: "", publishAtTime: "",
   });
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
+  const [selectedOrgCats, setSelectedOrgCats] = useState<string[]>([]);
+  const [orgCategories, setOrgCategories] = useState<{ id: string; name: string; slug: string; icon: string | null; color: string | null; parentCategoryId: string; parentCategory?: { name: string } }[]>([]);
   const [backTo, setBackTo] = useState("/dashboard");
 
   useEffect(() => {
@@ -41,6 +43,12 @@ export default function EditEventPage() {
       categoriesApi.list().then((res) => setCategories(res.data)).catch(console.error);
     }
   }, [categories.length, setCategories]);
+
+  useEffect(() => {
+    if (organization?.id) {
+      orgCategoriesApi.list(organization.id).then((res) => setOrgCategories(res.data)).catch(() => setOrgCategories([]));
+    }
+  }, [organization?.id]);
 
   useEffect(() => {
     if (!token || !id) return;
@@ -82,6 +90,7 @@ export default function EditEventPage() {
           : "",
       });
       setSelectedCats(event.categories?.map((c: { id: string }) => c.id) || []);
+      setSelectedOrgCats(event.orgCategories?.map((oc: { id: string }) => oc.id) || []);
       setFetching(false);
     }).catch(() => {
       setError("Event not found");
@@ -97,6 +106,10 @@ export default function EditEventPage() {
 
   function toggleCat(catId: string) {
     setSelectedCats((prev) => prev.includes(catId) ? prev.filter((c) => c !== catId) : [...prev, catId]);
+  }
+
+  function toggleOrgCat(id: string) {
+    setSelectedOrgCats((prev) => prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]);
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -119,6 +132,7 @@ export default function EditEventPage() {
         cost: form.cost || null, ticketUrl: form.ticketUrl || null, imageUrl: form.imageUrl || null,
         isOnline: form.isOnline, onlineEventUrl: form.onlineEventUrl || null,
         categoryIds: selectedCats,
+        orgCategoryIds: selectedOrgCats,
         color: form.color || null, subtitle: form.subtitle || null,
         externalUrl: form.externalUrl || null, externalUrlText: form.externalUrlText || null,
         externalUrlCaption: form.externalUrlCaption || null,
@@ -339,6 +353,29 @@ export default function EditEventPage() {
                 </label>
               ))}
             </div>
+          )}
+          {orgCategories.length > 0 && (
+            <>
+              <h3 className="text-sm font-bold text-gray-700 pt-2 border-t border-gray-100">Your sub-categories (optional)</h3>
+              <div className="flex flex-wrap gap-2">
+                {orgCategories.map((oc) => (
+                  <label
+                    key={oc.id}
+                    className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-all ${
+                      selectedOrgCats.includes(oc.id)
+                        ? "border-transparent text-white shadow-md"
+                        : "border-gray-200/80 bg-white/60 text-gray-600 hover:bg-white hover:shadow"
+                    }`}
+                    style={selectedOrgCats.includes(oc.id) ? { backgroundColor: oc.color ?? "#4f46e5", boxShadow: `0 4px 14px -3px ${oc.color ?? "#4f46e5"}50` } : undefined}
+                  >
+                    <input type="checkbox" checked={selectedOrgCats.includes(oc.id)} onChange={() => toggleOrgCat(oc.id)} className="sr-only" />
+                    {oc.icon && <span>{oc.icon}</span>}
+                    {oc.name}
+                    {oc.parentCategory && <span className="text-xs opacity-75">({oc.parentCategory.name})</span>}
+                  </label>
+                ))}
+              </div>
+            </>
           )}
         </section>
 

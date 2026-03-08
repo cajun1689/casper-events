@@ -38,6 +38,8 @@ export interface CYHCalendarConfig {
   defaultView?: "month" | "week" | "list" | "poster";
   categories?: string[];
   hiddenCategories?: string[];
+  /** Per parent slug: "parent" | "subs" | "both" - controls filter options */
+  categoryDisplayMode?: Record<string, "parent" | "subs" | "both">;
   /** Layout options */
   layoutDensity?: "compact" | "comfortable";
   firstDayOfWeek?: "sunday" | "monday";
@@ -74,6 +76,15 @@ export interface EmbedEvent {
     slug: string;
     icon: string | null;
     color: string | null;
+  }[];
+  orgCategories?: {
+    id: string;
+    name: string;
+    slug: string;
+    icon: string | null;
+    color: string | null;
+    parentCategoryId: string;
+    parentCategorySlug?: string;
   }[];
   organization?: {
     name: string;

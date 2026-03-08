@@ -180,6 +180,48 @@ export const eventCategories = pgTable(
   ]
 );
 
+/** Org-specific sub-categories under platform categories. */
+export const orgCategories = pgTable(
+  "org_categories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    parentCategoryId: uuid("parent_category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 100 }).notNull(),
+    slug: varchar("slug", { length: 100 }).notNull(),
+    icon: varchar("icon", { length: 50 }),
+    color: varchar("color", { length: 7 }),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("org_categories_org_id_idx").on(table.orgId),
+    index("org_categories_parent_idx").on(table.parentCategoryId),
+    uniqueIndex("org_categories_org_slug_idx").on(table.orgId, table.slug),
+  ]
+);
+
+export const eventOrgCategories = pgTable(
+  "event_org_categories",
+  {
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    orgCategoryId: uuid("org_category_id")
+      .notNull()
+      .references(() => orgCategories.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    uniqueIndex("event_org_categories_pk").on(table.eventId, table.orgCategoryId),
+  ]
+);
+
 export const users = pgTable(
   "users",
   {
@@ -237,6 +279,8 @@ export const embedConfigs = pgTable("embed_configs", {
   borderRadius: varchar("border_radius", { length: 10 }).default("8px").notNull(),
   defaultView: varchar("default_view", { length: 20 }).default("month").notNull(),
   categoryFilter: jsonb("category_filter").$type<string[]>().default([]),
+  /** Per parent slug: "parent" | "subs" | "both". Controls whether to show parent only, org sub-categories only, or both. */
+  categoryDisplayMode: jsonb("category_display_mode").$type<Record<string, "parent" | "subs" | "both">>().default({}),
   showConnectedOrgs: boolean("show_connected_orgs").default(true).notNull(),
   ctaOpensExternal: boolean("cta_opens_external").default(false).notNull(),
   borderColor: varchar("border_color", { length: 7 }),
@@ -392,6 +436,7 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
   events: many(events),
   users: many(users),
   embedConfigs: many(embedConfigs),
+  orgCategories: many(orgCategories),
   connections: many(orgConnections, { relationName: "orgConnections" }),
   connectedBy: many(orgConnections, { relationName: "connectedByOrgs" }),
 }));
@@ -402,6 +447,7 @@ export const eventsRelations = relations(events, ({ one, many }) => ({
     references: [organizations.id],
   }),
   eventCategories: many(eventCategories),
+  eventOrgCategories: many(eventOrgCategories),
   reviews: many(adminReviews),
   sponsors: many(eventSponsors),
   rsvps: many(eventRsvps),
@@ -420,6 +466,30 @@ export const eventRsvpsRelations = relations(eventRsvps, ({ one }) => ({
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   eventCategories: many(eventCategories),
+  orgCategories: many(orgCategories),
+}));
+
+export const orgCategoriesRelations = relations(orgCategories, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [orgCategories.orgId],
+    references: [organizations.id],
+  }),
+  parentCategory: one(categories, {
+    fields: [orgCategories.parentCategoryId],
+    references: [categories.id],
+  }),
+  eventOrgCategories: many(eventOrgCategories),
+}));
+
+export const eventOrgCategoriesRelations = relations(eventOrgCategories, ({ one }) => ({
+  event: one(events, {
+    fields: [eventOrgCategories.eventId],
+    references: [events.id],
+  }),
+  orgCategory: one(orgCategories, {
+    fields: [eventOrgCategories.orgCategoryId],
+    references: [orgCategories.id],
+  }),
 }));
 
 export const eventCategoriesRelations = relations(eventCategories, ({ one }) => ({

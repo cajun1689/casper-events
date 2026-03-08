@@ -62,14 +62,14 @@ export function EmbedEventDetail({ event, contentToggles = DEFAULT_TOGGLES }: Em
         {contentToggles.showOrganizer && event.organization && <DetailRow icon="🏢" text={event.organization.name} />}
       </div>
 
-      {contentToggles.showCategories && event.categories.length > 0 && (
+      {contentToggles.showCategories && (event.categories.length > 0 || (event.orgCategories?.length ?? 0) > 0) && (
         <div style={{
           display: "flex",
           flexWrap: "wrap",
           gap: "4px",
           marginBottom: event.description ? "14px" : 0,
         }}>
-          {event.categories.map((cat) => (
+          {(event.orgCategories?.length ? event.orgCategories : event.categories).map((cat) => (
             <span
               key={cat.id}
               style={{

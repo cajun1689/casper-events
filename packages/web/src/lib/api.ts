@@ -44,6 +44,7 @@ import type {
   PaginatedResponse,
   CategoryPublic,
   OrganizationPublic,
+  OrgCategoryPublic,
 } from "@cyh/shared";
 
 export interface EventSponsor {
@@ -101,6 +102,22 @@ export const sponsorsApi = {
 
 export const categoriesApi = {
   list: () => api.get<{ data: CategoryPublic[] }>("/categories"),
+};
+
+export const orgCategoriesApi = {
+  list: (orgId: string) =>
+    api.get<{ data: (OrgCategoryPublic & { parentCategory?: CategoryPublic })[] }>(
+      `/organizations/${orgId}/org-categories`,
+    ),
+  create: (orgId: string, data: { parentCategoryId: string; name: string; slug: string; icon?: string; color?: string; sortOrder?: number }) =>
+    api.post<OrgCategoryPublic & { parentCategory?: CategoryPublic }>(
+      `/organizations/${orgId}/org-categories`,
+      data,
+    ),
+  update: (orgId: string, catId: string, data: Partial<{ name: string; slug: string; icon?: string; color?: string; sortOrder: number }>) =>
+    api.put<OrgCategoryPublic>(`/organizations/${orgId}/org-categories/${catId}`, data),
+  delete: (orgId: string, catId: string) =>
+    api.delete(`/organizations/${orgId}/org-categories/${catId}`),
 };
 
 export const organizationsApi = {

@@ -41,6 +41,14 @@ export interface EventWithDetails {
     icon: string | null;
     color: string | null;
   }[];
+  orgCategories?: {
+    id: string;
+    name: string;
+    slug: string;
+    icon: string | null;
+    color: string | null;
+    parentCategoryId: string;
+  }[];
   sponsors: {
     id: string;
     name: string;
@@ -82,6 +90,18 @@ export interface CategoryPublic {
   sortOrder: number;
 }
 
+export interface OrgCategoryPublic {
+  id: string;
+  orgId: string;
+  parentCategoryId: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+  color: string | null;
+  sortOrder: number;
+  parentCategory?: CategoryPublic;
+}
+
 export interface EmbedConfigPublic {
   id: string;
   orgId: string;
@@ -95,6 +115,8 @@ export interface EmbedConfigPublic {
   borderRadius: string;
   defaultView: string;
   categoryFilter: string[];
+  /** Per parent slug: "parent" | "subs" | "both" */
+  categoryDisplayMode?: Record<string, "parent" | "subs" | "both">;
   showConnectedOrgs: boolean;
   ctaOpensExternal: boolean;
   borderColor?: string | null;

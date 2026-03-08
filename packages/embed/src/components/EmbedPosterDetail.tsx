@@ -134,7 +134,7 @@ export function EmbedPosterDetail({ event, onClose, api, contentToggles = DEFAUL
       : format(start, "h:mm a");
   const dateLabel = format(start, "EEEE, MMMM d, yyyy");
   const sponsors = event.sponsors ?? [];
-  const cats = event.categories ?? [];
+  const cats = (event.orgCategories?.length ? event.orgCategories : event.categories) ?? [];
 
   const handleAddToCalendar = () => {
     const ics = generateICS(event);

@@ -38,6 +38,7 @@ export const createEventSchema = z
     onlineEventUrl: z.string().max(500).nullish(),
     publishToFacebook: z.boolean().default(false),
     categoryIds: z.array(z.string().uuid()).default([]),
+    orgCategoryIds: z.array(z.string().uuid()).default([]),
     recurrenceRule: z.string().max(255).nullish(),
     color: z.string().max(25).nullish(),
     subtitle: z.string().max(255).nullish(),
@@ -118,6 +119,24 @@ export const reviewEventSchema = z.object({
 
 // ── Category Schemas ────────────────────────────────────────────────
 
+export const createOrgCategorySchema = z.object({
+  parentCategoryId: z.string().uuid(),
+  name: z.string().min(2).max(100),
+  slug: z
+    .string()
+    .min(2)
+    .max(100)
+    .regex(/^[a-z0-9-]+$/),
+  icon: z.string().max(50).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
+  sortOrder: z.number().int().default(0),
+});
+
+export const updateOrgCategorySchema = createOrgCategorySchema.partial();
+
 export const createCategorySchema = z.object({
   name: z.string().min(2).max(100),
   slug: z
@@ -161,6 +180,7 @@ export const createEmbedConfigSchema = z.object({
   borderRadius: z.string().max(10).default("8px"),
   defaultView: z.enum(["month", "week", "list", "poster"]).default("month"),
   categoryFilter: z.array(z.string()).default([]),
+  categoryDisplayMode: z.record(z.enum(["parent", "subs", "both"])).default({}),
   showConnectedOrgs: z.boolean().default(true),
   ctaOpensExternal: z.boolean().default(false),
   borderColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
@@ -231,6 +251,8 @@ export type UpdateEvent = z.infer<typeof updateEventSchema>;
 export type ListEventsQuery = z.infer<typeof listEventsSchema>;
 export type ReviewEvent = z.infer<typeof reviewEventSchema>;
 export type CreateCategory = z.infer<typeof createCategorySchema>;
+export type CreateOrgCategory = z.infer<typeof createOrgCategorySchema>;
+export type UpdateOrgCategory = z.infer<typeof updateOrgCategorySchema>;
 export type CreateEmbedConfig = z.infer<typeof createEmbedConfigSchema>;
 export type UpdateEmbedConfig = z.infer<typeof updateEmbedConfigSchema>;
 export type CreateConnection = z.infer<typeof createConnectionSchema>;

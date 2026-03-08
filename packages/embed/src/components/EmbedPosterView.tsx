@@ -51,7 +51,8 @@ export function EmbedPosterView({
     categoryFilter.length === 0
       ? events
       : events.filter((e) =>
-          (e.categories ?? []).some((c) => categoryFilter.includes(c.slug))
+          (e.categories ?? []).some((c) => categoryFilter.includes(c.slug)) ||
+          (e.orgCategories ?? []).some((oc) => categoryFilter.includes(oc.slug))
         );
 
   const maxShown = layoutOptions?.maxEventsShown ?? null;
@@ -168,7 +169,7 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, contentToggles, 
     : end
       ? `${format(start, timeFmt)} – ${format(end, timeFmt)}`
       : format(start, timeFmt);
-  const cats = event.categories ?? [];
+  const cats = (event.orgCategories?.length ? event.orgCategories : event.categories) ?? [];
   const primaryCat = cats[0];
 
   return (

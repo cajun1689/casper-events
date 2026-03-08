@@ -49,8 +49,9 @@ function CollapsibleSection({ title, icon: Icon, defaultOpen = true, children }:
   );
 }
 import { useStore } from "@/lib/store";
-import { api, categoriesApi } from "@/lib/api";
-import type { EmbedConfigPublic, OrganizationPublic, CategoryPublic } from "@cyh/shared";
+import { api, categoriesApi, orgCategoriesApi } from "@/lib/api";
+import type { EmbedConfigPublic, OrganizationPublic, CategoryPublic, OrgCategoryPublic } from "@cyh/shared";
+import { ICON_BANK } from "@cyh/shared";
 import { EmbedApp } from "@cyh/embed/components/EmbedApp";
 
 const PLATFORM_GUIDES: { id: string; name: string; icon: string; steps: string[] }[] = [
@@ -182,6 +183,145 @@ function PlatformGuides({ embedCode }: { embedCode: string }) {
   );
 }
 
+function OrgCategoryManager({
+  orgId,
+  parentCategories,
+  orgCategories,
+  iconBank,
+  onUpdate,
+}: {
+  orgId: string;
+  parentCategories: CategoryPublic[];
+  orgCategories: (OrgCategoryPublic & { parentCategory?: CategoryPublic })[];
+  iconBank: readonly string[];
+  onUpdate: () => void;
+}) {
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newSlug, setNewSlug] = useState("");
+  const [newParentId, setNewParentId] = useState(parentCategories[0]?.id ?? "");
+  const [newIcon, setNewIcon] = useState(iconBank[0] ?? "");
+  const [newColor, setNewColor] = useState("#4f46e5");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const slugify = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+
+  const handleCreate = async () => {
+    if (!newName.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await orgCategoriesApi.create(orgId, {
+        parentCategoryId: newParentId,
+        name: newName.trim(),
+        slug: newSlug.trim() || slugify(newName),
+        icon: newIcon || undefined,
+        color: newColor,
+      });
+      setCreating(false);
+      setNewName("");
+      setNewSlug("");
+      onUpdate();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to create");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (catId: string) => {
+    if (!confirm("Delete this sub-category?")) return;
+    try {
+      await orgCategoriesApi.delete(orgId, catId);
+      onUpdate();
+    } catch (e) {
+      console.error("Failed to delete", e);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {orgCategories.length > 0 && (
+        <ul className="space-y-2">
+          {orgCategories.map((oc) => {
+            const parent = parentCategories.find((p) => p.id === oc.parentCategoryId);
+            return (
+              <li key={oc.id} className="flex items-center justify-between rounded-xl bg-gray-50/80 px-4 py-2.5">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg text-xs" style={{ backgroundColor: (oc.color ?? "#4f46e5") + "18", color: oc.color ?? "#4f46e5" }}>
+                    {oc.icon ?? oc.name.charAt(0)}
+                  </span>
+                  <span className="text-sm font-semibold text-gray-900">{oc.name}</span>
+                  {parent && <span className="text-xs text-gray-400">under {parent.name}</span>}
+                </div>
+                <button onClick={() => handleDelete(oc.id)} className="text-xs font-semibold text-red-500 hover:underline">
+                  Delete
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {creating ? (
+        <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4 space-y-3">
+          <input
+            placeholder="Name (e.g. Kids Soccer)"
+            value={newName}
+            onChange={(e) => {
+              setNewName(e.target.value);
+              if (!newSlug) setNewSlug(slugify(e.target.value));
+            }}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+          />
+          <input placeholder="Slug (auto-generated)" value={newSlug} onChange={(e) => setNewSlug(e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono" />
+          <select value={newParentId} onChange={(e) => setNewParentId(e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
+            {parentCategories.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <div>
+            <p className="mb-1 text-xs font-semibold text-gray-500">Icon</p>
+            <div className="flex flex-wrap gap-1">
+              {iconBank.map((icon) => (
+                <button
+                  key={icon}
+                  type="button"
+                  onClick={() => setNewIcon(icon)}
+                  className={clsx("h-8 w-8 rounded-lg border-2 text-lg transition-all", newIcon === icon ? "border-primary-500 scale-110" : "border-gray-200 hover:border-gray-300")}
+                >
+                  {icon}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="color" value={newColor} onChange={(e) => setNewColor(e.target.value)} className="h-8 w-8 cursor-pointer rounded border" />
+            <input type="text" value={newColor} onChange={(e) => setNewColor(e.target.value)} className="w-24 rounded-lg border border-gray-200 px-2 py-1 text-xs font-mono" />
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className="flex gap-2">
+            <button onClick={handleCreate} disabled={saving} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">
+              {saving ? "Creating…" : "Create"}
+            </button>
+            <button onClick={() => setCreating(false)} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setCreating(true)} className="rounded-xl border border-dashed border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-500 hover:border-primary-300 hover:bg-primary-50/50 hover:text-primary-600 transition-all">
+          + Add sub-category
+        </button>
+      )}
+    </div>
+  );
+}
+
 function LivePreview({ config, orgId }: { config: EmbedConfigPublic; orgId: string }) {
   const [previewKey, setPreviewKey] = useState(0);
 
@@ -208,6 +348,7 @@ function LivePreview({ config, orgId }: { config: EmbedConfigPublic; orgId: stri
       },
       defaultView: config.defaultView as "month" | "week" | "list" | "poster",
       hiddenCategories: config.categoryFilter ?? [],
+      categoryDisplayMode: config.categoryDisplayMode ?? {},
       layoutDensity: (config.layoutDensity ?? "comfortable") as "compact" | "comfortable",
       firstDayOfWeek: (config.firstDayOfWeek ?? "sunday") as "sunday" | "monday",
       timeFormat: (config.timeFormat ?? "12h") as "12h" | "24h",
@@ -274,6 +415,7 @@ export default function EmbedSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [allCategories, setAllCategories] = useState<CategoryPublic[]>([]);
+  const [orgCategories, setOrgCategories] = useState<(OrgCategoryPublic & { parentCategory?: CategoryPublic })[]>([]);
 
   useEffect(() => {
     if (!token) { navigate("/login"); return; }
@@ -283,19 +425,32 @@ export default function EmbedSettingsPage() {
       api.get<{ data: { id: string; name: string; slug: string }[] }>(`/organizations/${organization.id}/connections`),
       api.get<{ data: OrganizationPublic[] }>("/organizations"),
       categoriesApi.list(),
-    ]).then(([configRes, connRes, orgsRes, catsRes]) => {
+      orgCategoriesApi.list(organization.id),
+    ]).then(([configRes, connRes, orgsRes, catsRes, orgCatsRes]) => {
       setConfigs(configRes.data);
       if (configRes.data.length > 0) setActiveConfig(configRes.data[0]);
       setConnections(connRes.data);
       setAllOrgs(orgsRes.data.filter((o) => o.id !== organization.id));
       setAllCategories(catsRes.data);
+      setOrgCategories(orgCatsRes.data);
       setLoading(false);
     });
   }, [token, organization, navigate]);
 
   const updateConfig = useCallback(
-    (field: string, value: string | boolean | string[] | number | null) => {
+    (field: string, value: string | boolean | string[] | number | null | Record<string, "parent" | "subs" | "both">) => {
       setActiveConfig((prev) => prev ? { ...prev, [field]: value } as EmbedConfigPublic : prev);
+    },
+    [],
+  );
+
+  const setCategoryDisplayMode = useCallback(
+    (parentSlug: string, mode: "parent" | "subs" | "both") => {
+      setActiveConfig((prev) => {
+        if (!prev) return prev;
+        const current = prev.categoryDisplayMode ?? {};
+        return { ...prev, categoryDisplayMode: { ...current, [parentSlug]: mode } } as EmbedConfigPublic;
+      });
     },
     [],
   );
@@ -346,6 +501,8 @@ export default function EmbedSettingsPage() {
       `    defaultView: '${c.defaultView}'`,
     ];
     if (hiddenCats.length > 0) opts.push(`    hiddenCategories: ${JSON.stringify(hiddenCats)}`);
+    const displayMode = c.categoryDisplayMode && Object.keys(c.categoryDisplayMode).length > 0 ? c.categoryDisplayMode : undefined;
+    if (displayMode) opts.push(`    categoryDisplayMode: ${JSON.stringify(displayMode)}`);
     if (c.layoutDensity && c.layoutDensity !== "comfortable") opts.push(`    layoutDensity: '${c.layoutDensity}'`);
     if (c.firstDayOfWeek && c.firstDayOfWeek !== "sunday") opts.push(`    firstDayOfWeek: '${c.firstDayOfWeek}'`);
     if (c.timeFormat && c.timeFormat !== "12h") opts.push(`    timeFormat: '${c.timeFormat}'`);
@@ -668,7 +825,29 @@ export default function EmbedSettingsPage() {
             </>
           )}
 
-          {/* Category Visibility */}
+          {/* Org Sub-Categories */}
+          {organization && allCategories.length > 0 && activeConfig && (
+            <div className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow">
+                  <Filter className="h-4 w-4 text-white" />
+                </div>
+                <h2 className="text-base font-bold text-gray-900">Custom Event Types (Sub-Categories)</h2>
+              </div>
+              <p className="mb-4 text-sm text-gray-500">
+                Create sub-categories under the main event types. Use these for your embed filters and when creating events.
+              </p>
+              <OrgCategoryManager
+                orgId={organization.id}
+                parentCategories={allCategories}
+                orgCategories={orgCategories}
+                iconBank={ICON_BANK}
+                onUpdate={() => orgCategoriesApi.list(organization.id).then((r) => setOrgCategories(r.data))}
+              />
+            </div>
+          )}
+
+          {/* Category Visibility & Display Mode */}
           {allCategories.length > 0 && activeConfig && (
             <div className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm">
               <div className="mb-4 flex items-center gap-2">
@@ -678,45 +857,68 @@ export default function EmbedSettingsPage() {
                 <h2 className="text-base font-bold text-gray-900">Event Types</h2>
               </div>
               <p className="mb-4 text-sm text-gray-500">
-                Toggle off event types you don't want displayed in your embed. Visitors can also filter within the visible types.
+                Toggle off event types you don&apos;t want displayed. For visible types, choose whether to show the parent, your sub-categories only, or both.
               </p>
               <div className="space-y-2">
                 {allCategories.map((cat) => {
                   const hidden = (activeConfig.categoryFilter ?? []).includes(cat.slug);
+                  const hasSubs = orgCategories.some((oc) => oc.parentCategoryId === cat.id);
+                  const displayMode = (activeConfig.categoryDisplayMode ?? {})[cat.slug] ?? "both";
                   return (
-                    <div key={cat.id} className="flex items-center justify-between rounded-xl bg-gray-50/80 px-4 py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <span
-                          className="flex h-6 w-6 items-center justify-center rounded-lg text-xs"
-                          style={{
-                            backgroundColor: cat.color ? `${cat.color}18` : "#4f46e518",
-                            color: cat.color ?? "#4f46e5",
+                    <div key={cat.id} className="rounded-xl bg-gray-50/80 px-4 py-2.5 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className="flex h-6 w-6 items-center justify-center rounded-lg text-xs"
+                            style={{
+                              backgroundColor: cat.color ? `${cat.color}18` : "#4f46e518",
+                              color: cat.color ?? "#4f46e5",
+                            }}
+                          >
+                            {cat.icon ?? cat.name.charAt(0)}
+                          </span>
+                          <span className={clsx("text-sm font-semibold", hidden ? "text-gray-300 line-through" : "text-gray-900")}>
+                            {cat.name}
+                          </span>
+                          {hasSubs && <span className="text-[10px] text-gray-400">({orgCategories.filter((oc) => oc.parentCategoryId === cat.id).length} subs)</span>}
+                        </div>
+                        <button
+                          onClick={() => {
+                            const current = activeConfig.categoryFilter ?? [];
+                            const updated = hidden
+                              ? current.filter((s) => s !== cat.slug)
+                              : [...current, cat.slug];
+                            updateConfig("categoryFilter", updated);
                           }}
+                          className={clsx(
+                            "relative inline-flex h-6 w-10 items-center rounded-full transition-colors shrink-0",
+                            hidden ? "bg-gray-300" : "bg-emerald-500",
+                          )}
                         >
-                          {cat.icon ?? cat.name.charAt(0)}
-                        </span>
-                        <span className={clsx("text-sm font-semibold", hidden ? "text-gray-300 line-through" : "text-gray-900")}>
-                          {cat.name}
-                        </span>
+                          <span className={clsx(
+                            "inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform",
+                            hidden ? "translate-x-1" : "translate-x-5",
+                          )} />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => {
-                          const current = activeConfig.categoryFilter ?? [];
-                          const updated = hidden
-                            ? current.filter((s) => s !== cat.slug)
-                            : [...current, cat.slug];
-                          updateConfig("categoryFilter", updated);
-                        }}
-                        className={clsx(
-                          "relative inline-flex h-6 w-10 items-center rounded-full transition-colors",
-                          hidden ? "bg-gray-300" : "bg-emerald-500",
-                        )}
-                      >
-                        <span className={clsx(
-                          "inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform",
-                          hidden ? "translate-x-1" : "translate-x-5",
-                        )} />
-                      </button>
+                      {!hidden && hasSubs && (
+                        <div className="flex flex-wrap gap-2 pl-8">
+                          {(["parent", "subs", "both"] as const).map((mode) => (
+                            <button
+                              key={mode}
+                              onClick={() => setCategoryDisplayMode(cat.slug, mode)}
+                              className={clsx(
+                                "rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
+                                displayMode === mode
+                                  ? "bg-primary-100 text-primary-700 ring-1 ring-primary-300"
+                                  : "bg-white/80 text-gray-500 hover:bg-gray-100",
+                              )}
+                            >
+                              {mode === "parent" ? "Parent only" : mode === "subs" ? "Subs only" : "Both"}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

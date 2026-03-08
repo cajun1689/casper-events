@@ -122,6 +122,32 @@ export async function eventRoutes(app: FastifyInstance) {
         categoriesMap[row.eventId].push(row.category);
       }
 
+      let orgCategoriesMap: Record<string, { id: string; name: string; slug: string; icon: string | null; color: string | null; parentCategoryId: string }[]> = {};
+      if (eventIds.length > 0) {
+        const eocRows = await db
+          .select({
+            eventId: schema.eventOrgCategories.eventId,
+            orgCat: schema.orgCategories,
+          })
+          .from(schema.eventOrgCategories)
+          .innerJoin(
+            schema.orgCategories,
+            eq(schema.eventOrgCategories.orgCategoryId, schema.orgCategories.id)
+          )
+          .where(inArray(schema.eventOrgCategories.eventId, eventIds));
+        for (const row of eocRows) {
+          if (!orgCategoriesMap[row.eventId]) orgCategoriesMap[row.eventId] = [];
+          orgCategoriesMap[row.eventId].push({
+            id: row.orgCat.id,
+            name: row.orgCat.name,
+            slug: row.orgCat.slug,
+            icon: row.orgCat.icon,
+            color: row.orgCat.color,
+            parentCategoryId: row.orgCat.parentCategoryId,
+          });
+        }
+      }
+
       const orgIds = [...new Set(eventsResult.map((e) => e.orgId))];
       const orgs = await db
         .select()
@@ -188,6 +214,7 @@ export async function eventRoutes(app: FastifyInstance) {
         icon: c.icon,
         color: c.color,
       })),
+      orgCategories: orgCategoriesMap[event.id] || [],
       color: event.color ?? null,
       subtitle: event.subtitle ?? null,
       externalUrl: event.externalUrl ?? null,
@@ -309,7 +336,7 @@ export async function eventRoutes(app: FastifyInstance) {
       .from(schema.organizations)
       .where(eq(schema.organizations.id, event.orgId));
 
-    const [ecRows, sponsorRows] = await Promise.all([
+    const [ecRows, eocRows, sponsorRows] = await Promise.all([
       db
         .select({ category: schema.categories })
         .from(schema.eventCategories)
@@ -318,6 +345,14 @@ export async function eventRoutes(app: FastifyInstance) {
           eq(schema.eventCategories.categoryId, schema.categories.id)
         )
         .where(eq(schema.eventCategories.eventId, id)),
+      db
+        .select({ orgCat: schema.orgCategories })
+        .from(schema.eventOrgCategories)
+        .innerJoin(
+          schema.orgCategories,
+          eq(schema.eventOrgCategories.orgCategoryId, schema.orgCategories.id)
+        )
+        .where(eq(schema.eventOrgCategories.eventId, id)),
       db
         .select()
         .from(schema.eventSponsors)
@@ -341,6 +376,14 @@ export async function eventRoutes(app: FastifyInstance) {
         slug: r.category.slug,
         icon: r.category.icon,
         color: r.category.color,
+      })),
+      orgCategories: eocRows.map((r) => ({
+        id: r.orgCat.id,
+        name: r.orgCat.name,
+        slug: r.orgCat.slug,
+        icon: r.orgCat.icon,
+        color: r.orgCat.color,
+        parentCategoryId: r.orgCat.parentCategoryId,
       })),
       color: event.color ?? null,
       subtitle: event.subtitle ?? null,
@@ -390,7 +433,7 @@ export async function eventRoutes(app: FastifyInstance) {
           .send({ error: "Your organization has been suspended. Contact an admin for help." });
       }
 
-      const { categoryIds, publishAt, ...eventData } = body;
+      const { categoryIds, orgCategoryIds = [], publishAt, ...eventData } = body;
 
       if ((eventData.address || eventData.venueName) && !eventData.latitude && !eventData.longitude) {
         const geo = await geocodeAddress(eventData.address || eventData.venueName || "");
@@ -420,6 +463,27 @@ export async function eventRoutes(app: FastifyInstance) {
             categoryId,
           }))
         );
+      }
+
+      if (orgCategoryIds.length > 0) {
+        const orgCats = await db
+          .select({ id: schema.orgCategories.id })
+          .from(schema.orgCategories)
+          .where(
+            and(
+              eq(schema.orgCategories.orgId, userOrg.orgId),
+              inArray(schema.orgCategories.id, orgCategoryIds)
+            )
+          );
+        const validIds = orgCats.map((c) => c.id);
+        if (validIds.length > 0) {
+          await db.insert(schema.eventOrgCategories).values(
+            validIds.map((orgCategoryId) => ({
+              eventId: event.id,
+              orgCategoryId,
+            }))
+          );
+        }
       }
 
       if (eventData.venueName) {
@@ -518,7 +582,7 @@ export async function eventRoutes(app: FastifyInstance) {
         return reply.status(403).send({ error: "Not authorized" });
       }
 
-      const { categoryIds, publishAt, ...eventData } = body;
+      const { categoryIds, orgCategoryIds, publishAt, ...eventData } = body;
 
       if ((eventData.address || eventData.venueName) && !eventData.latitude && !eventData.longitude) {
         const geo = await geocodeAddress(eventData.address || eventData.venueName || "");
@@ -555,6 +619,33 @@ export async function eventRoutes(app: FastifyInstance) {
               categoryId,
             }))
           );
+        }
+      }
+
+      if (orgCategoryIds !== undefined) {
+        await db
+          .delete(schema.eventOrgCategories)
+          .where(eq(schema.eventOrgCategories.eventId, id));
+
+        if (orgCategoryIds.length > 0) {
+          const orgCats = await db
+            .select({ id: schema.orgCategories.id })
+            .from(schema.orgCategories)
+            .where(
+              and(
+                eq(schema.orgCategories.orgId, existing.orgId),
+                inArray(schema.orgCategories.id, orgCategoryIds)
+              )
+            );
+          const validIds = orgCats.map((c) => c.id);
+          if (validIds.length > 0) {
+            await db.insert(schema.eventOrgCategories).values(
+              validIds.map((orgCategoryId) => ({
+                eventId: id,
+                orgCategoryId,
+              }))
+            );
+          }
         }
       }
 
