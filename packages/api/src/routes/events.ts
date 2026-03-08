@@ -101,6 +101,7 @@ export async function eventRoutes(app: FastifyInstance) {
     const eventIds = eventsResult.map((e) => e.id);
 
     let categoriesMap: Record<string, typeof schema.categories.$inferSelect[]> = {};
+    let orgCategoriesMap: Record<string, { id: string; name: string; slug: string; icon: string | null; color: string | null; parentCategoryId: string }[]> = {};
     let orgsMap: Record<string, typeof schema.organizations.$inferSelect> = {};
     let sponsorsMap: Record<string, { id: string; name: string; logoUrl: string | null; websiteUrl: string | null; level: string; sortOrder: number }[]> = {};
 
@@ -122,30 +123,27 @@ export async function eventRoutes(app: FastifyInstance) {
         categoriesMap[row.eventId].push(row.category);
       }
 
-      let orgCategoriesMap: Record<string, { id: string; name: string; slug: string; icon: string | null; color: string | null; parentCategoryId: string }[]> = {};
-      if (eventIds.length > 0) {
-        const eocRows = await db
-          .select({
-            eventId: schema.eventOrgCategories.eventId,
-            orgCat: schema.orgCategories,
-          })
-          .from(schema.eventOrgCategories)
-          .innerJoin(
-            schema.orgCategories,
-            eq(schema.eventOrgCategories.orgCategoryId, schema.orgCategories.id)
-          )
-          .where(inArray(schema.eventOrgCategories.eventId, eventIds));
-        for (const row of eocRows) {
-          if (!orgCategoriesMap[row.eventId]) orgCategoriesMap[row.eventId] = [];
-          orgCategoriesMap[row.eventId].push({
-            id: row.orgCat.id,
-            name: row.orgCat.name,
-            slug: row.orgCat.slug,
-            icon: row.orgCat.icon,
-            color: row.orgCat.color,
-            parentCategoryId: row.orgCat.parentCategoryId,
-          });
-        }
+      const eocRows = await db
+        .select({
+          eventId: schema.eventOrgCategories.eventId,
+          orgCat: schema.orgCategories,
+        })
+        .from(schema.eventOrgCategories)
+        .innerJoin(
+          schema.orgCategories,
+          eq(schema.eventOrgCategories.orgCategoryId, schema.orgCategories.id)
+        )
+        .where(inArray(schema.eventOrgCategories.eventId, eventIds));
+      for (const row of eocRows) {
+        if (!orgCategoriesMap[row.eventId]) orgCategoriesMap[row.eventId] = [];
+        orgCategoriesMap[row.eventId].push({
+          id: row.orgCat.id,
+          name: row.orgCat.name,
+          slug: row.orgCat.slug,
+          icon: row.orgCat.icon,
+          color: row.orgCat.color,
+          parentCategoryId: row.orgCat.parentCategoryId,
+        });
       }
 
       const orgIds = [...new Set(eventsResult.map((e) => e.orgId))];
