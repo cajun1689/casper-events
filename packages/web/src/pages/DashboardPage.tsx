@@ -1,9 +1,147 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, CalendarDays, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Facebook, Share2, Calendar, Pencil, Trash2 } from "lucide-react";
+import { Plus, CalendarDays, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Facebook, Share2, Calendar, Pencil, Trash2, X, ExternalLink } from "lucide-react";
+import clsx from "clsx";
 import { useStore } from "@/lib/store";
 import { eventsApi, api } from "@/lib/api";
 import type { EventWithDetails } from "@cyh/shared";
+
+interface FacebookShareModalProps {
+  event: EventWithDetails;
+  onClose: () => void;
+  onShared: () => void;
+}
+
+function FacebookShareModal({ event, onClose, onShared }: FacebookShareModalProps) {
+  const [message, setMessage] = useState("");
+  const [link, setLink] = useState("");
+  const [eventUrl, setEventUrl] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [posting, setPosting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    eventsApi.getFacebookPreview(event.id).then((res) => {
+      setMessage(res.message);
+      setLink(res.link);
+      setEventUrl(res.eventUrl);
+      setLoading(false);
+    }).catch(() => {
+      setMessage(event.title);
+      setLink(`https://casperevents.org/events/${event.id}`);
+      setEventUrl(`https://casperevents.org/events/${event.id}`);
+      setLoading(false);
+    });
+  }, [event.id, event.title]);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  const handlePost = async () => {
+    setPosting(true);
+    setError(null);
+    try {
+      await eventsApi.shareToFacebook(event.id, { message, link });
+      onShared();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to post to Facebook");
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const resetLink = () => setLink(eventUrl);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl animate-slide-up" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1877F2] shadow">
+              <Facebook className="h-4.5 w-4.5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-gray-900">Share to Facebook</h2>
+              <p className="text-xs text-gray-400">Customize your post before publishing</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-gray-100">
+            <X className="h-4 w-4 text-gray-400" />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-8 w-8 animate-spin rounded-full border-3 border-gray-200 border-t-[#1877F2]" />
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Post message</label>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={10}
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm leading-relaxed transition-all focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 resize-none"
+                />
+                <p className="mt-1 text-xs text-gray-400">{message.length} characters</p>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Link attached to post</label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={link}
+                    onChange={(e) => setLink(e.target.value)}
+                    className="flex-1 rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm transition-all focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
+                  />
+                  <button
+                    onClick={resetLink}
+                    title="Reset to event page link"
+                    className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-500 transition-all hover:bg-gray-50"
+                  >
+                    Reset
+                  </button>
+                </div>
+                <a href={link} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-blue-500 hover:underline">
+                  <ExternalLink className="h-3 w-3" /> Preview link
+                </a>
+              </div>
+
+              {error && (
+                <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm font-semibold text-red-700">
+                  {error}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4">
+          <button onClick={onClose} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100">
+            Cancel
+          </button>
+          <button
+            onClick={handlePost}
+            disabled={posting || loading || !message.trim()}
+            className={clsx(
+              "inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:shadow-xl hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed",
+              "bg-[#1877F2] shadow-blue-500/25",
+            )}
+          >
+            <Facebook className="h-4 w-4" />
+            {posting ? "Posting..." : "Post to Facebook"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const { token, user, organization } = useStore();
@@ -13,6 +151,7 @@ export default function DashboardPage() {
   const [fbConnected, setFbConnected] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [sharingId, setSharingId] = useState<string | null>(null);
+  const [fbShareEvent, setFbShareEvent] = useState<EventWithDetails | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -31,19 +170,10 @@ export default function DashboardPage() {
     });
   }, [token, organization, navigate]);
 
-  const shareToFacebook = async (eventId: string, e: React.MouseEvent) => {
+  const openFbShare = (event: EventWithDetails, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (sharingId) return;
-    setSharingId(eventId);
-    try {
-      await eventsApi.shareToFacebook(eventId);
-      alert("Shared to Facebook!");
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to share");
-    } finally {
-      setSharingId(null);
-    }
+    setFbShareEvent(event);
   };
 
   const handleDelete = async (eventId: string) => {
@@ -208,16 +338,11 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-1.5">
                   {fbConnected && (
                     <button
-                      onClick={(e) => shareToFacebook(event.id, e)}
-                      disabled={sharingId === event.id}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-blue-50 hover:text-[#1877F2] disabled:opacity-50"
+                      onClick={(e) => openFbShare(event, e)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-blue-50 hover:text-[#1877F2]"
                       title="Share to Facebook"
                     >
-                      {sharingId === event.id ? (
-                        <Share2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Facebook className="h-3.5 w-3.5" />
-                      )}
+                      <Facebook className="h-3.5 w-3.5" />
                     </button>
                   )}
                   <Link
@@ -248,6 +373,17 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {fbShareEvent && (
+        <FacebookShareModal
+          event={fbShareEvent}
+          onClose={() => setFbShareEvent(null)}
+          onShared={() => {
+            setFbShareEvent(null);
+            alert("Posted to Facebook!");
+          }}
+        />
+      )}
     </div>
   );
 }

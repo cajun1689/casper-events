@@ -75,9 +75,14 @@ export const eventsApi = {
   update: (id: string, data: unknown) =>
     api.put<EventWithDetails>(`/events/${id}`, data),
   delete: (id: string) => api.delete(`/events/${id}`),
-  shareToFacebook: (id: string) =>
+  shareToFacebook: (id: string, body?: { message?: string; link?: string }) =>
     api.post<{ success: boolean; postId?: string }>(
-      `/events/${id}/facebook/share`
+      `/events/${id}/facebook/share`,
+      body,
+    ),
+  getFacebookPreview: (id: string) =>
+    api.get<{ message: string; link: string; eventUrl: string }>(
+      `/events/${id}/facebook/preview`,
     ),
 };
 

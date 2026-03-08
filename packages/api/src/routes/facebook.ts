@@ -230,12 +230,68 @@ export async function facebookRoutes(app: FastifyInstance) {
     }
   );
 
+  // Generate default Facebook post text for an event (no auth needed for preview)
+  app.get(
+    "/events/:id/facebook/preview",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const db = await getDb();
+      const userOrg = await resolveUserOrg(db, request.user!.sub);
+      if (!userOrg) return reply.status(403).send({ error: "Not authorized" });
+
+      const [event] = await db
+        .select()
+        .from(schema.events)
+        .where(eq(schema.events.id, id));
+
+      if (!event || event.orgId !== userOrg.orgId) {
+        return reply.status(404).send({ error: "Event not found" });
+      }
+
+      const eventDate = new Date(event.startAt).toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+
+      const lines = [event.title, "", eventDate];
+      if (event.venueName) lines.push(event.venueName);
+      if (event.address) lines.push(event.address);
+      if (event.isOnline && event.onlineEventUrl) lines.push(`Online: ${event.onlineEventUrl}`);
+      lines.push("");
+      const plainDesc = event.description
+        ? event.description.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim()
+        : "";
+      if (plainDesc) lines.push(plainDesc.substring(0, 500));
+      if (event.ticketUrl) lines.push("", `Tickets: ${event.ticketUrl}`);
+      if (event.cost) lines.push(`Cost: ${event.cost}`);
+
+      const eventUrl = `https://casperevents.org/events/${event.id}`;
+      lines.push("", `More info: ${eventUrl}`);
+
+      const link = event.facebookEventId
+        ? `https://www.facebook.com/events/${event.facebookEventId}`
+        : eventUrl;
+
+      return reply.send({
+        message: lines.join("\n"),
+        link,
+        eventUrl,
+      });
+    }
+  );
+
   // Share event as a page feed post
   app.post(
     "/events/:id/facebook/share",
     { preHandler: requireAuth },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      const body = (request.body ?? {}) as { message?: string; link?: string };
       const db = await getDb();
       const userOrg = await resolveUserOrg(db, request.user!.sub);
 
@@ -261,34 +317,38 @@ export async function facebookRoutes(app: FastifyInstance) {
         return reply.status(400).send({ error: "Facebook Page not connected" });
       }
 
-      const eventDate = new Date(event.startAt).toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      });
+      let message = body.message;
+      if (!message) {
+        const eventDate = new Date(event.startAt).toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        });
 
-      const lines = [event.title, "", eventDate];
-      if (event.venueName) lines.push(event.venueName);
-      if (event.address) lines.push(event.address);
-      if (event.isOnline && event.onlineEventUrl) lines.push(`Online: ${event.onlineEventUrl}`);
-      lines.push("");
-      if (event.description) lines.push(event.description.substring(0, 500));
-      if (event.ticketUrl) lines.push("", `Tickets: ${event.ticketUrl}`);
-      if (event.cost) lines.push(`Cost: ${event.cost}`);
-      lines.push("", `More info: https://casperevents.org/events/${event.id}`);
-
-      const postBody: Record<string, unknown> = { message: lines.join("\n") };
-
-      if (event.facebookEventId) {
-        postBody.link = `https://www.facebook.com/events/${event.facebookEventId}`;
-      } else if (event.ticketUrl) {
-        postBody.link = event.ticketUrl;
-      } else {
-        postBody.link = `https://casperevents.org/events/${event.id}`;
+        const lines = [event.title, "", eventDate];
+        if (event.venueName) lines.push(event.venueName);
+        if (event.address) lines.push(event.address);
+        if (event.isOnline && event.onlineEventUrl) lines.push(`Online: ${event.onlineEventUrl}`);
+        lines.push("");
+        const plainDesc = event.description
+          ? event.description.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim()
+          : "";
+        if (plainDesc) lines.push(plainDesc.substring(0, 500));
+        if (event.ticketUrl) lines.push("", `Tickets: ${event.ticketUrl}`);
+        if (event.cost) lines.push(`Cost: ${event.cost}`);
+        lines.push("", `More info: https://casperevents.org/events/${event.id}`);
+        message = lines.join("\n");
       }
+
+      const eventUrl = `https://casperevents.org/events/${event.id}`;
+      const link = body.link || (event.facebookEventId
+        ? `https://www.facebook.com/events/${event.facebookEventId}`
+        : eventUrl);
+
+      const postBody: Record<string, unknown> = { message, link };
 
       const postResult = (await fbApi(
         `/${org.facebookPageId}/feed`,
