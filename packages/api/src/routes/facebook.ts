@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
 import * as schema from "@cyh/shared/db";
@@ -8,6 +9,30 @@ import { resolveUserOrg } from "../services/user-org.js";
 const FB_APP_ID = process.env.FACEBOOK_APP_ID || "";
 const FB_APP_SECRET = process.env.FACEBOOK_APP_SECRET || "";
 const FB_REDIRECT_URI = process.env.FACEBOOK_REDIRECT_URI || "";
+
+/** Verify Facebook signed_request HMAC-SHA256 signature. Returns decoded payload or null if invalid. */
+function verifySignedRequest(signedRequest: string): Record<string, unknown> | null {
+  if (!FB_APP_SECRET) return null;
+  const parts = signedRequest.split(".");
+  if (parts.length !== 2) return null;
+  const [encodedSig, payload] = parts;
+  const expectedSig = crypto
+    .createHmac("sha256", FB_APP_SECRET)
+    .update(payload)
+    .digest("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+  if (encodedSig !== expectedSig) return null;
+  try {
+    const decoded = JSON.parse(
+      Buffer.from(payload.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString(),
+    );
+    return decoded as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
 const FB_API_VERSION = "v21.0";
 
 async function fbApi(path: string, token: string, method = "GET", body?: Record<string, unknown>) {
@@ -422,14 +447,15 @@ export async function facebookRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: "Missing signed_request" });
     }
 
-    try {
-      const [, payload] = signed_request.split(".");
-      const decoded = JSON.parse(
-        Buffer.from(payload.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString(),
-      );
-      const userId = decoded.user_id as string;
+    const decoded = verifySignedRequest(signed_request);
+    if (!decoded) {
+      request.log.warn("Facebook deauthorize: invalid signed_request signature");
+      return reply.status(400).send({ error: "Invalid signed_request" });
+    }
 
-      if (userId) {
+    const userId = decoded.user_id as string | undefined;
+    if (userId) {
+      try {
         const db = await getDb();
         await db
           .update(schema.organizations)
@@ -440,9 +466,9 @@ export async function facebookRoutes(app: FastifyInstance) {
             updatedAt: new Date(),
           })
           .where(eq(schema.organizations.facebookPageId, userId));
+      } catch (err) {
+        request.log.warn({ err }, "Facebook deauthorize: cleanup error");
       }
-    } catch {
-      // best-effort cleanup
     }
 
     return reply.send({ success: true });
@@ -455,14 +481,15 @@ export async function facebookRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: "Missing signed_request" });
     }
 
-    try {
-      const [, payload] = signed_request.split(".");
-      const decoded = JSON.parse(
-        Buffer.from(payload.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString(),
-      );
-      const userId = decoded.user_id as string;
+    const decoded = verifySignedRequest(signed_request);
+    if (!decoded) {
+      request.log.warn("Facebook data-deletion: invalid signed_request signature");
+      return reply.status(400).send({ error: "Invalid signed_request" });
+    }
 
-      if (userId) {
+    const userId = decoded.user_id as string | undefined;
+    if (userId) {
+      try {
         const db = await getDb();
         await db
           .update(schema.organizations)
@@ -473,9 +500,9 @@ export async function facebookRoutes(app: FastifyInstance) {
             updatedAt: new Date(),
           })
           .where(eq(schema.organizations.facebookPageId, userId));
+      } catch (err) {
+        request.log.warn({ err }, "Facebook data-deletion: cleanup error");
       }
-    } catch {
-      // best-effort cleanup
     }
 
     const confirmationCode = `del_${Date.now()}`;

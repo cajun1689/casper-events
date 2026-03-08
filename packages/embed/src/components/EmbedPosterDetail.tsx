@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
+import DOMPurify from "dompurify";
 import { formatRecurrenceRule } from "@cyh/shared";
 import type { EmbedEvent } from "../types";
 import type { ContentToggles } from "../types";
@@ -259,7 +260,9 @@ export function EmbedPosterDetail({ event, onClose, api, contentToggles = DEFAUL
                 marginBottom: "20px",
               }}
               dangerouslySetInnerHTML={{
-                __html: event.description.startsWith("<") ? event.description : event.description.replace(/\n/g, "<br/>"),
+                __html: DOMPurify.sanitize(
+                  event.description.startsWith("<") ? event.description : event.description.replace(/\n/g, "<br/>"),
+                ),
               }}
             />
           )}

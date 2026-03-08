@@ -1,4 +1,5 @@
 import { format, parseISO } from "date-fns";
+import DOMPurify from "dompurify";
 import type { EmbedEvent, ContentToggles } from "../types";
 
 interface EmbedEventDetailProps {
@@ -98,9 +99,11 @@ export function EmbedEventDetail({ event, contentToggles = DEFAULT_TOGGLES }: Em
             color: "color-mix(in srgb, var(--cyh-text, #1f2937) 70%, transparent)",
           }}
           dangerouslySetInnerHTML={{
-            __html: event.description.startsWith("<")
-              ? event.description
-              : event.description.replace(/\n/g, "<br/>"),
+            __html: DOMPurify.sanitize(
+              event.description.startsWith("<")
+                ? event.description
+                : event.description.replace(/\n/g, "<br/>"),
+            ),
           }}
         />
       )}
