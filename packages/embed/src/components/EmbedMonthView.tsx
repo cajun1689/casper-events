@@ -163,7 +163,7 @@ export function EmbedMonthView({ events, onMonthChange, firstDayOfWeek = "sunday
                       width: "5px",
                       height: "5px",
                       borderRadius: "50%",
-                      backgroundColor: event.categories[0]?.color ?? "var(--cyh-primary, #4f46e5)",
+                      backgroundColor: event.categories?.[0]?.color ?? "var(--cyh-primary, #4f46e5)",
                     }} />
                   ))}
                 </div>

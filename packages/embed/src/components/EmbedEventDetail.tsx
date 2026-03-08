@@ -1,5 +1,5 @@
 import { format, parseISO } from "date-fns";
-import DOMPurify from "dompurify";
+import { safeSanitizeHtml } from "../lib/sanitize";
 import type { EmbedEvent, ContentToggles } from "../types";
 
 interface EmbedEventDetailProps {
@@ -51,7 +51,7 @@ export function EmbedEventDetail({ event, contentToggles = DEFAULT_TOGGLES }: Em
         display: "flex",
         flexDirection: "column",
         gap: "7px",
-        marginBottom: event.description || (contentToggles.showCategories && event.categories.length > 0) ? "14px" : 0,
+        marginBottom: event.description || (contentToggles.showCategories && (event.categories?.length ?? 0) > 0) ? "14px" : 0,
       }}>
         <DetailRow icon="📅" text={dateLabel} />
         <DetailRow icon="🕐" text={timeLabel} />
@@ -63,14 +63,14 @@ export function EmbedEventDetail({ event, contentToggles = DEFAULT_TOGGLES }: Em
         {contentToggles.showOrganizer && event.organization && <DetailRow icon="🏢" text={event.organization.name} />}
       </div>
 
-      {contentToggles.showCategories && (event.categories.length > 0 || (event.orgCategories?.length ?? 0) > 0) && (
+      {contentToggles.showCategories && ((event.categories?.length ?? 0) > 0 || (event.orgCategories?.length ?? 0) > 0) && (
         <div style={{
           display: "flex",
           flexWrap: "wrap",
           gap: "4px",
           marginBottom: event.description ? "14px" : 0,
         }}>
-          {(event.orgCategories?.length ? event.orgCategories : event.categories).map((cat) => (
+          {(event.orgCategories?.length ? event.orgCategories : event.categories ?? []).map((cat) => (
             <span
               key={cat.id}
               style={{
@@ -99,11 +99,7 @@ export function EmbedEventDetail({ event, contentToggles = DEFAULT_TOGGLES }: Em
             color: "color-mix(in srgb, var(--cyh-text, #1f2937) 70%, transparent)",
           }}
           dangerouslySetInnerHTML={{
-            __html: DOMPurify.sanitize(
-              event.description.startsWith("<")
-                ? event.description
-                : event.description.replace(/\n/g, "<br/>"),
-            ),
+            __html: safeSanitizeHtml(event.description),
           }}
         />
       )}

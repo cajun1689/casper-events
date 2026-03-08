@@ -17,7 +17,8 @@ export function createApiClient(apiUrl: string) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to fetch events: ${res.status}`);
     const json = await res.json();
-    return json.data ?? json;
+    const data = json.data ?? json;
+    return Array.isArray(data) ? data : [];
   }
 
   async function fetchConfig(orgId: string): Promise<EmbedConfig> {

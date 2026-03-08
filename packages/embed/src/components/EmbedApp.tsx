@@ -51,7 +51,7 @@ export function EmbedApp({ config }: EmbedAppProps) {
   const allCategories = useMemo(() => {
     const map = new Map<string, { id: string; name: string; slug: string; color: string | null }>();
     for (const event of events) {
-      for (const cat of event.categories) {
+      for (const cat of event.categories ?? []) {
         if (hiddenSlugs.has(cat.slug)) continue;
         const mode = displayMode[cat.slug] ?? "both";
         if (mode === "subs") continue;
@@ -70,7 +70,7 @@ export function EmbedApp({ config }: EmbedAppProps) {
 
   const filteredEvents = useMemo(() => {
     return events.filter((e) => {
-      const visibleCats = [...e.categories.filter((c) => !hiddenSlugs.has(c.slug)), ...(e.orgCategories ?? []).filter((oc) => !hiddenSlugs.has(oc.parentCategorySlug ?? ""))];
+      const visibleCats = [...(e.categories ?? []).filter((c) => !hiddenSlugs.has(c.slug)), ...(e.orgCategories ?? []).filter((oc) => !hiddenSlugs.has(oc.parentCategorySlug ?? ""))];
       if (visibleCats.length === 0) return true;
       if (disabledCategories.size === 0) return true;
       return visibleCats.some((c) => !disabledCategories.has(c.id));

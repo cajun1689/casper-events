@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { MapPin, Clock, CalendarDays, ExternalLink, Ticket, DollarSign, Building2, ArrowLeft, Link2, Mail, Users } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import DOMPurify from "dompurify";
+import { safeSanitizeHtml } from "@/lib/sanitize";
 import { useStore } from "@/lib/store";
 import { eventsApi } from "@/lib/api";
 import type { EventWithDetails } from "@cyh/shared";
@@ -272,7 +272,7 @@ export default function EventDetailPage() {
           {event.description && (
             <div
               className="prose prose-sm max-w-none mb-8 text-gray-600"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(event.description) }}
+              dangerouslySetInnerHTML={{ __html: safeSanitizeHtml(event.description) }}
             />
           )}
 
