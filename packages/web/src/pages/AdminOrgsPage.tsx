@@ -97,6 +97,15 @@ export default function AdminOrgsPage() {
     }
   }
 
+  async function handleToggle(id: string, field: "autoApprove" | "communityHub", value: boolean) {
+    try {
+      await adminApi.updateOrganization(id, { [field]: value });
+      setOrgs((prev) => prev.map((o) => (o.id === id ? { ...o, [field]: value } : o)));
+    } catch (err) {
+      console.error(`Failed to toggle ${field}:`, err);
+    }
+  }
+
   function startEdit(org: OrganizationPublic) {
     setEditingId(org.id);
     setEditName(org.name);
@@ -304,6 +313,30 @@ export default function AdminOrgsPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-gray-900 truncate">{org.name}</p>
                       <p className="text-xs font-mono text-gray-400">{org.slug}</p>
+                    </div>
+                  )}
+
+                  {/* Flags */}
+                  {!isEditing && (
+                    <div className="hidden sm:flex shrink-0 items-center gap-3">
+                      <label className="flex items-center gap-1.5 cursor-pointer" title="Events skip admin review and go straight to approved">
+                        <input
+                          type="checkbox"
+                          checked={!!org.autoApprove}
+                          onChange={(e) => handleToggle(org.id, "autoApprove", e.target.checked)}
+                          className="h-3.5 w-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        <span className="text-[10px] font-bold text-gray-500">Auto-Approve</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer" title="Embed shows events from all organizations">
+                        <input
+                          type="checkbox"
+                          checked={!!org.communityHub}
+                          onChange={(e) => handleToggle(org.id, "communityHub", e.target.checked)}
+                          className="h-3.5 w-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        <span className="text-[10px] font-bold text-gray-500">Community Hub</span>
+                      </label>
                     </div>
                   )}
 

@@ -34,40 +34,61 @@ export async function embedRoutes(app: FastifyInstance) {
     };
     const db = await getDb();
 
-    let orgIds = [orgId];
+    const [requestingOrg] = await db
+      .select()
+      .from(schema.organizations)
+      .where(eq(schema.organizations.id, orgId));
 
-    if (includeConnected === "true") {
-      const connections = await db
+    let events;
+
+    if (requestingOrg?.communityHub) {
+      events = await db
         .select()
-        .from(schema.orgConnections)
+        .from(schema.events)
         .where(
           and(
-            or(
-              eq(schema.orgConnections.orgId, orgId),
-              eq(schema.orgConnections.connectedOrgId, orgId)
-            ),
-            eq(schema.orgConnections.status, "accepted")
+            inArray(schema.events.status, ["published", "approved"]),
+            gte(schema.events.startAt, new Date())
           )
-        );
-
-      const connectedIds = connections.map((c) =>
-        c.orgId === orgId ? c.connectedOrgId : c.orgId
-      );
-      orgIds = [...orgIds, ...connectedIds];
-    }
-
-    const events = await db
-      .select()
-      .from(schema.events)
-      .where(
-        and(
-          inArray(schema.events.orgId, orgIds),
-          inArray(schema.events.status, ["published", "approved"]),
-          gte(schema.events.startAt, new Date())
         )
-      )
-      .orderBy(asc(schema.events.startAt))
-      .limit(100);
+        .orderBy(asc(schema.events.startAt))
+        .limit(200);
+    } else {
+      let orgIds = [orgId];
+
+      if (includeConnected === "true") {
+        const connections = await db
+          .select()
+          .from(schema.orgConnections)
+          .where(
+            and(
+              or(
+                eq(schema.orgConnections.orgId, orgId),
+                eq(schema.orgConnections.connectedOrgId, orgId)
+              ),
+              eq(schema.orgConnections.status, "accepted")
+            )
+          );
+
+        const connectedIds = connections.map((c) =>
+          c.orgId === orgId ? c.connectedOrgId : c.orgId
+        );
+        orgIds = [...orgIds, ...connectedIds];
+      }
+
+      events = await db
+        .select()
+        .from(schema.events)
+        .where(
+          and(
+            inArray(schema.events.orgId, orgIds),
+            inArray(schema.events.status, ["published", "approved"]),
+            gte(schema.events.startAt, new Date())
+          )
+        )
+        .orderBy(asc(schema.events.startAt))
+        .limit(100);
+    }
 
     const eventIds = events.map((e) => e.id);
     let categoriesMap: Record<string, { id: string; name: string; slug: string; icon: string | null; color: string | null }[]> = {};

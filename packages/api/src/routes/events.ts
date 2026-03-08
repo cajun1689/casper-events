@@ -441,7 +441,10 @@ export async function eventRoutes(app: FastifyInstance) {
         }
       }
 
-      const status = publishAt && new Date(publishAt) > new Date() ? "draft" : "published";
+      let status: "draft" | "published" | "approved" = publishAt && new Date(publishAt) > new Date() ? "draft" : "published";
+      if (status === "published" && org.autoApprove) {
+        status = "approved";
+      }
       const [event] = await db
         .insert(schema.events)
         .values({
@@ -596,7 +599,12 @@ export async function eventRoutes(app: FastifyInstance) {
       if (publishAt !== undefined) updateData.publishAt = publishAt ? new Date(publishAt) : null;
       if (publishAt !== undefined) {
         const pubDate = publishAt ? new Date(publishAt) : null;
-        updateData.status = pubDate && pubDate > new Date() ? "draft" : "published";
+        let newStatus: "draft" | "published" | "approved" = pubDate && pubDate > new Date() ? "draft" : "published";
+        if (newStatus === "published") {
+          const [org] = await db.select().from(schema.organizations).where(eq(schema.organizations.id, existing.orgId));
+          if (org?.autoApprove) newStatus = "approved";
+        }
+        updateData.status = newStatus;
       }
 
       const [updated] = await db

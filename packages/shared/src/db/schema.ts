@@ -82,6 +82,8 @@ export const organizations = pgTable(
     requireGoogleEventApproval: boolean("require_google_event_approval")
       .default(false)
       .notNull(),
+    autoApprove: boolean("auto_approve").default(false).notNull(),
+    communityHub: boolean("community_hub").default(false).notNull(),
     status: orgStatusEnum("status").default("pending").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()

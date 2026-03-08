@@ -367,6 +367,8 @@ export async function adminRoutes(app: FastifyInstance) {
         logoUrl?: string | null;
         description?: string | null;
         website?: string | null;
+        autoApprove?: boolean;
+        communityHub?: boolean;
       };
       const db = await getDb();
       await requireAdmin(db, request.user!.sub);
@@ -377,6 +379,8 @@ export async function adminRoutes(app: FastifyInstance) {
       if (body.logoUrl !== undefined) updates.logoUrl = body.logoUrl;
       if (body.description !== undefined) updates.description = body.description;
       if (body.website !== undefined) updates.website = body.website;
+      if (body.autoApprove !== undefined) updates.autoApprove = body.autoApprove;
+      if (body.communityHub !== undefined) updates.communityHub = body.communityHub;
 
       const [updated] = await db
         .update(schema.organizations)

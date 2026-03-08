@@ -79,6 +79,8 @@ export interface OrganizationPublic {
   email: string | null;
   address: string | null;
   status: string;
+  autoApprove?: boolean;
+  communityHub?: boolean;
 }
 
 export interface CategoryPublic {

@@ -242,6 +242,6 @@ export const adminApi = {
       "/admin/organizations",
       data,
     ),
-  updateOrganization: (id: string, data: { name?: string; slug?: string; logoUrl?: string | null }) =>
+  updateOrganization: (id: string, data: { name?: string; slug?: string; logoUrl?: string | null; autoApprove?: boolean; communityHub?: boolean }) =>
     api.put<OrganizationPublic>(`/admin/organizations/${id}`, data),
 };
