@@ -85,6 +85,13 @@
       "when": 1772905000000,
       "tag": "0012_org_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1772905100000,
+      "tag": "0013_auto_approve_community_hub",
+      "breakpoints": true
     }
   ]
 }
