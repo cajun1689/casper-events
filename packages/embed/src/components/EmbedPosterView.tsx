@@ -4,6 +4,7 @@ import type { EmbedEvent } from "../types";
 import { resolveEventColor, getTextColor } from "../lib/color";
 import { EmbedPosterDetail } from "./EmbedPosterDetail";
 import { EmbedPosterFilters } from "./EmbedPosterFilters";
+import type { ContentToggles, LayoutOptions } from "../types";
 
 interface EmbedPosterViewProps {
   events: EmbedEvent[];
@@ -12,6 +13,8 @@ interface EmbedPosterViewProps {
   /** When true, poster CTA opens external URL. Default: false (click opens event detail) */
   ctaOpensExternal?: boolean;
   api?: ReturnType<typeof import("../api").createApiClient>;
+  contentToggles?: ContentToggles;
+  layoutOptions?: LayoutOptions;
 }
 
 function groupEventsByMonth(events: EmbedEvent[]): Map<string, EmbedEvent[]> {
@@ -32,6 +35,8 @@ export function EmbedPosterView({
   onEventClick,
   ctaOpensExternal = false,
   api,
+  contentToggles,
+  layoutOptions,
 }: EmbedPosterViewProps) {
   const [selectedEvent, setSelectedEvent] = useState<EmbedEvent | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
@@ -42,12 +47,18 @@ export function EmbedPosterView({
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
-  const filteredEvents =
+  let filteredEvents =
     categoryFilter.length === 0
       ? events
       : events.filter((e) =>
           (e.categories ?? []).some((c) => categoryFilter.includes(c.slug))
         );
+
+  const maxShown = layoutOptions?.maxEventsShown ?? null;
+  if (maxShown) {
+    const sorted = [...filteredEvents].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+    filteredEvents = sorted.slice(0, maxShown);
+  }
 
   const grouped = groupEventsByMonth(filteredEvents);
 
@@ -116,6 +127,8 @@ export function EmbedPosterView({
                   event={event}
                   onClick={() => handleCardClick(event)}
                   ctaOpensExternal={ctaOpensExternal}
+                  contentToggles={contentToggles}
+                  layoutOptions={layoutOptions}
                   style={{ animationDelay: `${idx * 50}ms` }}
                 />
               ))}
@@ -128,6 +141,7 @@ export function EmbedPosterView({
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
           api={api}
+          contentToggles={contentToggles}
         />
       )}
     </div>
@@ -138,19 +152,22 @@ interface PosterCardProps {
   event: EmbedEvent;
   onClick: () => void;
   ctaOpensExternal?: boolean;
+  contentToggles?: ContentToggles;
+  layoutOptions?: LayoutOptions;
   style?: React.CSSProperties;
 }
 
-function PosterCard({ event, onClick, ctaOpensExternal = false, style }: PosterCardProps) {
+function PosterCard({ event, onClick, ctaOpensExternal = false, contentToggles, layoutOptions, style }: PosterCardProps) {
   const bgColor = resolveEventColor(event);
   const textColor = getTextColor(bgColor);
   const start = parseISO(event.startAt);
   const end = event.endAt ? parseISO(event.endAt) : null;
+  const timeFmt = layoutOptions?.timeFormat === "24h" ? "HH:mm" : "h:mm a";
   const timeLabel = event.allDay
     ? "All day"
     : end
-      ? `${format(start, "h:mm a")} – ${format(end, "h:mm a")}`
-      : format(start, "h:mm a");
+      ? `${format(start, timeFmt)} – ${format(end, timeFmt)}`
+      : format(start, timeFmt);
   const cats = event.categories ?? [];
   const primaryCat = cats[0];
 
@@ -214,7 +231,7 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, style }: PosterC
 
       {/* Card content - padding left clears the badge */}
       <div style={{ padding: "12px 12px 8px 72px", minHeight: "72px" }}>
-        {primaryCat && (
+        {contentToggles?.showCategories !== false && primaryCat && (
           <div
             style={{
               fontSize: "9px",
@@ -277,7 +294,7 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, style }: PosterC
       </div>
 
       {/* Poster image if present */}
-      {event.imageUrl && (
+      {contentToggles?.showEventImages !== false && event.imageUrl && (
         <div
           style={{
             width: "100%",
@@ -344,7 +361,7 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, style }: PosterC
         }}
       >
         <span>• {timeLabel}</span>
-        {event.venueName && <span>• {event.venueName}</span>}
+        {contentToggles?.showVenue !== false && event.venueName && <span>• {event.venueName}</span>}
         {event.recurrenceRule && (
           <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "2px", fontSize: "11px", opacity: 0.9 }}>
             ↻ Recurring

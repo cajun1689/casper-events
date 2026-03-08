@@ -25,6 +25,8 @@ interface SavedVenue {
   id: string;
   name: string;
   address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   usageCount: number;
 }
 
@@ -41,6 +43,7 @@ interface AddressAutocompleteProps {
   addressValue: string;
   onVenueChange: (value: string) => void;
   onAddressChange: (value: string) => void;
+  onCoordsChange?: (lat: number | null, lng: number | null) => void;
   className?: string;
 }
 
@@ -64,6 +67,7 @@ export function AddressAutocomplete({
   addressValue,
   onVenueChange,
   onAddressChange,
+  onCoordsChange,
   className,
 }: AddressAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -170,10 +174,21 @@ export function AddressAutocomplete({
     (suggestion: Suggestion) => {
       onVenueChange(suggestion.name);
       onAddressChange(suggestion.address);
+
+      if (onCoordsChange) {
+        if (suggestion.raw) {
+          onCoordsChange(parseFloat(suggestion.raw.lat), parseFloat(suggestion.raw.lon));
+        } else if (suggestion.venue) {
+          onCoordsChange(suggestion.venue.latitude, suggestion.venue.longitude);
+        } else {
+          onCoordsChange(null, null);
+        }
+      }
+
       setSuggestions([]);
       setShowDropdown(false);
     },
-    [onVenueChange, onAddressChange],
+    [onVenueChange, onAddressChange, onCoordsChange],
   );
 
   const handleKeyDown = useCallback(

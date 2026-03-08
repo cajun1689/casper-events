@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { eq, inArray, sql, and, desc } from "drizzle-orm";
+import { eq, inArray, sql, desc } from "drizzle-orm";
 import * as schema from "@cyh/shared/db";
 import { reviewEventSchema, createCategorySchema } from "@cyh/shared";
 import { getDb } from "../db/connection.js";
@@ -24,7 +24,109 @@ async function requireAdmin(
   return userOrg;
 }
 
+async function getRequireInviteCode(db: Awaited<ReturnType<typeof getDb>>): Promise<boolean> {
+  const [row] = await db
+    .select()
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, "require_invite_code"));
+  return row?.value === "true";
+}
+
+function generateInviteCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
 export async function adminRoutes(app: FastifyInstance) {
+  // ── Admin: Beta status & invite codes ──────────────────────
+
+  app.get(
+    "/admin/beta-status",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      await requireAdmin(db, request.user!.sub);
+      const requireInviteCode = await getRequireInviteCode(db);
+      return reply.send({ requireInviteCode });
+    }
+  );
+
+  app.put(
+    "/admin/beta-status",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      await requireAdmin(db, request.user!.sub);
+      const { requireInviteCode } = request.body as { requireInviteCode?: boolean };
+      const value = requireInviteCode ? "true" : "false";
+      const [existing] = await db
+        .select()
+        .from(schema.appSettings)
+        .where(eq(schema.appSettings.key, "require_invite_code"));
+      if (existing) {
+        await db
+          .update(schema.appSettings)
+          .set({ value, updatedAt: new Date() })
+          .where(eq(schema.appSettings.key, "require_invite_code"));
+      } else {
+        await db.insert(schema.appSettings).values({ key: "require_invite_code", value });
+      }
+      return reply.send({ requireInviteCode: !!requireInviteCode });
+    }
+  );
+
+  app.get(
+    "/admin/invite-codes",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      await requireAdmin(db, request.user!.sub);
+      const codes = await db
+        .select()
+        .from(schema.inviteCodes)
+        .orderBy(desc(schema.inviteCodes.createdAt));
+      return reply.send({
+        data: codes.map((c) => ({
+          id: c.id,
+          code: c.code,
+          createdAt: c.createdAt.toISOString(),
+          usedAt: c.usedAt?.toISOString() ?? null,
+          usedByOrgId: c.usedByOrgId,
+        })),
+      });
+    }
+  );
+
+  app.post(
+    "/admin/invite-codes",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      const admin = await requireAdmin(db, request.user!.sub);
+      const { code: customCode } = request.body as { code?: string };
+      const code = (customCode?.trim()?.toUpperCase() || generateInviteCode()).toUpperCase();
+      if (!code || code.length < 4) {
+        return reply.status(400).send({ error: "Code must be at least 4 characters" });
+      }
+      const existing = await db
+        .select()
+        .from(schema.inviteCodes)
+        .where(eq(schema.inviteCodes.code, code));
+      if (existing.length > 0) {
+        return reply.status(409).send({ error: "Invite code already exists" });
+      }
+      const [created] = await db
+        .insert(schema.inviteCodes)
+        .values({ code, createdBy: admin.userId })
+        .returning();
+      return reply.status(201).send({ id: created.id, code: created.code });
+    }
+  );
+
   // Review event (approve/reject)
   app.put(
     "/admin/events/:id/review",

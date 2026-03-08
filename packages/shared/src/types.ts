@@ -25,6 +25,7 @@ export interface EventWithDetails {
   externalUrlText: string | null;
   externalUrlCaption: string | null;
   featured: boolean;
+  publishAt: string | null;
   createdAt: string;
   updatedAt: string;
   organization: {
@@ -96,6 +97,23 @@ export interface EmbedConfigPublic {
   categoryFilter: string[];
   showConnectedOrgs: boolean;
   ctaOpensExternal: boolean;
+  borderColor?: string | null;
+  headerBgColor?: string | null;
+  linkColor?: string | null;
+  boxShadow: string;
+  layoutDensity: string;
+  firstDayOfWeek: string;
+  timeFormat: string;
+  maxEventsShown?: number | null;
+  showEventImages: boolean;
+  showVenue: boolean;
+  showOrganizer: boolean;
+  showCategories: boolean;
+  showTicketLink: boolean;
+  showCost: boolean;
+  headerTitle: string;
+  showHeader: boolean;
+  showPoweredBy: boolean;
 }
 
 export interface PaginatedResponse<T> {

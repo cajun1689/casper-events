@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { UserPlus, Mail, Lock, User, Eye, EyeOff, Building2 } from "lucide-react";
+import { UserPlus, Mail, Lock, User, Eye, EyeOff, Building2, Ticket } from "lucide-react";
 import {
   CognitoIdentityProviderClient,
   SignUpCommand,
   ConfirmSignUpCommand,
   ResendConfirmationCodeCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
+import { authApi } from "@/lib/api";
 
 const cognito = new CognitoIdentityProviderClient({ region: "us-east-1" });
 const CLIENT_ID = "6iiuflu8b3r81fr57oifkj1o6a";
@@ -23,13 +24,19 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [orgName, setOrgName] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [confirmCode, setConfirmCode] = useState("");
   const [step, setStep] = useState<"signup" | "confirm">("signup");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [requireInviteCode, setRequireInviteCode] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    authApi.getBetaStatus().then((r) => setRequireInviteCode(r.requireInviteCode)).catch(() => {});
+  }, []);
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
@@ -37,6 +44,21 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
+      if (requireInviteCode) {
+        const code = inviteCode.trim().toUpperCase();
+        if (!code) {
+          setError("Invite code is required during beta");
+          setLoading(false);
+          return;
+        }
+        const { valid } = await authApi.validateInvite(code);
+        if (!valid) {
+          setError("Invalid or already used invite code");
+          setLoading(false);
+          return;
+        }
+      }
+
       await cognito.send(
         new SignUpCommand({
           ClientId: CLIENT_ID,
@@ -70,13 +92,14 @@ export default function SignupPage() {
         })
       );
       if (orgName.trim()) {
-        sessionStorage.setItem(
-          "cyh_pending_org",
-          JSON.stringify({
-            organizationName: orgName.trim(),
-            organizationSlug: slugify(orgName.trim()),
-          })
-        );
+        const payload: Record<string, string> = {
+          organizationName: orgName.trim(),
+          organizationSlug: slugify(orgName.trim()),
+        };
+        if (requireInviteCode && inviteCode.trim()) {
+          payload.inviteCode = inviteCode.trim().toUpperCase();
+        }
+        sessionStorage.setItem("cyh_pending_org", JSON.stringify(payload));
       }
       navigate("/login");
     } catch (err) {
@@ -176,6 +199,24 @@ export default function SignupPage() {
                   />
                 </div>
               </div>
+
+              {requireInviteCode && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-gray-700">Invite Code</label>
+                  <div className="relative">
+                    <Ticket className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      value={inviteCode}
+                      onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-10 pr-4 text-sm font-mono tracking-wider uppercase transition-all focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100"
+                      placeholder="e.g. BETA2025"
+                      required
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">We&apos;re in beta — an invite code is required to sign up.</p>
+                </div>
+              )}
 
               <div>
                 <label className="mb-1.5 block text-sm font-semibold text-gray-700">Password</label>

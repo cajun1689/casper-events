@@ -73,8 +73,8 @@ function ToolbarDivider() {
 }
 
 const COLORS = [
-  "#1f2937", "#dc2626", "#ea580c", "#d97706", "#16a34a",
-  "#2563eb", "#7c3aed", "#db2777", "#6b7280",
+  "#dc2626", "#ea580c", "#16a34a", "#2563eb", "#7c3aed",
+  "#db2777", "#1f2937", "#6b7280",
 ];
 
 function Toolbar({ editor }: { editor: Editor }) {
@@ -82,17 +82,7 @@ function Toolbar({ editor }: { editor: Editor }) {
 
   const applyColor = useCallback(
     (color: string) => {
-      const { from, to } = editor.state.selection;
-      if (from === to) {
-        editor.chain().focus().setMark("textStyle", { color }).run();
-        return;
-      }
-      const mark = editor.state.schema.marks.textStyle?.create({ color });
-      if (!mark) return;
-      editor.view.dispatch(
-        editor.state.tr.addMark(from, to, mark),
-      );
-      editor.commands.focus();
+      editor.chain().focus().setColor(color).run();
     },
     [editor],
   );

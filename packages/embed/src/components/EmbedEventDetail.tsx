@@ -1,11 +1,21 @@
 import { format, parseISO } from "date-fns";
-import type { EmbedEvent } from "../types";
+import type { EmbedEvent, ContentToggles } from "../types";
 
 interface EmbedEventDetailProps {
   event: EmbedEvent;
+  contentToggles?: ContentToggles;
 }
 
-export function EmbedEventDetail({ event }: EmbedEventDetailProps) {
+const DEFAULT_TOGGLES: ContentToggles = {
+  showEventImages: true,
+  showVenue: true,
+  showOrganizer: true,
+  showCategories: true,
+  showTicketLink: true,
+  showCost: true,
+};
+
+export function EmbedEventDetail({ event, contentToggles = DEFAULT_TOGGLES }: EmbedEventDetailProps) {
   const start = parseISO(event.startAt);
   const end = event.endAt ? parseISO(event.endAt) : null;
 
@@ -40,19 +50,19 @@ export function EmbedEventDetail({ event }: EmbedEventDetailProps) {
         display: "flex",
         flexDirection: "column",
         gap: "7px",
-        marginBottom: event.description || event.categories.length > 0 ? "14px" : 0,
+        marginBottom: event.description || (contentToggles.showCategories && event.categories.length > 0) ? "14px" : 0,
       }}>
         <DetailRow icon="📅" text={dateLabel} />
         <DetailRow icon="🕐" text={timeLabel} />
-        {event.venueName && <DetailRow icon="📍" text={event.venueName} />}
-        {event.address && (
+        {contentToggles.showVenue && event.venueName && <DetailRow icon="📍" text={event.venueName} />}
+        {contentToggles.showVenue && event.address && (
           <DetailRow icon="🗺" text={event.address} href={`https://maps.google.com/?q=${encodeURIComponent(event.address)}`} />
         )}
-        {event.cost && <DetailRow icon="💰" text={event.cost} />}
-        {event.organization && <DetailRow icon="🏢" text={event.organization.name} />}
+        {contentToggles.showCost && event.cost && <DetailRow icon="💰" text={event.cost} />}
+        {contentToggles.showOrganizer && event.organization && <DetailRow icon="🏢" text={event.organization.name} />}
       </div>
 
-      {event.categories.length > 0 && (
+      {contentToggles.showCategories && event.categories.length > 0 && (
         <div style={{
           display: "flex",
           flexWrap: "wrap",
@@ -95,7 +105,7 @@ export function EmbedEventDetail({ event }: EmbedEventDetailProps) {
         />
       )}
 
-      {event.ticketUrl && (
+      {contentToggles.showTicketLink && event.ticketUrl && (
         <a
           href={event.ticketUrl}
           target="_blank"

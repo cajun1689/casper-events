@@ -1,7 +1,48 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Code2, Palette, Copy, Check, Eye, Link2, Unlink, ArrowLeft, ChevronDown, Globe, RefreshCw, Filter } from "lucide-react";
+import { Code2, Palette, Copy, Check, Eye, Link2, Unlink, ArrowLeft, ChevronDown, Globe, RefreshCw, Filter, Layout, FileText, Type, Plus, CopyPlus } from "lucide-react";
 import clsx from "clsx";
+
+const COLOR_PRESETS = [
+  { name: "Blue", primary: "#2563eb", secondary: "#64748b", bg: "#ffffff", text: "#1f2937", accent: "#f59e0b" },
+  { name: "Green", primary: "#059669", secondary: "#64748b", bg: "#ffffff", text: "#1f2937", accent: "#f59e0b" },
+  { name: "Purple", primary: "#7c3aed", secondary: "#64748b", bg: "#ffffff", text: "#1f2937", accent: "#f59e0b" },
+  { name: "Slate", primary: "#475569", secondary: "#64748b", bg: "#f8fafc", text: "#1e293b", accent: "#0ea5e9" },
+  { name: "Dark", primary: "#38bdf8", secondary: "#94a3b8", bg: "#0f172a", text: "#f1f5f9", accent: "#fbbf24" },
+];
+
+const FONT_PRESETS = [
+  { name: "Match site", value: "inherit" },
+  { name: "Inter", value: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif' },
+  { name: "System UI", value: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
+  { name: "Georgia", value: 'Georgia, "Times New Roman", serif' },
+];
+
+const BORDER_RADIUS_PRESETS = [
+  { name: "None", value: "0" },
+  { name: "Small", value: "4px" },
+  { name: "Medium", value: "8px" },
+  { name: "Large", value: "12px" },
+  { name: "Pill", value: "999px" },
+];
+
+function CollapsibleSection({ title, icon: Icon, defaultOpen = true, children }: { title: string; icon: React.ElementType; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="rounded-2xl border border-gray-200/60 bg-white/80 overflow-hidden shadow-sm backdrop-blur-sm">
+      <button onClick={() => setOpen(!open)} className="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-gray-50/50 transition-colors">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 shadow">
+            <Icon className="h-4 w-4 text-white" />
+          </div>
+          <h2 className="text-base font-bold text-gray-900">{title}</h2>
+        </div>
+        <ChevronDown className={clsx("h-4 w-4 text-gray-400 transition-transform", open && "rotate-180")} />
+      </button>
+      {open && <div className="px-6 pb-6 pt-0">{children}</div>}
+    </div>
+  );
+}
 import { useStore } from "@/lib/store";
 import { api, categoriesApi } from "@/lib/api";
 import type { EmbedConfigPublic, OrganizationPublic, CategoryPublic } from "@cyh/shared";
@@ -148,14 +189,32 @@ function LivePreview({ config, orgId }: { config: EmbedConfigPublic; orgId: stri
       ctaOpensExternal: config.ctaOpensExternal ?? false,
       theme: {
         primaryColor: config.primaryColor,
+        secondaryColor: config.secondaryColor,
         backgroundColor: config.backgroundColor,
         textColor: config.textColor,
         accentColor: config.accentColor,
         fontFamily: config.fontFamily,
         borderRadius: config.borderRadius,
+        borderColor: config.borderColor ?? undefined,
+        headerBgColor: config.headerBgColor ?? undefined,
+        linkColor: config.linkColor ?? undefined,
+        boxShadow: (config.boxShadow ?? "subtle") as "none" | "subtle" | "medium",
       },
       defaultView: config.defaultView as "month" | "week" | "list" | "poster",
       hiddenCategories: config.categoryFilter ?? [],
+      layoutDensity: (config.layoutDensity ?? "comfortable") as "compact" | "comfortable",
+      firstDayOfWeek: (config.firstDayOfWeek ?? "sunday") as "sunday" | "monday",
+      timeFormat: (config.timeFormat ?? "12h") as "12h" | "24h",
+      maxEventsShown: config.maxEventsShown ?? undefined,
+      showEventImages: config.showEventImages ?? true,
+      showVenue: config.showVenue ?? true,
+      showOrganizer: config.showOrganizer ?? true,
+      showCategories: config.showCategories ?? true,
+      showTicketLink: config.showTicketLink ?? true,
+      showCost: config.showCost ?? true,
+      headerTitle: config.headerTitle ?? "Events",
+      showHeader: config.showHeader ?? true,
+      showPoweredBy: config.showPoweredBy ?? true,
     }),
     [config, orgId],
   );
@@ -229,7 +288,7 @@ export default function EmbedSettingsPage() {
   }, [token, organization, navigate]);
 
   const updateConfig = useCallback(
-    async (field: string, value: string | boolean | string[]) => {
+    (field: string, value: string | boolean | string[] | number | null) => {
       if (!activeConfig) return;
       setActiveConfig({ ...activeConfig, [field]: value } as EmbedConfigPublic);
     },
@@ -247,12 +306,81 @@ export default function EmbedSettingsPage() {
     }
   };
 
-  const hiddenCats = activeConfig?.categoryFilter?.length ? activeConfig.categoryFilter : [];
-  const embedCode = activeConfig
-    ? `<div id="cyh-calendar"></div>\n<script src="https://casperevents.org/embed.js"></script>\n<script>\n  CYHCalendar.init({\n    container: '#cyh-calendar',\n    orgId: '${organization?.id}',\n    showConnectedOrgs: ${activeConfig.showConnectedOrgs},\n    ctaOpensExternal: ${activeConfig.ctaOpensExternal ?? false},\n    theme: {\n      primaryColor: '${activeConfig.primaryColor}',\n      backgroundColor: '${activeConfig.backgroundColor}',\n      textColor: '${activeConfig.textColor}',\n      accentColor: '${activeConfig.accentColor}',\n      fontFamily: '${activeConfig.fontFamily}',\n      borderRadius: '${activeConfig.borderRadius}'\n    },\n    defaultView: '${activeConfig.defaultView}'${hiddenCats.length > 0 ? `,\n    hiddenCategories: ${JSON.stringify(hiddenCats)}` : ""}\n  });\n</script>`
-    : "";
+  const buildEmbedCode = (c: EmbedConfigPublic) => {
+    const hiddenCats = c.categoryFilter?.length ? c.categoryFilter : [];
+    const theme: Record<string, string> = {
+      primaryColor: c.primaryColor,
+      secondaryColor: c.secondaryColor ?? "#64748b",
+      backgroundColor: c.backgroundColor,
+      textColor: c.textColor,
+      accentColor: c.accentColor,
+      fontFamily: c.fontFamily,
+      borderRadius: c.borderRadius,
+    };
+    if (c.borderColor) theme.borderColor = c.borderColor;
+    if (c.headerBgColor) theme.headerBgColor = c.headerBgColor;
+    if (c.linkColor) theme.linkColor = c.linkColor;
+    if (c.boxShadow && c.boxShadow !== "subtle") theme.boxShadow = c.boxShadow;
+    const themeStr = Object.entries(theme)
+      .map(([k, v]) => `      ${k}: '${String(v).replace(/'/g, "\\'")}'`)
+      .join(",\n");
+    const opts: string[] = [
+      `    container: '#cyh-calendar'`,
+      `    orgId: '${organization?.id}'`,
+      `    showConnectedOrgs: ${c.showConnectedOrgs}`,
+      `    ctaOpensExternal: ${c.ctaOpensExternal ?? false}`,
+      `    theme: {\n${themeStr}\n    }`,
+      `    defaultView: '${c.defaultView}'`,
+    ];
+    if (hiddenCats.length > 0) opts.push(`    hiddenCategories: ${JSON.stringify(hiddenCats)}`);
+    if (c.layoutDensity && c.layoutDensity !== "comfortable") opts.push(`    layoutDensity: '${c.layoutDensity}'`);
+    if (c.firstDayOfWeek && c.firstDayOfWeek !== "sunday") opts.push(`    firstDayOfWeek: '${c.firstDayOfWeek}'`);
+    if (c.timeFormat && c.timeFormat !== "12h") opts.push(`    timeFormat: '${c.timeFormat}'`);
+    if (c.maxEventsShown != null) opts.push(`    maxEventsShown: ${c.maxEventsShown}`);
+    if (c.showEventImages === false) opts.push(`    showEventImages: false`);
+    if (c.showVenue === false) opts.push(`    showVenue: false`);
+    if (c.showOrganizer === false) opts.push(`    showOrganizer: false`);
+    if (c.showCategories === false) opts.push(`    showCategories: false`);
+    if (c.showTicketLink === false) opts.push(`    showTicketLink: false`);
+    if (c.showCost === false) opts.push(`    showCost: false`);
+    if (c.headerTitle && c.headerTitle !== "Events") opts.push(`    headerTitle: '${String(c.headerTitle).replace(/'/g, "\\'")}'`);
+    if (c.showHeader === false) opts.push(`    showHeader: false`);
+    if (c.showPoweredBy === false) opts.push(`    showPoweredBy: false`);
+    return `<div id="cyh-calendar"></div>\n<script src="https://casperevents.org/embed.js"></script>\n<script>\n  CYHCalendar.init({\n${opts.join(",\n")}\n  });\n</script>`;
+  };
+  const embedCode = activeConfig ? buildEmbedCode(activeConfig) : "";
 
   const copyEmbed = () => { navigator.clipboard.writeText(embedCode); setCopied(true); setTimeout(() => setCopied(false), 2000); };
+
+  const createNewConfig = async () => {
+    if (!organization) return;
+    try {
+      const base = activeConfig ? (() => { const { id: _i, orgId: _o, ...r } = activeConfig; return r; })() : undefined;
+      const created = await api.post<EmbedConfigPublic>(`/embed/config`, {
+        ...base,
+        label: `Config ${configs.length + 1}`,
+      });
+      setConfigs([...configs, created]);
+      setActiveConfig(created);
+    } catch (e) {
+      console.error("Failed to create config", e);
+    }
+  };
+
+  const duplicateConfig = async () => {
+    if (!activeConfig || !organization) return;
+    try {
+      const { id: _id, orgId: _orgId, ...rest } = activeConfig;
+      const created = await api.post<EmbedConfigPublic>(`/embed/config`, {
+        ...rest,
+        label: `${activeConfig.label} (copy)`,
+      });
+      setConfigs([...configs, created]);
+      setActiveConfig(created);
+    } catch (e) {
+      console.error("Failed to duplicate config", e);
+    }
+  };
 
   const connectOrg = async (orgId: string) => {
     if (!organization) return;
@@ -280,76 +408,231 @@ export default function EmbedSettingsPage() {
         <ArrowLeft className="h-4 w-4" /> Dashboard
       </Link>
 
-      <h1 className="mb-8 text-2xl font-extrabold tracking-tight text-gray-900">Embed Settings</h1>
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Embed Settings</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          {configs.length > 1 && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-semibold text-gray-700">Config:</label>
+              <select
+                value={activeConfig?.id ?? ""}
+                onChange={(e) => {
+                  const c = configs.find((x) => x.id === e.target.value);
+                  if (c) setActiveConfig(c);
+                }}
+                className="rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm font-medium transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100"
+              >
+                {configs.map((c) => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <button
+            onClick={duplicateConfig}
+            disabled={!activeConfig}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:bg-gray-50 disabled:opacity-50"
+          >
+            <CopyPlus className="h-4 w-4" />
+            Duplicate
+          </button>
+          <button
+            onClick={createNewConfig}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-primary-300 bg-primary-50 px-3 py-2 text-sm font-semibold text-primary-700 transition-all hover:bg-primary-100"
+          >
+            <Plus className="h-4 w-4" />
+            New config
+          </button>
+        </div>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
+          {activeConfig && (
+            <>
           {/* Theme */}
-          <div className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm">
-            <div className="mb-5 flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 shadow"><Palette className="h-4 w-4 text-white" /></div>
-              <h2 className="text-base font-bold text-gray-900">Theme</h2>
-            </div>
-
-            {activeConfig && (
-              <div className="space-y-4">
-                {[
-                  { key: "primaryColor", label: "Primary Color" },
-                  { key: "backgroundColor", label: "Background" },
-                  { key: "textColor", label: "Text Color" },
-                  { key: "accentColor", label: "Accent Color" },
-                ].map(({ key, label }) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <label className="text-sm font-semibold text-gray-700">{label}</label>
-                    <div className="flex items-center gap-2">
-                      <input type="color" value={String((activeConfig as unknown as Record<string, string>)[key])} onChange={(e) => updateConfig(key, e.target.value)} className="h-9 w-9 cursor-pointer rounded-lg border border-gray-200 p-0.5" />
-                      <input type="text" value={String((activeConfig as unknown as Record<string, string>)[key])} onChange={(e) => updateConfig(key, e.target.value)} className="w-24 rounded-xl border border-gray-200 bg-gray-50/50 px-2.5 py-1.5 text-xs font-mono transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100" />
-                    </div>
+          <CollapsibleSection title="Theme" icon={Palette}>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-xs font-semibold text-gray-500 uppercase tracking-wider">Color presets</label>
+                <div className="flex flex-wrap gap-2">
+                  {COLOR_PRESETS.map((p) => (
+                    <button
+                      key={p.name}
+                      onClick={() => {
+                        updateConfig("primaryColor", p.primary);
+                        updateConfig("secondaryColor", p.secondary);
+                        updateConfig("backgroundColor", p.bg);
+                        updateConfig("textColor", p.text);
+                        updateConfig("accentColor", p.accent);
+                      }}
+                      className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold transition-all hover:border-primary-300 hover:bg-primary-50"
+                    >
+                      <span className="h-4 w-4 rounded-full border border-gray-300" style={{ backgroundColor: p.primary }} />
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {[
+                { key: "primaryColor", label: "Primary" },
+                { key: "secondaryColor", label: "Secondary" },
+                { key: "backgroundColor", label: "Background" },
+                { key: "textColor", label: "Text" },
+                { key: "accentColor", label: "Accent" },
+                { key: "borderColor", label: "Border (optional)" },
+                { key: "headerBgColor", label: "Header bg (optional)" },
+                { key: "linkColor", label: "Link (optional)" },
+              ].map(({ key, label }) => (
+                <div key={key} className="flex items-center justify-between gap-4">
+                  <label className="text-sm font-semibold text-gray-700 shrink-0">{label}</label>
+                  <div className="flex items-center gap-2">
+                    {!label.includes("optional") && (
+                      <input type="color" value={String((activeConfig as unknown as Record<string, string>)[key] ?? "#000000")} onChange={(e) => updateConfig(key, e.target.value)} className="h-9 w-9 cursor-pointer rounded-lg border border-gray-200 p-0.5" />
+                    )}
+                    <input type="text" value={String((activeConfig as unknown as Record<string, string>)[key] ?? "")} onChange={(e) => updateConfig(key, e.target.value)} placeholder={label.includes("optional") ? "inherit" : ""} className="w-24 rounded-xl border border-gray-200 bg-gray-50/50 px-2.5 py-1.5 text-xs font-mono transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100" />
                   </div>
-                ))}
-
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-gray-700">Font Family</label>
-                  <input type="text" value={activeConfig.fontFamily} onChange={(e) => updateConfig("fontFamily", e.target.value)} className="w-40 rounded-xl border border-gray-200 bg-gray-50/50 px-2.5 py-1.5 text-sm transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100" />
                 </div>
-
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-gray-700">Border Radius</label>
-                  <input type="text" value={activeConfig.borderRadius} onChange={(e) => updateConfig("borderRadius", e.target.value)} className="w-24 rounded-xl border border-gray-200 bg-gray-50/50 px-2.5 py-1.5 text-sm transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100" />
+              ))}
+              <div>
+                <label className="mb-2 block text-xs font-semibold text-gray-500 uppercase tracking-wider">Font presets</label>
+                <select value={FONT_PRESETS.some((f) => f.value === activeConfig.fontFamily) ? activeConfig.fontFamily : "custom"} onChange={(e) => e.target.value !== "custom" && updateConfig("fontFamily", e.target.value)} className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100">
+                  {FONT_PRESETS.map((f) => (
+                    <option key={f.value} value={f.value}>{f.name}</option>
+                  ))}
+                  <option value="custom">Custom</option>
+                </select>
+                <input type="text" value={activeConfig.fontFamily} onChange={(e) => updateConfig("fontFamily", e.target.value)} placeholder="CSS font-family" className="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-1.5 text-sm transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100" />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-semibold text-gray-500 uppercase tracking-wider">Border radius</label>
+                <div className="flex flex-wrap gap-2">
+                  {BORDER_RADIUS_PRESETS.map((p) => (
+                    <button key={p.value} onClick={() => updateConfig("borderRadius", p.value)} className={clsx("rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all", activeConfig.borderRadius === p.value ? "border-primary-500 bg-primary-50 text-primary-700" : "border-gray-200 hover:border-gray-300")}>
+                      {p.name}
+                    </button>
+                  ))}
                 </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-gray-700">Box shadow</label>
+                <select value={activeConfig.boxShadow ?? "subtle"} onChange={(e) => updateConfig("boxShadow", e.target.value)} className="rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-1.5 text-sm transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100">
+                  <option value="none">None</option>
+                  <option value="subtle">Subtle</option>
+                  <option value="medium">Medium</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-gray-700">Default view</label>
+                <select value={activeConfig.defaultView} onChange={(e) => updateConfig("defaultView", e.target.value)} className="rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-1.5 text-sm transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100">
+                  <option value="month">Month</option>
+                  <option value="week">Week</option>
+                  <option value="list">List</option>
+                  <option value="poster">Poster Board</option>
+                </select>
+              </div>
+            </div>
+          </CollapsibleSection>
 
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-gray-700">Default View</label>
-                  <select value={activeConfig.defaultView} onChange={(e) => updateConfig("defaultView", e.target.value)} className="rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-1.5 text-sm transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100">
-                    <option value="month">Month</option>
-                    <option value="week">Week</option>
-                    <option value="list">List</option>
-                    <option value="poster">Poster Board</option>
-                  </select>
-                </div>
+          {/* Layout */}
+          <CollapsibleSection title="Layout" icon={Layout} defaultOpen={false}>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-gray-700">Layout density</label>
+                <select value={activeConfig.layoutDensity ?? "comfortable"} onChange={(e) => updateConfig("layoutDensity", e.target.value)} className="rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-1.5 text-sm transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100">
+                  <option value="comfortable">Comfortable</option>
+                  <option value="compact">Compact</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-gray-700">First day of week</label>
+                <select value={activeConfig.firstDayOfWeek ?? "sunday"} onChange={(e) => updateConfig("firstDayOfWeek", e.target.value)} className="rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-1.5 text-sm transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100">
+                  <option value="sunday">Sunday</option>
+                  <option value="monday">Monday</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-gray-700">Time format</label>
+                <select value={activeConfig.timeFormat ?? "12h"} onChange={(e) => updateConfig("timeFormat", e.target.value)} className="rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-1.5 text-sm transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100">
+                  <option value="12h">12-hour</option>
+                  <option value="24h">24-hour</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-gray-700">Max events (list/poster)</label>
+                <input type="number" min={1} max={500} value={activeConfig.maxEventsShown ?? ""} onChange={(e) => updateConfig("maxEventsShown", e.target.value ? parseInt(e.target.value, 10) : null)} placeholder="All" className="w-24 rounded-xl border border-gray-200 bg-gray-50/50 px-2.5 py-1.5 text-sm transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100" />
+              </div>
+            </div>
+          </CollapsibleSection>
 
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-gray-700">Show Connected Orgs</label>
-                  <button onClick={() => updateConfig("showConnectedOrgs", !activeConfig.showConnectedOrgs)} className={clsx("relative inline-flex h-7 w-12 items-center rounded-full transition-colors", activeConfig.showConnectedOrgs ? "bg-primary-600" : "bg-gray-300")}>
-                    <span className={clsx("inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform", activeConfig.showConnectedOrgs ? "translate-x-6" : "translate-x-1")} />
+          {/* Content */}
+          <CollapsibleSection title="Content" icon={FileText} defaultOpen={false}>
+            <div className="space-y-3">
+              {[
+                { key: "showEventImages", label: "Show event images" },
+                { key: "showVenue", label: "Show venue/address" },
+                { key: "showOrganizer", label: "Show organizer" },
+                { key: "showCategories", label: "Show category badges" },
+                { key: "showTicketLink", label: "Show ticket link" },
+                { key: "showCost", label: "Show cost" },
+              ].map(({ key, label }) => (
+                <div key={key} className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-gray-700">{label}</label>
+                  <button onClick={() => updateConfig(key, !(activeConfig as unknown as Record<string, boolean>)[key])} className={clsx("relative inline-flex h-7 w-12 items-center rounded-full transition-colors", (activeConfig as unknown as Record<string, boolean>)[key] !== false ? "bg-primary-600" : "bg-gray-300")}>
+                    <span className={clsx("inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform", (activeConfig as unknown as Record<string, boolean>)[key] !== false ? "translate-x-6" : "translate-x-1")} />
                   </button>
                 </div>
+              ))}
+            </div>
+          </CollapsibleSection>
 
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-gray-700" title="When on, poster CTA opens external link directly. When off, click goes to event detail.">
-                    Poster CTA opens external link
-                  </label>
-                  <button onClick={() => updateConfig("ctaOpensExternal", !(activeConfig.ctaOpensExternal ?? false))} className={clsx("relative inline-flex h-7 w-12 items-center rounded-full transition-colors", (activeConfig.ctaOpensExternal ?? false) ? "bg-primary-600" : "bg-gray-300")}>
-                    <span className={clsx("inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform", (activeConfig.ctaOpensExternal ?? false) ? "translate-x-6" : "translate-x-1")} />
-                  </button>
-                </div>
-
-                <button onClick={saveConfig} disabled={saving} className="w-full rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary-500/25 transition-all hover:shadow-xl hover:-translate-y-px disabled:opacity-50">
-                  {saving ? "Saving..." : "Save Theme"}
+          {/* Header & Footer */}
+          <CollapsibleSection title="Header & Footer" icon={Type} defaultOpen={false}>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-gray-700">Header title</label>
+                <input type="text" value={activeConfig.headerTitle ?? "Events"} onChange={(e) => updateConfig("headerTitle", e.target.value)} placeholder="Events" className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm transition-all focus:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-100" />
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-gray-700">Show header</label>
+                <button onClick={() => updateConfig("showHeader", !(activeConfig.showHeader ?? true))} className={clsx("relative inline-flex h-7 w-12 items-center rounded-full transition-colors", (activeConfig.showHeader ?? true) ? "bg-primary-600" : "bg-gray-300")}>
+                  <span className={clsx("inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform", (activeConfig.showHeader ?? true) ? "translate-x-6" : "translate-x-1")} />
                 </button>
               </div>
-            )}
-          </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-gray-700">Show &quot;Powered by Casper Events&quot;</label>
+                <button onClick={() => updateConfig("showPoweredBy", !(activeConfig.showPoweredBy ?? true))} className={clsx("relative inline-flex h-7 w-12 items-center rounded-full transition-colors", (activeConfig.showPoweredBy ?? true) ? "bg-primary-600" : "bg-gray-300")}>
+                  <span className={clsx("inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform", (activeConfig.showPoweredBy ?? true) ? "translate-x-6" : "translate-x-1")} />
+                </button>
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* Connections & Behavior */}
+          <CollapsibleSection title="Connections & Behavior" icon={Link2} defaultOpen={false}>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-gray-700">Show connected orgs</label>
+                <button onClick={() => updateConfig("showConnectedOrgs", !activeConfig.showConnectedOrgs)} className={clsx("relative inline-flex h-7 w-12 items-center rounded-full transition-colors", activeConfig.showConnectedOrgs ? "bg-primary-600" : "bg-gray-300")}>
+                  <span className={clsx("inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform", activeConfig.showConnectedOrgs ? "translate-x-6" : "translate-x-1")} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-gray-700" title="When on, poster CTA opens external link directly. When off, click goes to event detail.">
+                  Poster CTA opens external link
+                </label>
+                <button onClick={() => updateConfig("ctaOpensExternal", !(activeConfig.ctaOpensExternal ?? false))} className={clsx("relative inline-flex h-7 w-12 items-center rounded-full transition-colors", (activeConfig.ctaOpensExternal ?? false) ? "bg-primary-600" : "bg-gray-300")}>
+                  <span className={clsx("inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform", (activeConfig.ctaOpensExternal ?? false) ? "translate-x-6" : "translate-x-1")} />
+                </button>
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          <button onClick={saveConfig} disabled={saving} className="w-full rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary-500/25 transition-all hover:shadow-xl hover:-translate-y-px disabled:opacity-50">
+            {saving ? "Saving..." : "Save All Settings"}
+          </button>
+            </>
+          )}
 
           {/* Category Visibility */}
           {allCategories.length > 0 && activeConfig && (

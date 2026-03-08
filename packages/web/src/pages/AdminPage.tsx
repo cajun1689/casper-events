@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Shield, CalendarCheck, Building2, Tags, BarChart3 } from "lucide-react";
+import { Shield, CalendarCheck, Building2, Tags, BarChart3, Ticket } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { adminApi } from "@/lib/api";
 
@@ -16,9 +16,10 @@ export default function AdminPage() {
 
   const cards = [
     { to: "/admin/events", label: "All Events", desc: "View, edit, or delete any event", icon: BarChart3, gradient: "from-orange-500 to-orange-600", count: stats?.events?.total },
-    { to: "/admin/reviews", label: "Review Events", desc: "Approve or reject pending events", icon: CalendarCheck, gradient: "from-violet-500 to-violet-600", count: stats?.events?.draft },
+    { to: "/admin/reviews", label: "Review Events", desc: "Approve or reject pending events", icon: CalendarCheck, gradient: "from-violet-500 to-violet-600", count: stats?.events?.pending },
     { to: "/admin/organizations", label: "Organizations", desc: "Manage organization status", icon: Building2, gradient: "from-blue-500 to-blue-600", count: stats?.organizations },
     { to: "/admin/categories", label: "Categories", desc: "Add or edit event categories", icon: Tags, gradient: "from-emerald-500 to-emerald-600" },
+    { to: "/admin/beta", label: "Beta & Invite Codes", desc: "Toggle beta mode and create invite codes", icon: Ticket, gradient: "from-amber-500 to-amber-600" },
   ];
 
   return (

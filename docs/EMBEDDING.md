@@ -34,20 +34,39 @@ Add this to your website's HTML:
 | `orgId` | string | (required) | Your organization ID |
 | `apiUrl` | string | auto | API base URL (auto-detected from script src) |
 | `showConnectedOrgs` | boolean | `true` | Include events from connected organizations |
+| `ctaOpensExternal` | boolean | `false` | When true, poster CTA opens external URL directly instead of event detail |
 | `theme` | object | defaults | Color and style customization |
-| `defaultView` | string | `"month"` | Initial view: `"month"`, `"week"`, or `"list"` |
-| `categories` | string[] | all | Filter to specific category slugs |
+| `defaultView` | string | `"month"` | Initial view: `"month"`, `"week"`, `"list"`, or `"poster"` |
+| `hiddenCategories` | string[] | `[]` | Category slugs to hide from the calendar |
+| `layoutDensity` | string | `"comfortable"` | `"compact"` or `"comfortable"` |
+| `firstDayOfWeek` | string | `"sunday"` | `"sunday"` or `"monday"` |
+| `timeFormat` | string | `"12h"` | `"12h"` or `"24h"` |
+| `maxEventsShown` | number \| null | `null` | Limit events in list/poster views (e.g. 10, 25, 50). Omit for all |
+| `showEventImages` | boolean | `true` | Show event images in list and poster views |
+| `showVenue` | boolean | `true` | Show venue/address |
+| `showOrganizer` | boolean | `true` | Show organization name |
+| `showCategories` | boolean | `true` | Show category badges |
+| `showTicketLink` | boolean | `true` | Show ticket URL button |
+| `showCost` | boolean | `true` | Show cost field |
+| `headerTitle` | string | `"Events"` | Custom header title |
+| `showHeader` | boolean | `true` | Show/hide header bar |
+| `showPoweredBy` | boolean | `true` | Show "Powered by Casper Events" footer |
 
 ## Theme Options
 
 | Property | Default | Description |
 |----------|---------|-------------|
 | `primaryColor` | `#2563eb` | Main accent color (buttons, links, highlights) |
+| `secondaryColor` | `#64748b` | Secondary buttons, muted elements |
 | `backgroundColor` | `#ffffff` | Widget background color |
 | `textColor` | `#1f2937` | Primary text color |
 | `accentColor` | `#f59e0b` | Secondary accent (category badges, dates) |
 | `fontFamily` | `inherit` | Font stack (inherits from host page by default) |
-| `borderRadius` | `8px` | Corner radius for cards and buttons |
+| `borderRadius` | `8px` | Corner radius for cards and buttons. Presets: `0`, `4px`, `8px`, `12px`, `999px` |
+| `borderColor` | derived | Custom border color (default: derived from text) |
+| `headerBgColor` | inherit | Optional header background color |
+| `linkColor` | primary | Override link color (default: primary) |
+| `boxShadow` | `"subtle"` | `"none"`, `"subtle"`, or `"medium"` |
 
 ## Responsive Behavior
 
@@ -74,14 +93,27 @@ CYHCalendar.init({
 });
 ```
 
-### Show only specific categories
+### Hide specific categories
 
 ```javascript
 CYHCalendar.init({
   container: '#youth-calendar',
   orgId: 'abc123',
-  categories: ['youth', 'family', 'education'],
+  hiddenCategories: ['internal', 'staff-only'],
   defaultView: 'list'
+});
+```
+
+### Compact layout with 24-hour time
+
+```javascript
+CYHCalendar.init({
+  container: '#sidebar-calendar',
+  orgId: 'abc123',
+  layoutDensity: 'compact',
+  firstDayOfWeek: 'monday',
+  timeFormat: '24h',
+  maxEventsShown: 10
 });
 ```
 

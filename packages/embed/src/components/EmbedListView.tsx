@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format, parseISO, isToday, isTomorrow } from "date-fns";
-import type { EmbedEvent } from "../types";
+import type { EmbedEvent, ContentToggles, LayoutOptions } from "../types";
 import { EmbedEventDetail } from "./EmbedEventDetail";
 
 interface EmbedListViewProps {
   events: EmbedEvent[];
+  contentToggles?: ContentToggles;
+  layoutOptions?: LayoutOptions;
 }
 
 function formatDateLabel(dateStr: string): string {
@@ -26,9 +28,16 @@ function groupEventsByDate(events: EmbedEvent[]): Map<string, EmbedEvent[]> {
   return groups;
 }
 
-export function EmbedListView({ events }: EmbedListViewProps) {
+export function EmbedListView({ events, contentToggles, layoutOptions }: EmbedListViewProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const grouped = groupEventsByDate(events);
+  const timeFmt = layoutOptions?.timeFormat === "24h" ? "HH:mm" : "h:mm a";
+  const maxShown = layoutOptions?.maxEventsShown ?? null;
+  const limitedEvents = useMemo(() => {
+    if (!maxShown) return events;
+    const sorted = [...events].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+    return sorted.slice(0, maxShown);
+  }, [events, maxShown]);
+  const grouped = groupEventsByDate(maxShown ? limitedEvents : events);
 
   if (events.length === 0) {
     return (
@@ -102,7 +111,7 @@ export function EmbedListView({ events }: EmbedListViewProps) {
                         color: "var(--cyh-primary, #4f46e5)",
                         lineHeight: 1.3,
                       }}>
-                        {event.allDay ? "All day" : format(parseISO(event.startAt), "h:mm a")}
+                        {event.allDay ? "All day" : format(parseISO(event.startAt), timeFmt)}
                       </div>
                     </div>
 
@@ -118,7 +127,7 @@ export function EmbedListView({ events }: EmbedListViewProps) {
                         {event.title}
                       </div>
 
-                      {event.venueName && (
+                      {contentToggles?.showVenue !== false && event.venueName && (
                         <div style={{
                           fontSize: "12px",
                           fontWeight: 500,
@@ -129,7 +138,7 @@ export function EmbedListView({ events }: EmbedListViewProps) {
                         </div>
                       )}
 
-                      {event.categories.length > 0 && (
+                      {contentToggles?.showCategories !== false && event.categories.length > 0 && (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                           {event.categories.map((cat) => (
                             <span
@@ -156,7 +165,7 @@ export function EmbedListView({ events }: EmbedListViewProps) {
 
                   {isExpanded && (
                     <div style={{ padding: "0 4px", marginTop: "6px", animation: "cyh-scale-in 0.2s ease-out" }}>
-                      <EmbedEventDetail event={event} />
+                      <EmbedEventDetail event={event} contentToggles={contentToggles} />
                     </div>
                   )}
                 </div>

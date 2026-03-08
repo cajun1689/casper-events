@@ -16,9 +16,15 @@ export function EmbedApp({ config }: EmbedAppProps) {
   const [events, setEvents] = useState<EmbedEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<View>(
+  const [view, setView] = useState<View>(() =>
     config.defaultView === "list" ? "list" : config.defaultView === "poster" ? "poster" : "month",
   );
+
+  useEffect(() => {
+    setView(
+      config.defaultView === "list" ? "list" : config.defaultView === "poster" ? "poster" : "month",
+    );
+  }, [config.defaultView]);
   const [disabledCategories, setDisabledCategories] = useState<Set<string>>(new Set());
   const [printDate, setPrintDate] = useState(() => new Date());
 
@@ -82,16 +88,43 @@ export function EmbedApp({ config }: EmbedAppProps) {
   }, []);
 
   const theme = config.theme ?? {};
+  const boxShadowMap: Record<string, string> = {
+    none: "none",
+    subtle: "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)",
+    medium: "0 4px 6px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.06)",
+  };
   const rootStyle: Record<string, string> = {
     "--cyh-primary": theme.primaryColor ?? "#4f46e5",
+    "--cyh-secondary": theme.secondaryColor ?? "#64748b",
     "--cyh-bg": theme.backgroundColor ?? "#ffffff",
     "--cyh-text": theme.textColor ?? "#1f2937",
     "--cyh-accent": theme.accentColor ?? "#f59e0b",
     "--cyh-radius": theme.borderRadius ?? "12px",
     "--cyh-font": theme.fontFamily ?? '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    "--cyh-border": "color-mix(in srgb, var(--cyh-text) 12%, var(--cyh-bg))",
+    "--cyh-border": theme.borderColor ?? "color-mix(in srgb, var(--cyh-text) 12%, var(--cyh-bg))",
     "--cyh-hover": "color-mix(in srgb, var(--cyh-primary) 6%, var(--cyh-bg))",
+    "--cyh-link": theme.linkColor ?? "var(--cyh-primary)",
   };
+
+  const contentToggles = {
+    showEventImages: config.showEventImages ?? true,
+    showVenue: config.showVenue ?? true,
+    showOrganizer: config.showOrganizer ?? true,
+    showCategories: config.showCategories ?? true,
+    showTicketLink: config.showTicketLink ?? true,
+    showCost: config.showCost ?? true,
+  };
+
+  const layoutOptions = {
+    layoutDensity: config.layoutDensity ?? "comfortable",
+    firstDayOfWeek: config.firstDayOfWeek ?? "sunday",
+    timeFormat: config.timeFormat ?? "12h",
+    maxEventsShown: config.maxEventsShown ?? null,
+  };
+
+  const showHeader = config.showHeader ?? true;
+  const showPoweredBy = config.showPoweredBy ?? true;
+  const headerTitle = config.headerTitle ?? "Events";
 
   return (
     <div
@@ -103,38 +136,40 @@ export function EmbedApp({ config }: EmbedAppProps) {
         borderRadius: "var(--cyh-radius)",
         border: "1px solid var(--cyh-border)",
         overflow: "hidden",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)",
+        boxShadow: boxShadowMap[theme.boxShadow ?? "subtle"] ?? boxShadowMap.subtle,
       } as React.CSSProperties}
     >
       {/* Header */}
+      {showHeader && (
       <div style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "14px 16px",
+        padding: layoutOptions.layoutDensity === "compact" ? "10px 14px" : "14px 16px",
         borderBottom: "1px solid var(--cyh-border)",
+        backgroundColor: theme.headerBgColor ?? "transparent",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <div style={{
-            width: "28px",
-            height: "28px",
+            width: layoutOptions.layoutDensity === "compact" ? "24px" : "28px",
+            height: layoutOptions.layoutDensity === "compact" ? "24px" : "28px",
             borderRadius: "8px",
             background: `linear-gradient(135deg, var(--cyh-primary), color-mix(in srgb, var(--cyh-primary) 80%, #000))`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: "14px",
+            fontSize: layoutOptions.layoutDensity === "compact" ? "12px" : "14px",
             boxShadow: `0 2px 8px color-mix(in srgb, var(--cyh-primary) 30%, transparent)`,
           }}>
             📅
           </div>
           <span style={{
-            fontSize: "13px",
+            fontSize: layoutOptions.layoutDensity === "compact" ? "12px" : "13px",
             fontWeight: 700,
             color: "var(--cyh-text)",
             letterSpacing: "-0.01em",
           }}>
-            Events
+            {headerTitle}
           </span>
         </div>
 
@@ -176,9 +211,10 @@ export function EmbedApp({ config }: EmbedAppProps) {
           </div>
         </div>
       </div>
+      )}
 
       {/* Category toggles */}
-      {allCategories.length > 1 && (
+      {contentToggles.showCategories && allCategories.length > 1 && (
         <div style={{
           display: "flex",
           flexWrap: "wrap",
@@ -255,19 +291,20 @@ export function EmbedApp({ config }: EmbedAppProps) {
         {!loading && !error && (
           <div style={{ animation: "cyh-fade-in 0.3s ease-out" }}>
             {view === "month" ? (
-              <EmbedMonthView events={filteredEvents} onMonthChange={handleMonthChange} />
+              <EmbedMonthView events={filteredEvents} onMonthChange={handleMonthChange} firstDayOfWeek={layoutOptions.firstDayOfWeek} contentToggles={contentToggles} />
             ) : view === "poster" ? (
-              <EmbedPosterView events={filteredEvents} categories={allCategories} ctaOpensExternal={config.ctaOpensExternal} api={api} />
+              <EmbedPosterView events={filteredEvents} categories={allCategories} ctaOpensExternal={config.ctaOpensExternal} api={api} contentToggles={contentToggles} layoutOptions={layoutOptions} />
             ) : (
-              <EmbedListView events={filteredEvents} />
+              <EmbedListView events={filteredEvents} contentToggles={contentToggles} layoutOptions={layoutOptions} />
             )}
           </div>
         )}
       </div>
 
       {/* Footer */}
+      {showPoweredBy && (
       <div style={{
-        padding: "10px 16px",
+        padding: layoutOptions.layoutDensity === "compact" ? "8px 14px" : "10px 16px",
         borderTop: "1px solid var(--cyh-border)",
         textAlign: "center",
       }}>
@@ -282,12 +319,13 @@ export function EmbedApp({ config }: EmbedAppProps) {
             textDecoration: "none",
             letterSpacing: "0.02em",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--cyh-primary)"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--cyh-link)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = "color-mix(in srgb, var(--cyh-text) 30%, transparent)"; }}
         >
           Powered by Casper Events
         </a>
       </div>
+      )}
     </div>
   );
 }

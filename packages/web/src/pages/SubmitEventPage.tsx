@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { categoriesApi, publicEventsApi } from "@/lib/api";
 import { useStore } from "@/lib/store";
@@ -7,7 +7,7 @@ import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { RichTextEditor } from "@/components/RichTextEditor";
 
 export default function SubmitEventPage() {
-  const { categories, setCategories } = useStore();
+  const { token, categories, setCategories } = useStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -27,6 +27,8 @@ export default function SubmitEventPage() {
     submitterEmail: "",
   });
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
+
+  if (!token) return <Navigate to="/login" replace />;
 
   useEffect(() => {
     if (categories.length === 0) {

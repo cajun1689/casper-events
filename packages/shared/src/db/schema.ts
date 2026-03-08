@@ -79,6 +79,9 @@ export const organizations = pgTable(
     googleTokenExpiresAt: timestamp("google_token_expires_at", {
       withTimezone: true,
     }),
+    requireGoogleEventApproval: boolean("require_google_event_approval")
+      .default(false)
+      .notNull(),
     status: orgStatusEnum("status").default("pending").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -127,6 +130,7 @@ export const events = pgTable(
     externalUrlText: varchar("external_url_text", { length: 100 }),
     externalUrlCaption: varchar("external_url_caption", { length: 255 }),
     featured: boolean("featured").default(false).notNull(),
+    publishAt: timestamp("publish_at", { withTimezone: true }),
     submitterEmail: varchar("submitter_email", { length: 255 }),
     submitterName: varchar("submitter_name", { length: 255 }),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -235,6 +239,23 @@ export const embedConfigs = pgTable("embed_configs", {
   categoryFilter: jsonb("category_filter").$type<string[]>().default([]),
   showConnectedOrgs: boolean("show_connected_orgs").default(true).notNull(),
   ctaOpensExternal: boolean("cta_opens_external").default(false).notNull(),
+  borderColor: varchar("border_color", { length: 7 }),
+  headerBgColor: varchar("header_bg_color", { length: 7 }),
+  linkColor: varchar("link_color", { length: 7 }),
+  boxShadow: varchar("box_shadow", { length: 20 }).default("subtle").notNull(),
+  layoutDensity: varchar("layout_density", { length: 20 }).default("comfortable").notNull(),
+  firstDayOfWeek: varchar("first_day_of_week", { length: 10 }).default("sunday").notNull(),
+  timeFormat: varchar("time_format", { length: 5 }).default("12h").notNull(),
+  maxEventsShown: integer("max_events_shown"),
+  showEventImages: boolean("show_event_images").default(true).notNull(),
+  showVenue: boolean("show_venue").default(true).notNull(),
+  showOrganizer: boolean("show_organizer").default(true).notNull(),
+  showCategories: boolean("show_categories").default(true).notNull(),
+  showTicketLink: boolean("show_ticket_link").default(true).notNull(),
+  showCost: boolean("show_cost").default(true).notNull(),
+  headerTitle: varchar("header_title", { length: 100 }).default("Events").notNull(),
+  showHeader: boolean("show_header").default(true).notNull(),
+  showPoweredBy: boolean("show_powered_by").default(true).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -335,6 +356,33 @@ export const eventSponsors = pgTable(
       .notNull(),
   },
   (table) => [index("event_sponsors_event_id_idx").on(table.eventId)]
+);
+
+export const appSettings = pgTable("app_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: varchar("key", { length: 100 }).notNull(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+}, (table) => [uniqueIndex("app_settings_key_idx").on(table.key)]);
+
+export const inviteCodes = pgTable(
+  "invite_codes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    code: varchar("code", { length: 64 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    usedByOrgId: uuid("used_by_org_id").references(() => organizations.id, { onDelete: "set null" }),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  },
+  (table) => [
+    uniqueIndex("invite_codes_code_idx").on(table.code),
+    index("invite_codes_used_at_idx").on(table.usedAt),
+  ]
 );
 
 // ── Relations ───────────────────────────────────────────────────────

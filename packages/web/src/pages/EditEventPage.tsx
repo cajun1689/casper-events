@@ -6,7 +6,7 @@ const COLOR_PALETTE = [
   "#3b82f6", "#8b5cf6", "#a855f7", "#d946ef",
 ];
 import { useNavigate, Navigate, Link, useParams } from "react-router-dom";
-import { ArrowLeft, Globe, Video, ChevronDown, Trash2 } from "lucide-react";
+import { ArrowLeft, Globe, Video, ChevronDown, Trash2, Clock } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { eventsApi, categoriesApi } from "@/lib/api";
 import { ImageUpload } from "@/components/ImageUpload";
@@ -25,10 +25,13 @@ export default function EditEventPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [form, setForm] = useState({
     title: "", description: "", startDate: "", startTime: "", endDate: "", endTime: "",
-    allDay: false, venueName: "", address: "", cost: "", ticketUrl: "", imageUrl: "",
+    allDay: false, venueName: "", address: "", latitude: null as number | null, longitude: null as number | null,
+    cost: "", ticketUrl: "", imageUrl: "",
     isOnline: false, onlineEventUrl: "",
     color: "", subtitle: "", externalUrl: "", externalUrlText: "", externalUrlCaption: "",
     featured: false,
+    schedulePublish: false,
+    publishAtDate: "", publishAtTime: "",
   });
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
   const [backTo, setBackTo] = useState("/dashboard");
@@ -57,6 +60,8 @@ export default function EditEventPage() {
         allDay: event.allDay,
         venueName: event.venueName || "",
         address: event.address || "",
+        latitude: event.latitude ?? null,
+        longitude: event.longitude ?? null,
         cost: event.cost || "",
         ticketUrl: event.ticketUrl || "",
         imageUrl: event.imageUrl || "",
@@ -68,6 +73,13 @@ export default function EditEventPage() {
         externalUrlText: event.externalUrlText || "",
         externalUrlCaption: event.externalUrlCaption || "",
         featured: event.featured ?? false,
+        schedulePublish: !!(event as { publishAt?: string | null }).publishAt,
+        publishAtDate: (event as { publishAt?: string | null }).publishAt
+          ? new Date((event as { publishAt: string }).publishAt).toISOString().slice(0, 10)
+          : "",
+        publishAtTime: (event as { publishAt?: string | null }).publishAt
+          ? new Date((event as { publishAt: string }).publishAt).toTimeString().slice(0, 5)
+          : "",
       });
       setSelectedCats(event.categories?.map((c: { id: string }) => c.id) || []);
       setFetching(false);
@@ -96,10 +108,14 @@ export default function EditEventPage() {
     const endAt = form.endDate || form.endTime
       ? form.allDay ? `${form.endDate || form.startDate}T23:59:59` : `${form.endDate || form.startDate}T${form.endTime || form.startTime}`
       : null;
+    const publishAt = form.schedulePublish && form.publishAtDate
+      ? `${form.publishAtDate}T${form.publishAtTime || "00:00:00"}`
+      : null;
     try {
       await eventsApi.update(id, {
         title: form.title, description: form.description || null, startAt, endAt,
         allDay: form.allDay, venueName: form.venueName || null, address: form.address || null,
+        latitude: form.latitude, longitude: form.longitude,
         cost: form.cost || null, ticketUrl: form.ticketUrl || null, imageUrl: form.imageUrl || null,
         isOnline: form.isOnline, onlineEventUrl: form.onlineEventUrl || null,
         categoryIds: selectedCats,
@@ -107,6 +123,7 @@ export default function EditEventPage() {
         externalUrl: form.externalUrl || null, externalUrlText: form.externalUrlText || null,
         externalUrlCaption: form.externalUrlCaption || null,
         featured: form.featured,
+        publishAt: publishAt || undefined,
       });
       navigate(backTo);
     } catch (err) {
@@ -225,6 +242,26 @@ export default function EditEventPage() {
               </div>
             )}
           </div>
+
+          <div className="pt-4 border-t border-gray-100">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+              <input type="checkbox" checked={form.schedulePublish} onChange={(e) => update("schedulePublish", e.target.checked)} className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+              <Clock className="h-4 w-4 text-gray-400" />
+              Schedule publish (prep event, show on calendar at a specific time)
+            </label>
+            {form.schedulePublish && (
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="publishAtDate" className="mb-1.5 block text-sm font-semibold text-gray-700">Publish Date</label>
+                  <input id="publishAtDate" type="date" required={form.schedulePublish} value={form.publishAtDate} onChange={(e) => update("publishAtDate", e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label htmlFor="publishAtTime" className="mb-1.5 block text-sm font-semibold text-gray-700">Publish Time</label>
+                  <input id="publishAtTime" type="time" step="300" value={form.publishAtTime} onChange={(e) => update("publishAtTime", e.target.value)} className={inputCls} />
+                </div>
+              </div>
+            )}
+          </div>
         </section>
 
         <section className="relative z-20 rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm space-y-5 overflow-visible">
@@ -242,7 +279,7 @@ export default function EditEventPage() {
             </div>
           )}
           {!form.isOnline && (
-            <AddressAutocomplete venueValue={form.venueName} addressValue={form.address} onVenueChange={(v) => update("venueName", v)} onAddressChange={(v) => update("address", v)} />
+            <AddressAutocomplete venueValue={form.venueName} addressValue={form.address} onVenueChange={(v) => update("venueName", v)} onAddressChange={(v) => update("address", v)} onCoordsChange={(lat, lng) => setForm((prev) => ({ ...prev, latitude: lat, longitude: lng }))} />
           )}
           {form.isOnline && (
             <div className="rounded-lg bg-blue-50/50 px-3 py-2">
@@ -251,7 +288,7 @@ export default function EditEventPage() {
                 <ChevronDown className="h-3 w-3" /> Add physical venue
               </button>
               <div id="hybrid-venue-edit" className="hidden mt-3">
-                <AddressAutocomplete venueValue={form.venueName} addressValue={form.address} onVenueChange={(v) => update("venueName", v)} onAddressChange={(v) => update("address", v)} />
+                <AddressAutocomplete venueValue={form.venueName} addressValue={form.address} onVenueChange={(v) => update("venueName", v)} onAddressChange={(v) => update("address", v)} onCoordsChange={(lat, lng) => setForm((prev) => ({ ...prev, latitude: lat, longitude: lng }))} />
               </div>
             </div>
           )}

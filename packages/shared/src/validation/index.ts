@@ -45,6 +45,7 @@ export const createEventSchema = z
     externalUrlText: z.string().max(100).nullish(),
     externalUrlCaption: z.string().max(255).nullish(),
     featured: z.boolean().default(false),
+    publishAt: z.string().datetime().nullish(),
   })
   .refine(
     (data) => {
@@ -162,6 +163,23 @@ export const createEmbedConfigSchema = z.object({
   categoryFilter: z.array(z.string()).default([]),
   showConnectedOrgs: z.boolean().default(true),
   ctaOpensExternal: z.boolean().default(false),
+  borderColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  headerBgColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  linkColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  boxShadow: z.enum(["none", "subtle", "medium"]).default("subtle"),
+  layoutDensity: z.enum(["compact", "comfortable"]).default("comfortable"),
+  firstDayOfWeek: z.enum(["sunday", "monday"]).default("sunday"),
+  timeFormat: z.enum(["12h", "24h"]).default("12h"),
+  maxEventsShown: z.number().int().min(1).max(500).nullable().optional(),
+  showEventImages: z.boolean().default(true),
+  showVenue: z.boolean().default(true),
+  showOrganizer: z.boolean().default(true),
+  showCategories: z.boolean().default(true),
+  showTicketLink: z.boolean().default(true),
+  showCost: z.boolean().default(true),
+  headerTitle: z.string().max(100).default("Events"),
+  showHeader: z.boolean().default(true),
+  showPoweredBy: z.boolean().default(true),
 });
 
 export const updateEmbedConfigSchema = createEmbedConfigSchema.partial();

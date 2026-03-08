@@ -12,6 +12,27 @@ import { requireAuth, optionalAuth } from "../middleware/auth.js";
 import { resolveUserOrg } from "../services/user-org.js";
 import { upsertVenue } from "./venues.js";
 
+async function geocodeAddress(address: string): Promise<{ lat: number; lon: number } | null> {
+  try {
+    const params = new URLSearchParams({
+      q: address,
+      format: "json",
+      limit: "1",
+      countrycodes: "us",
+    });
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+      headers: { "User-Agent": "CasperEventsCalendar/1.0", "Accept-Language": "en" },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { lat: string; lon: string }[];
+    if (data.length === 0) return null;
+    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+  } catch {
+    return null;
+  }
+}
+
 export async function eventRoutes(app: FastifyInstance) {
   // List events (public, with filters)
   app.get("/events", { preHandler: optionalAuth }, async (request, reply) => {
@@ -149,6 +170,7 @@ export async function eventRoutes(app: FastifyInstance) {
       ...event,
       startAt: event.startAt.toISOString(),
       endAt: event.endAt?.toISOString() ?? null,
+      publishAt: event.publishAt?.toISOString() ?? null,
       createdAt: event.createdAt.toISOString(),
       updatedAt: event.updatedAt.toISOString(),
       organization: orgsMap[event.orgId]
@@ -307,6 +329,7 @@ export async function eventRoutes(app: FastifyInstance) {
       ...event,
       startAt: event.startAt.toISOString(),
       endAt: event.endAt?.toISOString() ?? null,
+      publishAt: event.publishAt?.toISOString() ?? null,
       createdAt: event.createdAt.toISOString(),
       updatedAt: event.updatedAt.toISOString(),
       organization: org
@@ -367,8 +390,17 @@ export async function eventRoutes(app: FastifyInstance) {
           .send({ error: "Your organization has been suspended. Contact an admin for help." });
       }
 
-      const { categoryIds, ...eventData } = body;
+      const { categoryIds, publishAt, ...eventData } = body;
 
+      if ((eventData.address || eventData.venueName) && !eventData.latitude && !eventData.longitude) {
+        const geo = await geocodeAddress(eventData.address || eventData.venueName || "");
+        if (geo) {
+          eventData.latitude = geo.lat;
+          eventData.longitude = geo.lon;
+        }
+      }
+
+      const status = publishAt && new Date(publishAt) > new Date() ? "draft" : "published";
       const [event] = await db
         .insert(schema.events)
         .values({
@@ -376,7 +408,8 @@ export async function eventRoutes(app: FastifyInstance) {
           startAt: new Date(eventData.startAt),
           endAt: eventData.endAt ? new Date(eventData.endAt) : null,
           orgId: userOrg.orgId,
-          status: "published",
+          status,
+          publishAt: publishAt ? new Date(publishAt) : null,
         })
         .returning();
 
@@ -397,6 +430,7 @@ export async function eventRoutes(app: FastifyInstance) {
         ...event,
         startAt: event.startAt.toISOString(),
         endAt: event.endAt?.toISOString() ?? null,
+        publishAt: event.publishAt?.toISOString() ?? null,
         createdAt: event.createdAt.toISOString(),
         updatedAt: event.updatedAt.toISOString(),
         facebookEventCreated: false,
@@ -484,11 +518,24 @@ export async function eventRoutes(app: FastifyInstance) {
         return reply.status(403).send({ error: "Not authorized" });
       }
 
-      const { categoryIds, ...eventData } = body;
+      const { categoryIds, publishAt, ...eventData } = body;
+
+      if ((eventData.address || eventData.venueName) && !eventData.latitude && !eventData.longitude) {
+        const geo = await geocodeAddress(eventData.address || eventData.venueName || "");
+        if (geo) {
+          eventData.latitude = geo.lat;
+          eventData.longitude = geo.lon;
+        }
+      }
 
       const updateData: Record<string, unknown> = { ...eventData, updatedAt: new Date() };
       if (eventData.startAt) updateData.startAt = new Date(eventData.startAt);
       if (eventData.endAt) updateData.endAt = new Date(eventData.endAt);
+      if (publishAt !== undefined) updateData.publishAt = publishAt ? new Date(publishAt) : null;
+      if (publishAt !== undefined) {
+        const pubDate = publishAt ? new Date(publishAt) : null;
+        updateData.status = pubDate && pubDate > new Date() ? "draft" : "published";
+      }
 
       const [updated] = await db
         .update(schema.events)
@@ -515,6 +562,7 @@ export async function eventRoutes(app: FastifyInstance) {
         ...updated,
         startAt: updated.startAt.toISOString(),
         endAt: updated.endAt?.toISOString() ?? null,
+        publishAt: updated.publishAt?.toISOString() ?? null,
         createdAt: updated.createdAt.toISOString(),
         updatedAt: updated.updatedAt.toISOString(),
       });

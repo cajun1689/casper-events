@@ -49,6 +49,8 @@ export default function GoogleCalendarSettingsPage() {
   );
   const [error, setError] = useState<string | null>(null);
   const [syncSuccess, setSyncSuccess] = useState(false);
+  const [requireApproval, setRequireApproval] = useState(false);
+  const [savingApproval, setSavingApproval] = useState(false);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -56,11 +58,15 @@ export default function GoogleCalendarSettingsPage() {
       setStatus(res);
 
       if (res.connected) {
-        const calRes = await api.get<CalendarsResponse>(
-          "/google-calendar/calendars"
-        );
+        const calRes = await api.get<CalendarsResponse>("/google-calendar/calendars");
         setCalendars(calRes.calendars);
         setSelectedCalId(calRes.selectedCalendarId);
+        try {
+          const settingsRes = await api.get<{ requireGoogleEventApproval: boolean }>("/google-calendar/settings");
+          setRequireApproval(settingsRes.requireGoogleEventApproval);
+        } catch {
+          setRequireApproval(false);
+        }
       }
     } catch {
       setStatus({ connected: false, calendarId: null });
@@ -272,6 +278,48 @@ export default function GoogleCalendarSettingsPage() {
           </div>
         )}
       </div>
+
+      {/* Auto-publish toggle - prominent section */}
+      {status?.connected && (
+        <div className="mt-6 rounded-2xl border-2 border-amber-200/80 bg-amber-50/50 p-6 shadow-sm backdrop-blur-sm">
+          <h2 className="mb-2 text-base font-bold text-gray-900">
+            Auto-publish imported events
+          </h2>
+          <p className="mb-4 text-sm text-gray-600">
+            By default, imported Google Calendar events appear on the public calendar immediately. Turn this off to review and approve each event before it goes live.
+          </p>
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-white/80 p-4 border border-amber-200/60">
+            <input
+              type="checkbox"
+              checked={requireApproval}
+              onChange={async (e) => {
+                const next = e.target.checked;
+                setSavingApproval(true);
+                try {
+                  await api.put("/google-calendar/settings", { requireGoogleEventApproval: next });
+                  setRequireApproval(next);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Failed to update");
+                } finally {
+                  setSavingApproval(false);
+                }
+              }}
+              disabled={savingApproval}
+              className="mt-0.5 h-5 w-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            />
+            <div>
+              <span className="text-sm font-semibold text-gray-800">
+                {requireApproval ? "Manual approval ON" : "Manual approval OFF"}
+              </span>
+              <p className="text-xs text-gray-600 mt-1">
+                {requireApproval
+                  ? "Imported events are saved as drafts. Approve them from your dashboard before they appear publicly."
+                  : "Imported events are published automatically."}
+              </p>
+            </div>
+          </label>
+        </div>
+      )}
 
       {/* Calendar Selection */}
       {status?.connected && calendars.length > 0 && (

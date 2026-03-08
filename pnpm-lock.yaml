@@ -135,6 +135,9 @@ importers:
       constructs:
         specifier: ^10.4.0
         version: 10.5.1
+      dotenv:
+        specifier: ^16.4.0
+        version: 16.6.1
     devDependencies:
       '@types/node':
         specifier: ^22.0.0

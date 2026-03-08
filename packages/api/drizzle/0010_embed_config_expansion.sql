@@ -1,0 +1,17 @@
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "border_color" varchar(7);
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "header_bg_color" varchar(7);
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "link_color" varchar(7);
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "box_shadow" varchar(20) DEFAULT 'subtle' NOT NULL;
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "layout_density" varchar(20) DEFAULT 'comfortable' NOT NULL;
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "first_day_of_week" varchar(10) DEFAULT 'sunday' NOT NULL;
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "time_format" varchar(5) DEFAULT '12h' NOT NULL;
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "max_events_shown" integer;
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "show_event_images" boolean DEFAULT true NOT NULL;
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "show_venue" boolean DEFAULT true NOT NULL;
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "show_organizer" boolean DEFAULT true NOT NULL;
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "show_categories" boolean DEFAULT true NOT NULL;
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "show_ticket_link" boolean DEFAULT true NOT NULL;
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "show_cost" boolean DEFAULT true NOT NULL;
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "header_title" varchar(100) DEFAULT 'Events' NOT NULL;
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "show_header" boolean DEFAULT true NOT NULL;
+ALTER TABLE "embed_configs" ADD COLUMN IF NOT EXISTS "show_powered_by" boolean DEFAULT true NOT NULL;

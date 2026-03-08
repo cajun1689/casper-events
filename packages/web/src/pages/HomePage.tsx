@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { addMonths, subMonths, format, addWeeks, subWeeks, startOfDay, endOfDay, addDays } from "date-fns";
+import { addMonths, subMonths, format, addWeeks, subWeeks, startOfDay, endOfDay, addDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { ChevronLeft, ChevronRight, Sparkles, Printer } from "lucide-react";
 import { useStore, type DatePreset } from "@/lib/store";
 import { eventsApi, categoriesApi } from "@/lib/api";
@@ -48,6 +48,22 @@ function getDateRangeForPreset(preset: DatePreset): { startAfter: string; startB
   }
   return null;
 }
+
+function getViewDateRange(viewMode: string, currentDate: Date): { startAfter: string; startBefore: string } {
+  if (viewMode === "week") {
+    return {
+      startAfter: startOfWeek(currentDate, { weekStartsOn: 0 }).toISOString(),
+      startBefore: endOfWeek(currentDate, { weekStartsOn: 0 }).toISOString(),
+    };
+  }
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  return {
+    startAfter: startOfWeek(monthStart, { weekStartsOn: 0 }).toISOString(),
+    startBefore: endOfWeek(monthEnd, { weekStartsOn: 0 }).toISOString(),
+  };
+}
+
 import { printCalendar } from "@/lib/print-calendar";
 import type { EventWithDetails } from "@cyh/shared";
 import { MonthView } from "@/components/MonthView";
@@ -82,10 +98,18 @@ export default function HomePage() {
   useEffect(() => {
     async function load() {
       try {
-        const range = getDateRangeForPreset(datePreset);
-        const params = range
-          ? { startAfter: range.startAfter, startBefore: range.startBefore }
-          : undefined;
+        const presetRange = getDateRangeForPreset(datePreset);
+
+        let params: Record<string, string>;
+        if (presetRange) {
+          params = { startAfter: presetRange.startAfter, startBefore: presetRange.startBefore, limit: "100" };
+        } else if (viewMode === "month" || viewMode === "week") {
+          const viewRange = getViewDateRange(viewMode, currentDate);
+          params = { startAfter: viewRange.startAfter, startBefore: viewRange.startBefore, limit: "100" };
+        } else {
+          params = { limit: "100" };
+        }
+
         const [eventsRes, catsRes] = await Promise.all([
           eventsApi.list(params),
           categoriesApi.list(),
@@ -99,7 +123,7 @@ export default function HomePage() {
       }
     }
     load();
-  }, [setCategories, datePreset]);
+  }, [setCategories, datePreset, viewMode, currentDate]);
 
   const filteredEvents = useMemo(() => {
     if (selectedCategories.length === 0) return events;

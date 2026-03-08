@@ -1,3 +1,19 @@
+export interface ContentToggles {
+  showEventImages: boolean;
+  showVenue: boolean;
+  showOrganizer: boolean;
+  showCategories: boolean;
+  showTicketLink: boolean;
+  showCost: boolean;
+}
+
+export interface LayoutOptions {
+  layoutDensity: "compact" | "comfortable";
+  firstDayOfWeek: "sunday" | "monday";
+  timeFormat: "12h" | "24h";
+  maxEventsShown: number | null;
+}
+
 export interface CYHCalendarConfig {
   container: string;
   orgId: string;
@@ -7,15 +23,36 @@ export interface CYHCalendarConfig {
   ctaOpensExternal?: boolean;
   theme?: {
     primaryColor?: string;
+    secondaryColor?: string;
     backgroundColor?: string;
     textColor?: string;
     accentColor?: string;
     fontFamily?: string;
     borderRadius?: string;
+    borderColor?: string;
+    headerBgColor?: string;
+    linkColor?: string;
+    boxShadow?: "none" | "subtle" | "medium";
   };
   defaultView?: "month" | "week" | "list" | "poster";
   categories?: string[];
   hiddenCategories?: string[];
+  /** Layout options */
+  layoutDensity?: "compact" | "comfortable";
+  firstDayOfWeek?: "sunday" | "monday";
+  timeFormat?: "12h" | "24h";
+  maxEventsShown?: number | null;
+  /** Content toggles */
+  showEventImages?: boolean;
+  showVenue?: boolean;
+  showOrganizer?: boolean;
+  showCategories?: boolean;
+  showTicketLink?: boolean;
+  showCost?: boolean;
+  /** Header & footer */
+  headerTitle?: string;
+  showHeader?: boolean;
+  showPoweredBy?: boolean;
 }
 
 export interface EmbedEvent {

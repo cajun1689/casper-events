@@ -223,6 +223,7 @@ export async function syncGoogleCalendarEvents(
         }
       }
 
+      const initialStatus = org.requireGoogleEventApproval ? "draft" : "published";
       await db.insert(schema.events).values({
         orgId: org.id,
         title: gEvent.summary,
@@ -240,7 +241,7 @@ export async function syncGoogleCalendarEvents(
         imageUrl,
         googleCalendarEventId: gEvent.id,
         source: "google_calendar_import",
-        status: "published",
+        status: initialStatus,
       });
     }
 
@@ -331,6 +332,46 @@ export async function googleCalendarRoutes(app: FastifyInstance) {
       `${frontendUrl}/dashboard/google-calendar?google=connected`
     );
   });
+
+  app.get(
+    "/google-calendar/settings",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      const userOrg = await resolveUserOrg(db, request.user!.sub);
+      if (!userOrg) {
+        return reply.status(403).send({ error: "No organization found" });
+      }
+      const [org] = await db
+        .select({ requireGoogleEventApproval: schema.organizations.requireGoogleEventApproval })
+        .from(schema.organizations)
+        .where(eq(schema.organizations.id, userOrg.orgId));
+      return reply.send({
+        requireGoogleEventApproval: org?.requireGoogleEventApproval ?? false,
+      });
+    }
+  );
+
+  app.put(
+    "/google-calendar/settings",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      const userOrg = await resolveUserOrg(db, request.user!.sub);
+      if (!userOrg) {
+        return reply.status(403).send({ error: "No organization found" });
+      }
+      const { requireGoogleEventApproval } = request.body as { requireGoogleEventApproval?: boolean };
+      await db
+        .update(schema.organizations)
+        .set({
+          requireGoogleEventApproval: requireGoogleEventApproval ?? false,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.organizations.id, userOrg.orgId));
+      return reply.send({ requireGoogleEventApproval: !!requireGoogleEventApproval });
+    }
+  );
 
   app.get(
     "/google-calendar/status",

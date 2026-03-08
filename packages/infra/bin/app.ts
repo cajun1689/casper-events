@@ -1,4 +1,14 @@
 #!/usr/bin/env node
+import path from "path";
+import { fileURLToPath } from "url";
+import { config } from "dotenv";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, "../../..");
+// Load .env for deploy: try repo root first, then packages/api (where local dev .env lives)
+config({ path: path.join(root, ".env") });
+config({ path: path.join(root, "packages/api/.env") });
+
 import * as cdk from "aws-cdk-lib";
 import { NetworkStack } from "../lib/network-stack.js";
 import { DatabaseStack } from "../lib/database-stack.js";

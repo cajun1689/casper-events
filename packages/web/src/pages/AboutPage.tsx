@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CalendarHeart, Users, Code2, Heart, Building2, Globe, Share2, Printer } from "lucide-react";
+import { CalendarHeart, Users, Code2, Heart, Building2, Globe, Share2, Printer, MapPin, Award, LayoutGrid } from "lucide-react";
 
 export default function AboutPage() {
   return (
@@ -26,6 +26,15 @@ export default function AboutPage() {
         <p className="mt-3 text-sm leading-relaxed text-gray-600">
           Too often, events are scattered across dozens of Facebook pages, flyers, and word of mouth. We built this platform to bring it all together in one place that anyone can browse, filter, and print out to share.
         </p>
+        <p className="mt-3 text-sm leading-relaxed text-gray-600">
+          Our goal is to provide greater access to nonprofit events across Natrona County. We believe that access to events for youth creates positive childhood experiences.
+        </p>
+        <div className="mt-4 rounded-xl border border-gray-200/80 bg-gray-50/60 px-4 py-3">
+          <p className="text-sm font-semibold text-gray-700 mb-1">What you won't find here</p>
+          <p className="text-sm leading-relaxed text-gray-600">
+            Bars and club events will never show on this calendar. Event organizers are currently limited to nonprofit organizations, and preference will be given to youth-serving nonprofits during our beta phase.
+          </p>
+        </div>
       </section>
 
       {/* Who built this */}
@@ -101,8 +110,26 @@ export default function AboutPage() {
             {
               icon: Code2,
               title: "Embeddable Calendar",
-              desc: "Get a customizable calendar widget you can embed on your own website. Match your brand colors, choose which event types to show, and install it on Squarespace, WordPress, Wix, or any site.",
+              desc: "Embed a calendar on your website with month, list, or poster board view. Match your brand colors, set the default view, filter event types, and install on Squarespace, WordPress, Wix, or any site.",
               gradient: "from-cyan-500 to-cyan-600",
+            },
+            {
+              icon: MapPin,
+              title: "Map View",
+              desc: "Events with a location appear on an interactive map so visitors can see where things are happening. Available on the main calendar and in your embed.",
+              gradient: "from-emerald-500 to-emerald-600",
+            },
+            {
+              icon: LayoutGrid,
+              title: "Poster Board View",
+              desc: "Show events in a poster-style layout perfect for venues and programs. Choose it as the default view for your embed and feature events with images and sponsor logos.",
+              gradient: "from-amber-500 to-amber-600",
+            },
+            {
+              icon: Award,
+              title: "Event Sponsors",
+              desc: "Add sponsor logos and links to any event with tiered levels (presenting, gold, silver, bronze, community). Sponsors appear on event pages and in poster board view.",
+              gradient: "from-rose-500 to-rose-600",
             },
             {
               icon: Share2,

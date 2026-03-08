@@ -1,5 +1,5 @@
 import { getDb } from "./db/connection.js";
-import { eq, and, lt, isNotNull } from "drizzle-orm";
+import { eq, and, lt, lte, isNotNull, isNull, or, sql } from "drizzle-orm";
 import * as schema from "@cyh/shared/db";
 import { syncGoogleCalendarEvents } from "./routes/google-calendar.js";
 
@@ -58,6 +58,25 @@ export async function handler() {
     }
   }
 
+  // Publish scheduled events (publishAt <= now, status = draft)
+  const now = new Date();
+  const toPublish = await db
+    .select({ id: schema.events.id })
+    .from(schema.events)
+    .where(
+      and(
+        eq(schema.events.status, "draft"),
+        isNotNull(schema.events.publishAt),
+        lte(schema.events.publishAt, now)
+      )
+    );
+  for (const evt of toPublish) {
+    await db
+      .update(schema.events)
+      .set({ status: "published", updatedAt: new Date() })
+      .where(eq(schema.events.id, evt.id));
+  }
+
   // Check for expiring Facebook tokens (within 7 days)
   const expiringOrgs = await db
     .select()
@@ -80,10 +99,53 @@ export async function handler() {
     // TODO: Send SES email notification to admins
   }
 
+  // Geocode events that have an address but no coordinates (batch of 10 per run)
+  let geocoded = 0;
+  try {
+    const eventsNeedingGeocode = await db
+      .select({ id: schema.events.id, address: schema.events.address, venueName: schema.events.venueName })
+      .from(schema.events)
+      .where(
+        and(
+          isNull(schema.events.latitude),
+          or(isNotNull(schema.events.address), isNotNull(schema.events.venueName))
+        )
+      )
+      .limit(10);
+
+    for (const evt of eventsNeedingGeocode) {
+      const query = evt.address || evt.venueName || "";
+      if (!query) continue;
+      try {
+        const params = new URLSearchParams({ q: query, format: "json", limit: "1", countrycodes: "us" });
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+          headers: { "User-Agent": "CasperEventsCalendar/1.0", "Accept-Language": "en" },
+          signal: AbortSignal.timeout(5000),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { lat: string; lon: string }[];
+          if (data.length > 0) {
+            await db.update(schema.events).set({
+              latitude: parseFloat(data[0].lat),
+              longitude: parseFloat(data[0].lon),
+            }).where(eq(schema.events.id, evt.id));
+            geocoded++;
+          }
+        }
+        await new Promise((r) => setTimeout(r, 1100));
+      } catch {
+        // geocoding is best-effort
+      }
+    }
+  } catch (err) {
+    console.error("Geocode backfill error:", err);
+  }
+
   return {
     synced: orgsWithFb.length,
     icalSynced: orgsWithIcal.length,
     googleSynced: orgsWithGoogle.length,
+    geocoded,
   };
 }
 

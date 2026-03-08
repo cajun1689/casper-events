@@ -6,13 +6,14 @@ const COLOR_PALETTE = [
   "#3b82f6", "#8b5cf6", "#a855f7", "#d946ef",
 ];
 import { useNavigate, Navigate, Link } from "react-router-dom";
-import { ArrowLeft, Facebook, Globe, Video, ChevronDown } from "lucide-react";
+import { ArrowLeft, Facebook, Globe, Video, ChevronDown, Clock } from "lucide-react";
 import clsx from "clsx";
 import { useStore } from "@/lib/store";
-import { eventsApi, categoriesApi, api } from "@/lib/api";
+import { eventsApi, categoriesApi, sponsorsApi, api } from "@/lib/api";
 import { ImageUpload } from "@/components/ImageUpload";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { EventSponsorsCreateSection, type PendingSponsor } from "@/components/EventSponsorsCreateSection";
 
 export default function CreateEventPage() {
   const navigate = useNavigate();
@@ -21,12 +22,16 @@ export default function CreateEventPage() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: "", description: "", startDate: "", startTime: "", endDate: "", endTime: "",
-    allDay: false, venueName: "", address: "", cost: "", ticketUrl: "", imageUrl: "",
+    allDay: false, venueName: "", address: "", latitude: null as number | null, longitude: null as number | null,
+    cost: "", ticketUrl: "", imageUrl: "",
     isOnline: false, onlineEventUrl: "", publishToFacebook: false,
     color: "", subtitle: "", externalUrl: "", externalUrlText: "", externalUrlCaption: "",
     featured: false,
+    schedulePublish: false,
+    publishAtDate: "", publishAtTime: "",
   });
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
+  const [pendingSponsors, setPendingSponsors] = useState<PendingSponsor[]>([]);
   const [fbConnected, setFbConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -61,10 +66,14 @@ export default function CreateEventPage() {
     const endAt = form.endDate || form.endTime
       ? form.allDay ? `${form.endDate || form.startDate}T23:59:59` : `${form.endDate || form.startDate}T${form.endTime || form.startTime}`
       : null;
+    const publishAt = form.schedulePublish && form.publishAtDate
+      ? `${form.publishAtDate}T${form.publishAtTime || "00:00:00"}`
+      : null;
     try {
-      await eventsApi.create({
+      const created = await eventsApi.create({
         title: form.title, description: form.description || null, startAt, endAt,
         allDay: form.allDay, venueName: form.venueName || null, address: form.address || null,
+        latitude: form.latitude, longitude: form.longitude,
         cost: form.cost || null, ticketUrl: form.ticketUrl || null, imageUrl: form.imageUrl || null,
         isOnline: form.isOnline, onlineEventUrl: form.onlineEventUrl || null,
         publishToFacebook: form.publishToFacebook,
@@ -73,7 +82,23 @@ export default function CreateEventPage() {
         externalUrl: form.externalUrl || null, externalUrlText: form.externalUrlText || null,
         externalUrlCaption: form.externalUrlCaption || null,
         featured: form.featured,
+        publishAt: publishAt || undefined,
       });
+
+      for (let i = 0; i < pendingSponsors.length; i++) {
+        try {
+          await sponsorsApi.create(created.id, {
+            name: pendingSponsors[i].name,
+            logoUrl: pendingSponsors[i].logoUrl,
+            websiteUrl: pendingSponsors[i].websiteUrl,
+            level: pendingSponsors[i].level,
+            sortOrder: i,
+          });
+        } catch (sponsorErr) {
+          console.error("Failed to add sponsor:", sponsorErr);
+        }
+      }
+
       navigate("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create event");
@@ -141,6 +166,26 @@ export default function CreateEventPage() {
               </div>
             )}
           </div>
+
+          <div className="pt-4 border-t border-gray-100">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+              <input type="checkbox" checked={form.schedulePublish} onChange={(e) => update("schedulePublish", e.target.checked)} className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+              <Clock className="h-4 w-4 text-gray-400" />
+              Schedule publish (prep event, show on calendar at a specific time)
+            </label>
+            {form.schedulePublish && (
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="publishAtDate" className="mb-1.5 block text-sm font-semibold text-gray-700">Publish Date</label>
+                  <input id="publishAtDate" type="date" required={form.schedulePublish} value={form.publishAtDate} onChange={(e) => update("publishAtDate", e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label htmlFor="publishAtTime" className="mb-1.5 block text-sm font-semibold text-gray-700">Publish Time</label>
+                  <input id="publishAtTime" type="time" step="300" value={form.publishAtTime} onChange={(e) => update("publishAtTime", e.target.value)} className={inputCls} />
+                </div>
+              </div>
+            )}
+          </div>
         </section>
 
         <section className="relative z-20 rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm space-y-5 overflow-visible">
@@ -177,6 +222,7 @@ export default function CreateEventPage() {
               addressValue={form.address}
               onVenueChange={(v) => update("venueName", v)}
               onAddressChange={(v) => update("address", v)}
+              onCoordsChange={(lat, lng) => setForm((prev) => ({ ...prev, latitude: lat, longitude: lng }))}
             />
           )}
 
@@ -201,6 +247,7 @@ export default function CreateEventPage() {
                   addressValue={form.address}
                   onVenueChange={(v) => update("venueName", v)}
                   onAddressChange={(v) => update("address", v)}
+                  onCoordsChange={(lat, lng) => setForm((prev) => ({ ...prev, latitude: lat, longitude: lng }))}
                 />
               </div>
             </div>
@@ -323,6 +370,8 @@ export default function CreateEventPage() {
             </div>
           </div>
         </section>
+
+        <EventSponsorsCreateSection value={pendingSponsors} onChange={setPendingSponsors} />
 
         {/* Facebook Integration */}
         <section className={clsx(

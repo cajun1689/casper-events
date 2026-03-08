@@ -4,17 +4,22 @@ import {
   eachDayOfInterval, format, isSameMonth, isSameDay, isToday, parseISO,
   addMonths, subMonths,
 } from "date-fns";
-import type { EmbedEvent } from "../types";
+import type { EmbedEvent, ContentToggles } from "../types";
 import { EmbedEventDetail } from "./EmbedEventDetail";
 
 interface EmbedMonthViewProps {
   events: EmbedEvent[];
   onMonthChange?: (date: Date) => void;
+  firstDayOfWeek?: "sunday" | "monday";
+  contentToggles?: ContentToggles;
 }
 
-const DAY_HEADERS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const DAY_HEADERS_SUNDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const DAY_HEADERS_MONDAY = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
-export function EmbedMonthView({ events, onMonthChange }: EmbedMonthViewProps) {
+export function EmbedMonthView({ events, onMonthChange, firstDayOfWeek = "sunday", contentToggles }: EmbedMonthViewProps) {
+  const weekStartsOn = firstDayOfWeek === "monday" ? 1 : 0;
+  const DAY_HEADERS = firstDayOfWeek === "monday" ? DAY_HEADERS_MONDAY : DAY_HEADERS_SUNDAY;
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -28,8 +33,8 @@ export function EmbedMonthView({ events, onMonthChange }: EmbedMonthViewProps) {
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  const calendarStart = startOfWeek(monthStart);
-  const calendarEnd = endOfWeek(monthEnd);
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn });
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn });
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   const eventsByDate = new Map<string, EmbedEvent[]>();
@@ -195,7 +200,7 @@ export function EmbedMonthView({ events, onMonthChange }: EmbedMonthViewProps) {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {selectedEvents.map((event) => (
-                <EmbedEventDetail key={event.id} event={event} />
+                <EmbedEventDetail key={event.id} event={event} contentToggles={contentToggles} />
               ))}
             </div>
           )}

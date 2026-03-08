@@ -2,11 +2,13 @@ import React, { useEffect, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { formatRecurrenceRule } from "@cyh/shared";
 import type { EmbedEvent } from "../types";
+import type { ContentToggles } from "../types";
 
 interface EmbedPosterDetailProps {
   event: EmbedEvent;
   onClose: () => void;
   api?: ReturnType<typeof import("../api").createApiClient>;
+  contentToggles?: ContentToggles;
 }
 
 function escapeICS(str: string): string {
@@ -81,7 +83,16 @@ function getOutlookCalendarUrl(event: EmbedEvent): string {
   return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
 }
 
-export function EmbedPosterDetail({ event, onClose, api }: EmbedPosterDetailProps) {
+const DEFAULT_TOGGLES: ContentToggles = {
+  showEventImages: true,
+  showVenue: true,
+  showOrganizer: true,
+  showCategories: true,
+  showTicketLink: true,
+  showCost: true,
+};
+
+export function EmbedPosterDetail({ event, onClose, api, contentToggles = DEFAULT_TOGGLES }: EmbedPosterDetailProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [rsvp, setRsvp] = useState<{ count: number; userRsvped: boolean } | null>(null);
   const [rsvpLoading, setRsvpLoading] = useState(false);
@@ -192,7 +203,7 @@ export function EmbedPosterDetail({ event, onClose, api }: EmbedPosterDetailProp
         </div>
 
         <div style={{ padding: "0 20px 24px" }}>
-          {cats[0] && (
+          {contentToggles.showCategories && cats[0] && (
             <div style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--cyh-primary)", marginBottom: "4px" }}>
               {cats[0].name}
             </div>
@@ -233,7 +244,7 @@ export function EmbedPosterDetail({ event, onClose, api }: EmbedPosterDetailProp
             </div>
           )}
 
-          {event.imageUrl && (
+          {contentToggles.showEventImages && event.imageUrl && (
             <div style={{ marginBottom: "16px", borderRadius: "var(--cyh-radius)", overflow: "hidden" }}>
               <img src={event.imageUrl} alt="" style={{ width: "100%", display: "block" }} />
             </div>
@@ -353,7 +364,7 @@ export function EmbedPosterDetail({ event, onClose, api }: EmbedPosterDetailProp
             </div>
           )}
 
-          {(event.venueName || event.address) && (
+          {contentToggles.showVenue && (event.venueName || event.address) && (
             <div style={{ marginBottom: "20px" }}>
               <div style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.05em", marginBottom: "8px", color: "var(--cyh-text)" }}>WHERE</div>
               <div style={{ fontSize: "14px", fontWeight: 600 }}>{event.venueName}</div>

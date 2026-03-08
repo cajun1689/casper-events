@@ -106,11 +106,15 @@ export const organizationsApi = {
 export const authApi = {
   me: () => api.get<{ user: unknown; organization: unknown }>("/auth/me"),
   register: (data: unknown) => api.post("/auth/register", data),
+  getBetaStatus: () =>
+    api.get<{ requireInviteCode: boolean }>("/auth/beta-status"),
+  validateInvite: (code: string) =>
+    api.post<{ valid: boolean }>("/auth/validate-invite", { code }),
 };
 
 export const venuesApi = {
   search: (q: string) =>
-    api.get<{ data: Array<{ id: string; name: string; address: string | null; usageCount: number }> }>(
+    api.get<{ data: Array<{ id: string; name: string; address: string | null; latitude: number | null; longitude: number | null; usageCount: number }> }>(
       `/venues?q=${encodeURIComponent(q)}`,
     ),
 };
@@ -143,6 +147,10 @@ export const googleCalendarApi = {
     api.get<{ connected: boolean; calendarId: string | null }>(
       "/google-calendar/status"
     ),
+  getSettings: () =>
+    api.get<{ requireGoogleEventApproval: boolean }>("/google-calendar/settings"),
+  setSettings: (requireGoogleEventApproval: boolean) =>
+    api.put("/google-calendar/settings", { requireGoogleEventApproval }),
   calendars: () =>
     api.get<{
       calendars: { id: string; name: string; primary: boolean; color: string | null }[];
@@ -177,6 +185,22 @@ export const publicEventsApi = {
 };
 
 export const adminApi = {
+  getBetaStatus: () =>
+    api.get<{ requireInviteCode: boolean }>("/admin/beta-status"),
+  setBetaStatus: (requireInviteCode: boolean) =>
+    api.put("/admin/beta-status", { requireInviteCode }),
+  listInviteCodes: () =>
+    api.get<{
+      data: Array<{
+        id: string;
+        code: string;
+        createdAt: string;
+        usedAt: string | null;
+        usedByOrgId: string | null;
+      }>;
+    }>("/admin/invite-codes"),
+  createInviteCode: (code?: string) =>
+    api.post<{ id: string; code: string }>("/admin/invite-codes", { code }),
   pendingEvents: () =>
     api.get<{ data: EventWithDetails[] }>("/admin/events/pending"),
   reviewEvent: (id: string, data: { decision: string; notes?: string }) =>
