@@ -61,8 +61,6 @@ export async function facebookRoutes(app: FastifyInstance) {
         "pages_read_engagement",
         "pages_manage_posts",
         "pages_manage_engagement",
-        "pages_manage_events",
-        "business_management",
       ].join(",");
 
       const url =
