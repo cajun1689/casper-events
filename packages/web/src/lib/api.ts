@@ -6,9 +6,12 @@ async function request<T>(
 ): Promise<T> {
   const token = localStorage.getItem("cyh_token");
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...(options?.headers as Record<string, string>),
   };
+
+  if (options?.body) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
