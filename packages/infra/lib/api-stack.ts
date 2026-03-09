@@ -4,6 +4,7 @@ import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
@@ -49,6 +50,11 @@ export class ApiStack extends cdk.Stack {
       description: "Security group for API Lambda functions",
     });
 
+    const fbAppId = ssm.StringParameter.valueForStringParameter(this, "/cyh/facebook-app-id");
+    const fbAppSecret = ssm.StringParameter.valueForStringParameter(this, "/cyh/facebook-app-secret");
+    const googleClientId = ssm.StringParameter.valueForStringParameter(this, "/cyh/google-client-id");
+    const googleClientSecret = ssm.StringParameter.valueForStringParameter(this, "/cyh/google-client-secret");
+
     const apiHandler = new lambda.Function(this, "ApiHandler", {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: "index.handler",
@@ -67,12 +73,12 @@ export class ApiStack extends cdk.Stack {
         MEDIA_BUCKET: props.mediaBucket.bucketName,
         CDN_DOMAIN: props.domainName,
         CORS_ORIGIN: `https://${props.domainName}`,
-        FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID || "",
-        FACEBOOK_APP_SECRET: process.env.FACEBOOK_APP_SECRET || "",
-        FACEBOOK_REDIRECT_URI: process.env.FACEBOOK_REDIRECT_URI || `https://api.${props.domainName}/v1/auth/facebook/callback`,
-        GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
-        GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
-        GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI || `https://api.${props.domainName}/v1/auth/google/callback`,
+        FACEBOOK_APP_ID: fbAppId,
+        FACEBOOK_APP_SECRET: fbAppSecret,
+        FACEBOOK_REDIRECT_URI: `https://api.${props.domainName}/v1/auth/facebook/callback`,
+        GOOGLE_CLIENT_ID: googleClientId,
+        GOOGLE_CLIENT_SECRET: googleClientSecret,
+        GOOGLE_REDIRECT_URI: `https://api.${props.domainName}/v1/auth/google/callback`,
       },
     });
 
