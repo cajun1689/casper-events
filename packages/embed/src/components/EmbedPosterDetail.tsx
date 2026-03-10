@@ -489,11 +489,24 @@ function EmbedSponsorGrid({ sponsors }: { sponsors: EmbedPosterDetailProps["even
                 }}
               >
                 {s.logoUrl ? (
-                  <img
-                    src={s.logoUrl}
-                    alt={s.name}
-                    style={{ maxWidth: cfg.maxW, maxHeight: cfg.maxH, objectFit: "contain" }}
-                  />
+                  <div
+                    style={{
+                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "8px",
+                      borderRadius: "10px",
+                      background: "linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.05) 40%, rgba(0,0,0,0.08) 100%)",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 4px rgba(0,0,0,0.1)",
+                    }}
+                  >
+                    <img
+                      src={s.logoUrl}
+                      alt={s.name}
+                      style={{ maxWidth: cfg.maxW, maxHeight: cfg.maxH, objectFit: "contain" }}
+                    />
+                  </div>
                 ) : (
                   <span style={{ fontSize: cfg.textSize, fontWeight: 700 }}>{s.name}</span>
                 )}

@@ -294,10 +294,11 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, contentToggles, 
         )}
       </div>
 
-      {/* Poster image if present */}
+      {/* Poster image if present - gradient overlay for glossy look */}
       {contentToggles?.showEventImages !== false && event.imageUrl && (
         <div
           style={{
+            position: "relative",
             width: "100%",
             aspectRatio: "4/3",
             overflow: "hidden",
@@ -313,10 +314,18 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, contentToggles, 
               objectFit: "cover",
             }}
           />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 45%, rgba(0,0,0,0.06) 100%)",
+              pointerEvents: "none",
+            }}
+          />
         </div>
       )}
 
-      {/* Sponsor logos - compact row, sized by level */}
+      {/* Sponsor logos - compact row with gradient styling */}
       {(event.sponsors ?? []).length > 0 && (
         <div
           style={{
@@ -332,13 +341,26 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, contentToggles, 
             const mh = s.level === "presenting" ? "32px" : s.level === "gold" ? "28px" : s.level === "silver" ? "24px" : "20px";
             const mw = s.level === "presenting" ? "80px" : s.level === "gold" ? "70px" : s.level === "silver" ? "55px" : "45px";
             return s.logoUrl ? (
-              <img
+              <div
                 key={s.id ?? s.name}
-                src={s.logoUrl}
-                alt={s.name}
-                title={s.name}
-                style={{ maxHeight: mh, maxWidth: mw, objectFit: "contain" }}
-              />
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "6px",
+                  borderRadius: "8px",
+                  background: "linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.05) 40%, rgba(0,0,0,0.08) 100%)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 3px rgba(0,0,0,0.1)",
+                }}
+              >
+                <img
+                  src={s.logoUrl}
+                  alt={s.name}
+                  title={s.name}
+                  style={{ maxHeight: mh, maxWidth: mw, objectFit: "contain" }}
+                />
+              </div>
             ) : (
               <span key={s.id ?? s.name} style={{ fontSize: "10px", fontWeight: 700, opacity: 0.85 }}>
                 {s.name}

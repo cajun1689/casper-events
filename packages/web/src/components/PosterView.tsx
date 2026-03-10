@@ -162,31 +162,45 @@ function PosterCard({ event }: { event: EventWithDetails }) {
         )}
       </div>
 
-      {/* Poster image */}
+      {/* Poster image - gradient overlay for glossy look */}
       {event.imageUrl && (
-        <div className="mt-1 aspect-[4/3] w-full overflow-hidden">
+        <div className="relative mt-1 aspect-[4/3] w-full overflow-hidden">
           <img
             src={event.imageUrl}
             alt=""
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background: "linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 45%, rgba(0,0,0,0.06) 100%)",
+            }}
+          />
         </div>
       )}
 
-      {/* Sponsor logos - compact row, sized by level */}
+      {/* Sponsor logos - compact row with gradient styling */}
       {sponsors.length > 0 && (
         <div className="flex flex-wrap items-center gap-2.5 pl-20 pr-4 py-2" style={{ opacity: 0.9 }}>
           {sponsors.slice(0, 4).map((s) => {
             const h = s.level === "presenting" ? "h-8" : s.level === "gold" ? "h-7" : s.level === "silver" ? "h-6" : "h-5";
             const mw = s.level === "presenting" ? "max-w-[80px]" : s.level === "gold" ? "max-w-[70px]" : s.level === "silver" ? "max-w-[55px]" : "max-w-[45px]";
             return s.logoUrl ? (
-              <img
+              <div
                 key={s.id}
-                src={s.logoUrl}
-                alt={s.name}
-                className={`${h} ${mw} object-contain`}
-                title={s.name}
-              />
+                className="flex items-center justify-center rounded-lg p-1.5 shadow-sm"
+                style={{
+                  background: "linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.05) 40%, rgba(0,0,0,0.08) 100%)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 3px rgba(0,0,0,0.1)",
+                }}
+              >
+                <img
+                  src={s.logoUrl}
+                  alt={s.name}
+                  className={`${h} ${mw} object-contain`}
+                  title={s.name}
+                />
+              </div>
             ) : (
               <span key={s.id} className="text-[10px] font-bold" style={{ opacity: 0.85 }}>
                 {s.name}
