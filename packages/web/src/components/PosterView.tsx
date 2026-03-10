@@ -193,32 +193,38 @@ function PosterCard({ event }: { event: EventWithDetails }) {
         </div>
       )}
 
-      {/* Sponsor logos - compact row with gradient styling */}
+      {/* Sponsor logos - clickable, level-sized, centered */}
       {sponsors.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2.5 pl-20 pr-4 py-2" style={{ opacity: 0.9 }}>
+        <div className="flex flex-wrap items-center justify-center gap-3 pl-20 pr-4 py-2" style={{ opacity: 0.9 }}>
           {sponsors.slice(0, 4).map((s) => {
-            const h = s.level === "presenting" ? "h-8" : s.level === "gold" ? "h-7" : s.level === "silver" ? "h-6" : "h-5";
-            const mw = s.level === "presenting" ? "max-w-[80px]" : s.level === "gold" ? "max-w-[70px]" : s.level === "silver" ? "max-w-[55px]" : "max-w-[45px]";
-            return s.logoUrl ? (
-              <div
-                key={s.id}
-                className="flex items-center justify-center rounded-lg p-1.5 shadow-sm"
-                style={{
-                  background: "linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.05) 40%, rgba(0,0,0,0.08) 100%)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 3px rgba(0,0,0,0.1)",
-                }}
-              >
-                <img
-                  src={s.logoUrl}
-                  alt={s.name}
-                  className={`${h} ${mw} object-contain`}
-                  title={s.name}
-                />
-              </div>
+            const h = s.level === "presenting" ? "h-8" : s.level === "gold" ? "h-7" : s.level === "silver" ? "h-6" : s.level === "bronze" ? "h-5" : "h-5";
+            const mw = s.level === "presenting" ? "max-w-[80px]" : s.level === "gold" ? "max-w-[70px]" : s.level === "silver" ? "max-w-[55px]" : s.level === "bronze" ? "max-w-[48px]" : "max-w-[45px]";
+            const wrapperCls = "flex items-center justify-center rounded-lg p-1.5 shadow-sm transition-opacity hover:opacity-100";
+            const wrapperStyle = {
+              background: "linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.05) 40%, rgba(0,0,0,0.08) 100%)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 3px rgba(0,0,0,0.1)",
+            };
+            const content = s.logoUrl ? (
+              <img src={s.logoUrl} alt={s.name} className={`${h} ${mw} object-contain`} title={s.name} />
             ) : (
-              <span key={s.id} className="text-[10px] font-bold" style={{ opacity: 0.85 }}>
-                {s.name}
-              </span>
+              <span className="text-[10px] font-bold" style={{ opacity: 0.85 }}>{s.name}</span>
+            );
+            return s.websiteUrl ? (
+              <a
+                key={s.id}
+                href={s.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className={`${wrapperCls} cursor-pointer`}
+                style={wrapperStyle}
+              >
+                {content}
+              </a>
+            ) : (
+              <div key={s.id} className={wrapperCls} style={wrapperStyle}>
+                {content}
+              </div>
             );
           })}
         </div>

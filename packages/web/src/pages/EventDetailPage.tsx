@@ -487,39 +487,50 @@ function SponsorGrid({
     .filter((g) => g.items.length > 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 flex flex-col items-center">
       {grouped.map(({ level, items }) => {
         const cfg = LEVEL_CONFIG[level];
         return (
-          <div key={level} className={`flex flex-wrap items-center ${cfg.gap}`}>
-            {items.map((s) => (
-              <a
-                key={s.id}
-                href={s.websiteUrl || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex flex-col items-center gap-1 transition-opacity hover:opacity-80"
-              >
-                {s.logoUrl ? (
-                  <img
-                    src={s.logoUrl}
-                    alt={s.name}
-                    className="object-contain"
-                    style={{ maxWidth: cfg.maxW, maxHeight: cfg.maxH }}
-                  />
-                ) : (
-                  <span className={`font-bold ${cfg.textSize} ${variant === "poster" ? "" : "text-gray-800"}`}>
+          <div key={level} className={`flex flex-wrap items-center justify-center ${cfg.gap}`}>
+            {items.map((s) => {
+              const content = (
+                <>
+                  {s.logoUrl ? (
+                    <img
+                      src={s.logoUrl}
+                      alt={s.name}
+                      className="object-contain"
+                      style={{ maxWidth: cfg.maxW, maxHeight: cfg.maxH }}
+                    />
+                  ) : (
+                    <span className={`font-bold ${cfg.textSize} ${variant === "poster" ? "" : "text-gray-800"}`}>
+                      {s.name}
+                    </span>
+                  )}
+                  <span
+                    className={`font-semibold ${variant === "poster" ? "" : "text-gray-500"}`}
+                    style={{ fontSize: "10px", opacity: variant === "poster" ? 0.85 : 1 }}
+                  >
                     {s.name}
                   </span>
-                )}
-                <span
-                  className={`font-semibold ${variant === "poster" ? "" : "text-gray-500"}`}
-                  style={{ fontSize: "10px", opacity: variant === "poster" ? 0.85 : 1 }}
+                </>
+              );
+              return s.websiteUrl ? (
+                <a
+                  key={s.id}
+                  href={s.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-1 transition-opacity hover:opacity-80"
                 >
-                  {s.name}
-                </span>
-              </a>
-            ))}
+                  {content}
+                </a>
+              ) : (
+                <div key={s.id} className="flex flex-col items-center gap-1">
+                  {content}
+                </div>
+              );
+            })}
           </div>
         );
       })}

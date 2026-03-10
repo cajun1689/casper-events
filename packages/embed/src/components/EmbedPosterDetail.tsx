@@ -468,51 +468,55 @@ function EmbedSponsorGrid({ sponsors }: { sponsors: EmbedPosterDetailProps["even
     .filter((g) => g.items.length > 0);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
       {grouped.map(({ level, items }) => {
         const cfg = LEVEL_SIZES[level] ?? LEVEL_SIZES.community;
         return (
-          <div key={level} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: cfg.gap }}>
-            {items.map((s, i) => (
-              <a
-                key={i}
-                href={s.websiteUrl || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "4px",
-                  textDecoration: "none",
-                  color: "var(--cyh-text)",
-                }}
-              >
-                {s.logoUrl ? (
-                  <div
-                    style={{
-                      position: "relative",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      padding: "8px",
-                      borderRadius: "10px",
-                      background: "linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.05) 40%, rgba(0,0,0,0.08) 100%)",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 4px rgba(0,0,0,0.1)",
-                    }}
-                  >
-                    <img
-                      src={s.logoUrl}
-                      alt={s.name}
-                      style={{ maxWidth: cfg.maxW, maxHeight: cfg.maxH, objectFit: "contain" }}
-                    />
-                  </div>
-                ) : (
-                  <span style={{ fontSize: cfg.textSize, fontWeight: 700 }}>{s.name}</span>
-                )}
-                <span style={{ fontSize: "10px", fontWeight: 600, opacity: 0.8 }}>{s.name}</span>
-              </a>
-            ))}
+          <div key={level} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: cfg.gap }}>
+            {items.map((s, i) => {
+              const linkStyle = {
+                display: "flex",
+                flexDirection: "column" as const,
+                alignItems: "center" as const,
+                gap: "4px",
+                textDecoration: "none",
+                color: "var(--cyh-text)",
+              };
+              const content = (
+                <>
+                  {s.logoUrl ? (
+                    <div
+                      style={{
+                        position: "relative",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "8px",
+                        borderRadius: "10px",
+                        background: "linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.05) 40%, rgba(0,0,0,0.08) 100%)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 4px rgba(0,0,0,0.1)",
+                      }}
+                    >
+                      <img
+                        src={s.logoUrl}
+                        alt={s.name}
+                        style={{ maxWidth: cfg.maxW, maxHeight: cfg.maxH, objectFit: "contain" }}
+                      />
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: cfg.textSize, fontWeight: 700 }}>{s.name}</span>
+                  )}
+                  <span style={{ fontSize: "10px", fontWeight: 600, opacity: 0.8 }}>{s.name}</span>
+                </>
+              );
+              return s.websiteUrl ? (
+                <a key={i} href={s.websiteUrl} target="_blank" rel="noopener noreferrer" style={linkStyle}>
+                  {content}
+                </a>
+              ) : (
+                <div key={i} style={linkStyle}>{content}</div>
+              );
+            })}
           </div>
         );
       })}

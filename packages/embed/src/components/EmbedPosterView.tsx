@@ -325,7 +325,7 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, contentToggles, 
         </div>
       )}
 
-      {/* Sponsor logos - compact row with gradient styling */}
+      {/* Sponsor logos - clickable, level-sized, centered */}
       {(event.sponsors ?? []).length > 0 && (
         <div
           style={{
@@ -333,38 +333,50 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, contentToggles, 
             display: "flex",
             flexWrap: "wrap",
             alignItems: "center",
-            gap: "10px",
+            justifyContent: "center",
+            gap: "12px",
             opacity: 0.9,
           }}
         >
-          {(event.sponsors ?? []).slice(0, 4).map((s: { id?: string; name: string; logoUrl: string | null; level?: string }) => {
-            const mh = s.level === "presenting" ? "32px" : s.level === "gold" ? "28px" : s.level === "silver" ? "24px" : "20px";
-            const mw = s.level === "presenting" ? "80px" : s.level === "gold" ? "70px" : s.level === "silver" ? "55px" : "45px";
-            return s.logoUrl ? (
-              <div
-                key={s.id ?? s.name}
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "6px",
-                  borderRadius: "8px",
-                  background: "linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.05) 40%, rgba(0,0,0,0.08) 100%)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 3px rgba(0,0,0,0.1)",
-                }}
-              >
-                <img
-                  src={s.logoUrl}
-                  alt={s.name}
-                  title={s.name}
-                  style={{ maxHeight: mh, maxWidth: mw, objectFit: "contain" }}
-                />
-              </div>
+          {(event.sponsors ?? []).slice(0, 4).map((s: { id?: string; name: string; logoUrl: string | null; websiteUrl?: string | null; level?: string }) => {
+            const mh = s.level === "presenting" ? "32px" : s.level === "gold" ? "28px" : s.level === "silver" ? "24px" : s.level === "bronze" ? "22px" : "20px";
+            const mw = s.level === "presenting" ? "80px" : s.level === "gold" ? "70px" : s.level === "silver" ? "55px" : s.level === "bronze" ? "48px" : "45px";
+            const wrapperStyle: React.CSSProperties = {
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "6px",
+              borderRadius: "8px",
+              background: "linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.05) 40%, rgba(0,0,0,0.08) 100%)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 3px rgba(0,0,0,0.1)",
+              cursor: s.websiteUrl ? "pointer" : "default",
+            };
+            const content = s.logoUrl ? (
+              <img
+                src={s.logoUrl}
+                alt={s.name}
+                title={s.name}
+                style={{ maxHeight: mh, maxWidth: mw, objectFit: "contain" }}
+              />
             ) : (
-              <span key={s.id ?? s.name} style={{ fontSize: "10px", fontWeight: 700, opacity: 0.85 }}>
-                {s.name}
-              </span>
+              <span style={{ fontSize: "10px", fontWeight: 700, opacity: 0.85 }}>{s.name}</span>
+            );
+            return s.websiteUrl ? (
+              <a
+                key={s.id ?? s.name}
+                href={s.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                style={{ ...wrapperStyle, textDecoration: "none", color: "inherit" }}
+              >
+                {content}
+              </a>
+            ) : (
+              <div key={s.id ?? s.name} style={wrapperStyle}>
+                {content}
+              </div>
             );
           })}
         </div>
