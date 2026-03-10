@@ -2,6 +2,8 @@ import * as cdk from "aws-cdk-lib";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import { Construct } from "constructs";
 
+const DOMAIN_NAME = process.env.DOMAIN_NAME || "casperevents.org";
+
 export class AuthStack extends cdk.Stack {
   public readonly userPool: cognito.UserPool;
   public readonly userPoolClient: cognito.UserPoolClient;
@@ -34,6 +36,15 @@ export class AuthStack extends cdk.Stack {
         emailStyle: cognito.VerificationEmailStyle.CODE,
       },
     });
+
+    // Configure Cognito to send email via SES (domain must be verified in SES)
+    const cfnUserPool = this.userPool.node.defaultChild as cognito.CfnUserPool;
+    cfnUserPool.emailConfiguration = {
+      emailSendingAccount: "DEVELOPER",
+      sourceArn: `arn:aws:ses:${this.region}:${this.account}:identity/${DOMAIN_NAME}`,
+      from: `Casper Events <noreply@${DOMAIN_NAME}>`,
+      replyToEmailAddress: `noreply@${DOMAIN_NAME}`,
+    };
 
     this.userPoolClient = this.userPool.addClient("WebClient", {
       userPoolClientName: "cyh-calendar-web",
