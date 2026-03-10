@@ -208,6 +208,22 @@ export default function AboutPage() {
           <Link to="/terms" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">
             Terms of Service
           </Link>
+          <span className="text-gray-300">·</span>
+          <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">
+            Facebook Privacy
+          </a>
+          <span className="text-gray-300">·</span>
+          <a href="https://www.facebook.com/terms.php" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">
+            Facebook Terms
+          </a>
+          <span className="text-gray-300">·</span>
+          <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">
+            Google Privacy
+          </a>
+          <span className="text-gray-300">·</span>
+          <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">
+            Google Terms
+          </a>
         </div>
       </section>
     </div>

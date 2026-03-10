@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { addMonths, subMonths, format, addWeeks, subWeeks, startOfDay, endOfDay, addDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { ChevronLeft, ChevronRight, Sparkles, Printer } from "lucide-react";
 import { useStore, type DatePreset } from "@/lib/store";
@@ -322,6 +323,21 @@ export default function HomePage() {
             <div className="mt-12">
               <DigestSignup />
             </div>
+
+            {/* Footer links - required for OAuth branding verification */}
+            <footer className="mt-12 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-sm text-gray-500">
+              <Link to="/privacy" className="hover:text-primary-600 hover:underline">Privacy Policy</Link>
+              <span className="text-gray-300">·</span>
+              <Link to="/terms" className="hover:text-primary-600 hover:underline">Terms of Service</Link>
+              <span className="text-gray-300">·</span>
+              <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 hover:underline">Facebook Privacy</a>
+              <span className="text-gray-300">·</span>
+              <a href="https://www.facebook.com/terms.php" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 hover:underline">Facebook Terms</a>
+              <span className="text-gray-300">·</span>
+              <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 hover:underline">Google Privacy</a>
+              <span className="text-gray-300">·</span>
+              <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 hover:underline">Google Terms</a>
+            </footer>
           </>
         )}
       </div>
