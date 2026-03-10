@@ -19,6 +19,13 @@ interface MapViewProps {
 
 const DEFAULT_CENTER: [number, number] = [-106.3131, 42.8666]; // Casper, WY [lng, lat]
 
+function resolveColor(event: EventWithDetails): string {
+  if (event.color) return event.color;
+  const cats = event.orgCategories?.length ? event.orgCategories : event.categories ?? [];
+  if (cats.length > 0 && cats[0].color) return cats[0].color;
+  return "#4f46e5";
+}
+
 export function MapView({ events, onEventClick }: MapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -43,11 +50,12 @@ export function MapView({ events, onEventClick }: MapViewProps) {
 
     const markers: maplibregl.Marker[] = [];
     for (const event of withCoords) {
+      const color = resolveColor(event);
       const el = document.createElement("div");
       el.className = "event-marker";
       el.style.cssText = `
         width: 24px; height: 24px;
-        background: #4f46e5;
+        background: ${color};
         border: 2px solid white;
         border-radius: 50% 50% 50% 0;
         transform: rotate(-45deg);
