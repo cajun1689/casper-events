@@ -52,6 +52,19 @@ button {
   to { opacity: 1; }
 }
 
+@keyframes cyh-pulse-hover {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1.05); }
+}
+
+#cyh-embed-root .cyh-sponsor-btn {
+  transition: transform 0.2s ease-out;
+}
+#cyh-embed-root .cyh-sponsor-btn:hover {
+  animation: cyh-pulse-hover 0.4s ease-out;
+}
+
 /* Rich text description styles */
 #cyh-embed-root h1,
 #cyh-embed-root h2,

@@ -329,7 +329,7 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, contentToggles, 
       {(event.sponsors ?? []).length > 0 && (
         <div
           style={{
-            padding: "8px 16px 8px 72px",
+            padding: "8px 16px",
             display: "flex",
             flexWrap: "wrap",
             alignItems: "center",
@@ -369,6 +369,7 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, contentToggles, 
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
+                className="cyh-sponsor-btn"
                 style={{ ...wrapperStyle, textDecoration: "none", color: "inherit" }}
               >
                 {content}

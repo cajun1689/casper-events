@@ -195,7 +195,7 @@ function PosterCard({ event }: { event: EventWithDetails }) {
 
       {/* Sponsor logos - clickable, level-sized, centered */}
       {sponsors.length > 0 && (
-        <div className="flex flex-wrap items-center justify-center gap-3 pl-20 pr-4 py-2" style={{ opacity: 0.9 }}>
+        <div className="flex flex-wrap items-center justify-center gap-3 px-4 py-2" style={{ opacity: 0.9 }}>
           {sponsors.slice(0, 4).map((s) => {
             const h = s.level === "presenting" ? "h-8" : s.level === "gold" ? "h-7" : s.level === "silver" ? "h-6" : s.level === "bronze" ? "h-5" : "h-5";
             const mw = s.level === "presenting" ? "max-w-[80px]" : s.level === "gold" ? "max-w-[70px]" : s.level === "silver" ? "max-w-[55px]" : s.level === "bronze" ? "max-w-[48px]" : "max-w-[45px]";
@@ -216,7 +216,7 @@ function PosterCard({ event }: { event: EventWithDetails }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className={`${wrapperCls} cursor-pointer`}
+                className={`${wrapperCls} cursor-pointer sponsor-pulse-hover`}
                 style={wrapperStyle}
               >
                 {content}

@@ -56,6 +56,19 @@ body {
   100% { background-position: 200% 0; }
 }
 
+@keyframes sponsor-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1.05); }
+}
+
+.sponsor-pulse-hover {
+  transition: transform 0.2s ease-out;
+}
+.sponsor-pulse-hover:hover {
+  animation: sponsor-pulse 0.4s ease-out;
+}
+
 .animate-fade-in {
   animation: fade-in 0.4s ease-out both;
 }
