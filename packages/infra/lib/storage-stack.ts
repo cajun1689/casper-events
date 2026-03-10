@@ -113,6 +113,14 @@ export class StorageStack extends cdk.Stack {
       ),
     });
 
+    // Google Search Console domain verification (apex domain)
+    new route53.TxtRecord(this, "GoogleSiteVerification", {
+      zone: hostedZone,
+      values: [
+        "google-site-verification=SydLI7jiDkCrHMG8tTd5Yb8lwkPuXA3HvsVl5BH_sCE",
+      ],
+    });
+
     new cdk.CfnOutput(this, "DistributionDomainName", {
       value: this.distribution.distributionDomainName,
       description: "CloudFront distribution domain",
