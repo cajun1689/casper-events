@@ -19,7 +19,8 @@ function parseColor(hex: string): { r: number; g: number; b: number } | null {
 }
 
 function getTextColor(bg: string): string {
-  const c = parseColor(bg);
+  const solid = isGradient(bg) ? getSolidFromGradient(bg) : bg;
+  const c = parseColor(solid);
   if (!c) return "#1a1a1a";
   const lum = (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
   return lum > 0.55 ? "#1a1a1a" : "#ffffff";
@@ -27,8 +28,18 @@ function getTextColor(bg: string): string {
 
 function resolveColor(event: EventWithDetails): string {
   if (event.color) return event.color;
-  if (event.categories.length > 0 && event.categories[0].color) return event.categories[0].color;
+  const cats = event.orgCategories?.length ? event.orgCategories : event.categories ?? [];
+  if (cats.length > 0 && cats[0].color) return cats[0].color;
   return "#4f46e5";
+}
+
+function isGradient(value: string): boolean {
+  return typeof value === "string" && value.trim().startsWith("linear-gradient");
+}
+
+function getSolidFromGradient(value: string): string {
+  const match = value?.match(/#[0-9a-fA-F]{3,6}/);
+  return match ? match[0] : "#4f46e5";
 }
 
 export function PosterView({ events }: PosterViewProps) {
@@ -127,7 +138,10 @@ function PosterCard({ event }: { event: EventWithDetails }) {
     <Link
       to={`/events/${event.id}`}
       className="group relative flex min-h-[180px] flex-col overflow-hidden rounded-2xl shadow-md transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-      style={{ backgroundColor: bgColor, color: textColor }}
+      style={{
+        ...(isGradient(bgColor) ? { background: bgColor } : { backgroundColor: bgColor }),
+        color: textColor,
+      }}
     >
       {/* Date badge */}
       <div className="absolute left-3 top-3 z-10 flex w-14 flex-col items-center rounded-xl bg-white/95 py-1.5 shadow-lg">

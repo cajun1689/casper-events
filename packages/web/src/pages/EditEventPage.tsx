@@ -5,6 +5,15 @@ const COLOR_PALETTE = [
   "#f97316", "#eab308", "#22c55e", "#14b8a6", "#06b6d4", "#0ea5e9",
   "#3b82f6", "#8b5cf6", "#a855f7", "#d946ef",
 ];
+
+const GRADIENT_PRESETS = [
+  { value: "linear-gradient(135deg, #4f46e5, #7c3aed)", label: "Indigo" },
+  { value: "linear-gradient(135deg, #ec4899, #f43f5e)", label: "Pink" },
+  { value: "linear-gradient(135deg, #22c55e, #14b8a6)", label: "Green" },
+  { value: "linear-gradient(135deg, #f97316, #eab308)", label: "Amber" },
+  { value: "linear-gradient(135deg, #06b6d4, #0ea5e9)", label: "Cyan" },
+  { value: "linear-gradient(135deg, #8b5cf6, #a855f7)", label: "Violet" },
+];
 import { useNavigate, Navigate, Link, useParams } from "react-router-dom";
 import { ArrowLeft, Globe, Video, ChevronDown, Trash2, Clock } from "lucide-react";
 import { useStore } from "@/lib/store";
@@ -390,28 +399,48 @@ export default function EditEventPage() {
 
           <div>
             <label className="mb-1.5 block text-sm font-semibold text-gray-700">Card Color</label>
-            <p className="mb-2 text-xs text-gray-500">Optional — sets the card color in poster view. If empty, uses the category color.</p>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {COLOR_PALETTE.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => update("color", form.color === c ? "" : c)}
-                  className={`h-8 w-8 rounded-lg border-2 transition-all ${
-                    form.color === c ? "border-gray-900 scale-110" : "border-gray-200 hover:border-gray-400"
-                  }`}
-                  style={{ backgroundColor: c }}
-                  title={c}
-                />
-              ))}
+            <p className="mb-2 text-xs text-gray-500">Optional — sets the card color in poster view. Choose a solid color, gradient, or leave empty to use the category color.</p>
+            <div className="mb-2">
+              <p className="mb-1.5 text-xs font-medium text-gray-500">Solid colors</p>
+              <div className="flex flex-wrap gap-2">
+                {COLOR_PALETTE.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => update("color", form.color === c ? "" : c)}
+                    className={`h-8 w-8 rounded-lg border-2 transition-all ${
+                      form.color === c ? "border-gray-900 scale-110" : "border-gray-200 hover:border-gray-400"
+                    }`}
+                    style={{ backgroundColor: c }}
+                    title={c}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="mb-2">
+              <p className="mb-1.5 text-xs font-medium text-gray-500">Gradients</p>
+              <div className="flex flex-wrap gap-2">
+                {GRADIENT_PRESETS.map((g) => (
+                  <button
+                    key={g.value}
+                    type="button"
+                    onClick={() => update("color", form.color === g.value ? "" : g.value)}
+                    className={`h-8 w-24 rounded-lg border-2 transition-all ${
+                      form.color === g.value ? "border-gray-900 scale-105" : "border-gray-200 hover:border-gray-400"
+                    }`}
+                    style={{ background: g.value }}
+                    title={g.label}
+                  />
+                ))}
+              </div>
             </div>
             <input
               type="text"
               value={form.color}
               onChange={(e) => update("color", e.target.value)}
               className={inputCls}
-              placeholder="#4f46e5 or leave empty"
-              maxLength={25}
+              placeholder="#4f46e5 or linear-gradient(135deg, #4f46e5, #7c3aed)"
+              maxLength={200}
             />
           </div>
 

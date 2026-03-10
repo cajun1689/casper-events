@@ -23,7 +23,8 @@ function parseColor(hex: string): { r: number; g: number; b: number } | null {
 }
 
 function getTextColor(bg: string): string {
-  const c = parseColor(bg);
+  const solid = isGradient(bg) ? getSolidFromGradient(bg) : bg;
+  const c = parseColor(solid);
   if (!c) return "#1a1a1a";
   const lum = (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
   return lum > 0.55 ? "#1a1a1a" : "#ffffff";
@@ -31,8 +32,18 @@ function getTextColor(bg: string): string {
 
 function resolveColor(event: EventWithDetails): string {
   if (event.color) return event.color;
-  if (event.categories.length > 0 && event.categories[0].color) return event.categories[0].color;
+  const cats = event.orgCategories?.length ? event.orgCategories : event.categories ?? [];
+  if (cats.length > 0 && cats[0].color) return cats[0].color;
   return "#4f46e5";
+}
+
+function isGradient(value: string): boolean {
+  return typeof value === "string" && value.trim().startsWith("linear-gradient");
+}
+
+function getSolidFromGradient(value: string): string {
+  const match = value?.match(/#[0-9a-fA-F]{3,6}/);
+  return match ? match[0] : "#4f46e5";
 }
 
 function generateICS(event: EventWithDetails): string {
@@ -172,7 +183,10 @@ export default function EventDetailPage() {
         {/* Full poster display - matches poster card style */}
         <div
           className="relative overflow-hidden"
-          style={{ backgroundColor: resolveColor(event), color: getTextColor(resolveColor(event)) }}
+          style={{
+            ...(isGradient(resolveColor(event)) ? { background: resolveColor(event) } : { backgroundColor: resolveColor(event) }),
+            color: getTextColor(resolveColor(event)),
+          }}
         >
           <div className="p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row sm:items-start gap-6">

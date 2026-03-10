@@ -126,7 +126,7 @@ export const events = pgTable(
     source: eventSourceEnum("source").default("manual").notNull(),
     recurrenceRule: varchar("recurrence_rule", { length: 255 }),
     recurrenceParentId: uuid("recurrence_parent_id"),
-    color: varchar("color", { length: 25 }),
+    color: varchar("color", { length: 200 }),
     subtitle: varchar("subtitle", { length: 255 }),
     externalUrl: varchar("external_url", { length: 500 }),
     externalUrlText: varchar("external_url_text", { length: 100 }),

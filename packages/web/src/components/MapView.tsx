@@ -26,6 +26,14 @@ function resolveColor(event: EventWithDetails): string {
   return "#4f46e5";
 }
 
+function getSolidForMarker(value: string): string {
+  if (!value || value.trim().startsWith("linear-gradient")) {
+    const match = value?.match(/#[0-9a-fA-F]{3,6}/);
+    return match ? match[0] : "#4f46e5";
+  }
+  return value;
+}
+
 export function MapView({ events, onEventClick }: MapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -50,7 +58,7 @@ export function MapView({ events, onEventClick }: MapViewProps) {
 
     const markers: maplibregl.Marker[] = [];
     for (const event of withCoords) {
-      const color = resolveColor(event);
+      const color = getSolidForMarker(resolveColor(event));
       const el = document.createElement("div");
       el.className = "event-marker";
       el.style.cssText = `

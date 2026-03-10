@@ -40,7 +40,7 @@ export const createEventSchema = z
     categoryIds: z.array(z.string().uuid()).default([]),
     orgCategoryIds: z.array(z.string().uuid()).default([]),
     recurrenceRule: z.string().max(255).nullish(),
-    color: z.string().max(25).nullish(),
+    color: z.string().max(200).nullish(),
     subtitle: z.string().max(255).nullish(),
     externalUrl: z.string().max(500).nullish(),
     externalUrlText: z.string().max(100).nullish(),

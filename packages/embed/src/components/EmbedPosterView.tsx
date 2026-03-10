@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from "react";
 import { format, parseISO } from "date-fns";
 import type { EmbedEvent } from "../types";
-import { resolveEventColor, getTextColor } from "../lib/color";
+import { resolveEventColor, getTextColor, isGradient } from "../lib/color";
 import { EmbedPosterDetail } from "./EmbedPosterDetail";
 import { EmbedPosterFilters } from "./EmbedPosterFilters";
 import type { ContentToggles, LayoutOptions } from "../types";
@@ -184,7 +184,7 @@ function PosterCard({ event, onClick, ctaOpensExternal = false, contentToggles, 
         padding: 0,
         border: "none",
         borderRadius: "var(--cyh-radius, 12px)",
-        backgroundColor: bgColor,
+        ...(isGradient(bgColor) ? { background: bgColor } : { backgroundColor: bgColor }),
         color: textColor,
         cursor: "pointer",
         overflow: "hidden",

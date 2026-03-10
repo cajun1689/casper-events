@@ -92,6 +92,13 @@
       "when": 1772905100000,
       "tag": "0013_auto_approve_community_hub",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1773169000000,
+      "tag": "0014_event_color_gradient",
+      "breakpoints": true
     }
   ]
 }

@@ -40,18 +40,34 @@ export function getLuminance(r: number, g: number, b: number): number {
 }
 
 export function getTextColor(bgColor: string): string {
-  const rgb = parseColor(bgColor);
+  const solid = isGradient(bgColor) ? getSolidColorForContrast(bgColor) : bgColor;
+  const rgb = parseColor(solid);
   if (!rgb) return "var(--cyh-text, #1f2937)";
   const lum = getLuminance(rgb.r, rgb.g, rgb.b);
   return lum > 0.55 ? "#1a1a1a" : "#ffffff";
 }
 
 export function resolveEventColor(
-  event: Pick<EmbedEvent, "color" | "categories">,
+  event: Pick<EmbedEvent, "color" | "categories" | "orgCategories">,
   primaryColor = "var(--cyh-primary, #4f46e5)"
 ): string {
   if (event.color) return event.color;
-  const catColor = event.categories?.[0]?.color;
+  const cats = event.orgCategories?.length ? event.orgCategories : event.categories ?? [];
+  const catColor = cats[0]?.color;
   if (catColor) return catColor;
   return primaryColor;
+}
+
+/** True if the value is a CSS gradient (e.g. linear-gradient(...)) */
+export function isGradient(value: string): boolean {
+  return typeof value === "string" && value.trim().startsWith("linear-gradient");
+}
+
+/** Extract first hex color from gradient for text contrast, or return value if solid. */
+export function getSolidColorForContrast(value: string): string {
+  if (!value || isGradient(value)) {
+    const match = value?.match(/#[0-9a-fA-F]{3,6}/);
+    return match ? match[0] : "#4f46e5";
+  }
+  return value;
 }
