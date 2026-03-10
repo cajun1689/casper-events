@@ -209,6 +209,48 @@ export const publicEventsApi = {
   }) => api.post<{ success: boolean; message: string; eventId: string }>("/public/events", data),
 };
 
+export interface DigestSubscriber {
+  id: string;
+  email: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface DigestSettings {
+  emailHeader: string;
+  emailFooter: string;
+  headerImageUrl: string;
+  sponsors: { name: string; url: string; logoUrl?: string }[];
+  extraLinks: { label: string; url: string }[];
+}
+
+export const digestAdminApi = {
+  listSubscribers: () =>
+    api.get<{ data: DigestSubscriber[] }>("/admin/digest/subscribers"),
+  addSubscriber: (email: string) =>
+    api.post<{ success: boolean; message: string }>("/admin/digest/subscribers", { email }),
+  deleteSubscriber: (id: string) =>
+    api.delete(`/admin/digest/subscribers/${id}`),
+  exportSubscribers: async (): Promise<void> => {
+    const token = localStorage.getItem("cyh_token");
+    const res = await fetch(`${API_BASE}/admin/digest/subscribers/export`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error("Export failed");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "digest-subscribers.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+  getSettings: () =>
+    api.get<DigestSettings>("/admin/digest/settings"),
+  updateSettings: (settings: DigestSettings) =>
+    api.put<DigestSettings>("/admin/digest/settings", settings),
+};
+
 export const adminApi = {
   getBetaStatus: () =>
     api.get<{ requireInviteCode: boolean }>("/admin/beta-status"),
@@ -235,7 +277,7 @@ export const adminApi = {
     decision: string;
     notes?: string;
   }) => api.post("/admin/events/bulk-review", data),
-  stats: () => api.get<{ events: Record<string, number>; organizations: number }>("/admin/stats"),
+  stats: () => api.get<{ events: Record<string, number>; organizations: number; digestSubscribers?: number }>("/admin/stats"),
   organizations: () =>
     api.get<{ data: OrganizationPublic[] }>("/admin/organizations"),
   updateOrgStatus: (id: string, status: string) =>

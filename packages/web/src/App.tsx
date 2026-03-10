@@ -15,6 +15,7 @@ import AdminReviewPage from "@/pages/AdminReviewPage";
 import AdminOrgsPage from "@/pages/AdminOrgsPage";
 import AdminCategoriesPage from "@/pages/AdminCategoriesPage";
 import AdminBetaPage from "@/pages/AdminBetaPage";
+import AdminDigestPage from "@/pages/AdminDigestPage";
 import EmbedSettingsPage from "@/pages/EmbedSettingsPage";
 import FacebookSettingsPage from "@/pages/FacebookSettingsPage";
 import GoogleCalendarSettingsPage from "@/pages/GoogleCalendarSettingsPage";
@@ -50,6 +51,7 @@ export default function App() {
             <Route path="/admin/organizations" element={<AdminOrgsPage />} />
             <Route path="/admin/categories" element={<AdminCategoriesPage />} />
             <Route path="/admin/beta" element={<AdminBetaPage />} />
+            <Route path="/admin/digest" element={<AdminDigestPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/submit" element={<SubmitEventPage />} />
             <Route path="/unsubscribed" element={<UnsubscribedPage />} />

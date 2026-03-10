@@ -78,8 +78,9 @@ export async function handler() {
     eventsByDay.set(day, list);
   }
 
-  const html = buildDigestHtml(eventsByDay, categoriesMap);
-  const text = buildDigestText(eventsByDay, categoriesMap);
+  const digestSettings = await loadDigestSettings(db);
+  const html = buildDigestHtml(eventsByDay, categoriesMap, digestSettings);
+  const text = buildDigestText(eventsByDay, categoriesMap, digestSettings);
 
   let sent = 0;
   for (const sub of subscribers) {
@@ -96,13 +97,15 @@ export async function handler() {
     const subHtml = catFilter?.length
       ? buildDigestHtml(
           groupByDay(filteredEvents),
-          categoriesMap
+          categoriesMap,
+          digestSettings
         )
       : html;
     const subText = catFilter?.length
       ? buildDigestText(
           groupByDay(filteredEvents),
-          categoriesMap
+          categoriesMap,
+          digestSettings
         )
       : text;
 
@@ -143,6 +146,34 @@ export async function handler() {
   return { sent, subscribers: subscribers.length, events: events.length };
 }
 
+interface DigestSettings {
+  emailHeader: string;
+  emailFooter: string;
+  headerImageUrl: string;
+  sponsors: { name: string; url: string; logoUrl?: string }[];
+  extraLinks: { label: string; url: string }[];
+}
+
+async function loadDigestSettings(db: Awaited<ReturnType<typeof getDb>>): Promise<DigestSettings> {
+  const [row] = await db
+    .select()
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, "digest_settings"));
+  const defaultSettings: DigestSettings = {
+    emailHeader: "",
+    emailFooter: "",
+    headerImageUrl: "",
+    sponsors: [],
+    extraLinks: [],
+  };
+  if (!row?.value) return defaultSettings;
+  try {
+    return { ...defaultSettings, ...JSON.parse(row.value) };
+  } catch {
+    return defaultSettings;
+  }
+}
+
 function groupByDay(
   events: { startAt: Date }[]
 ): Map<string, typeof events> {
@@ -158,7 +189,8 @@ function groupByDay(
 
 function buildDigestHtml(
   eventsByDay: Map<string, { id: string; title: string; startAt: Date; endAt: Date | null; allDay: boolean; venueName: string | null; address: string | null }[]>,
-  categoriesMap: Record<string, { name: string; slug: string }[]>
+  categoriesMap: Record<string, { name: string; slug: string }[]>,
+  settings: DigestSettings
 ): string {
   const days = Array.from(eventsByDay.entries()).sort(([a], [b]) => a.localeCompare(b));
   let body = "";
@@ -185,14 +217,48 @@ function buildDigestHtml(
         </div>`;
     }
   }
+
+  const headerImg = settings.headerImageUrl?.trim()
+    ? `<img src="${escapeHtml(settings.headerImageUrl)}" alt="" style="max-width:100%;height:auto;display:block;margin-bottom:24px" />`
+    : "";
+  const customHeader = settings.emailHeader?.trim() ? `<div style="margin-bottom:24px">${settings.emailHeader}</div>` : "";
+  const customFooter = settings.emailFooter?.trim() ? `<div style="margin-top:24px">${settings.emailFooter}</div>` : "";
+
+  let sponsorsHtml = "";
+  if (settings.sponsors?.length) {
+    sponsorsHtml = `<div style="margin-top:32px;padding-top:24px;border-top:1px solid #e5e7eb">
+      <p style="font-size:12px;color:#6b7280;margin-bottom:12px">Our sponsors</p>
+      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center">`;
+    for (const s of settings.sponsors) {
+      if (s.logoUrl?.trim()) {
+        sponsorsHtml += `<a href="${escapeHtml(s.url || "#")}" style="display:block"><img src="${escapeHtml(s.logoUrl)}" alt="${escapeHtml(s.name)}" style="max-height:40px;width:auto" /></a>`;
+      } else {
+        sponsorsHtml += `<a href="${escapeHtml(s.url || "#")}" style="font-size:13px;color:#4f46e5;text-decoration:none">${escapeHtml(s.name)}</a>`;
+      }
+    }
+    sponsorsHtml += `</div></div>`;
+  }
+
+  let extraLinksHtml = "";
+  if (settings.extraLinks?.length) {
+    extraLinksHtml = `<div style="margin-top:16px;font-size:13px">
+      ${settings.extraLinks.map((l) => `<a href="${escapeHtml(l.url)}" style="color:#4f46e5;text-decoration:none;margin-right:16px">${escapeHtml(l.label)}</a>`).join("")}
+    </div>`;
+  }
+
   return `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>Weekly Events</title></head>
 <body style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1f2937">
+  ${headerImg}
+  ${customHeader}
   <h1 style="font-size:24px;margin-bottom:8px">This week's events</h1>
   <p style="color:#6b7280;margin-bottom:24px">Here are the upcoming events in your community.</p>
   ${body}
+  ${customFooter}
+  ${sponsorsHtml}
+  ${extraLinksHtml}
   <p style="margin-top:32px;font-size:12px;color:#9ca3af">
     <a href="{{UNSUBSCRIBE_URL}}" style="color:#9ca3af">Unsubscribe</a> from this digest
   </p>
@@ -202,7 +268,8 @@ function buildDigestHtml(
 
 function buildDigestText(
   eventsByDay: Map<string, { id: string; title: string; startAt: Date; endAt: Date | null; allDay: boolean; venueName: string | null; address: string | null }[]>,
-  categoriesMap: Record<string, { name: string; slug: string }[]>
+  categoriesMap: Record<string, { name: string; slug: string }[]>,
+  _settings: DigestSettings
 ): string {
   const days = Array.from(eventsByDay.entries()).sort(([a], [b]) => a.localeCompare(b));
   let lines: string[] = ["This week's events", ""];

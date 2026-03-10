@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { eq, inArray, sql, desc } from "drizzle-orm";
+import { randomBytes } from "crypto";
 import * as schema from "@cyh/shared/db";
 import { reviewEventSchema, createCategorySchema } from "@cyh/shared";
 import { getDb } from "../db/connection.js";
@@ -211,7 +212,7 @@ export async function adminRoutes(app: FastifyInstance) {
       const pending = await db
         .select()
         .from(schema.events)
-        .where(eq(schema.events.status, "published"))
+        .where(inArray(schema.events.status, ["draft", "published"]))
         .orderBy(desc(schema.events.createdAt));
 
       const orgIds = [...new Set(pending.map((e) => e.orgId))];
@@ -501,7 +502,7 @@ export async function adminRoutes(app: FastifyInstance) {
       const [eventCounts] = await db
         .select({
           total: sql<number>`count(*)`,
-          pending: sql<number>`count(*) filter (where ${schema.events.status} = 'published')`,
+          pending: sql<number>`count(*) filter (where ${schema.events.status} = 'draft' or ${schema.events.status} = 'published')`,
           approved: sql<number>`count(*) filter (where ${schema.events.status} = 'approved')`,
         })
         .from(schema.events);
@@ -510,10 +511,153 @@ export async function adminRoutes(app: FastifyInstance) {
         .select({ count: sql<number>`count(*)` })
         .from(schema.organizations);
 
+      const [digestCount] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(schema.digestSubscribers)
+        .where(eq(schema.digestSubscribers.active, true));
+
       return reply.send({
         events: eventCounts,
         organizations: Number(orgCount.count),
+        digestSubscribers: Number(digestCount.count),
       });
+    }
+  );
+
+  // ── Admin: Digest subscribers ─────────────────────────────────
+
+  app.get(
+    "/admin/digest/subscribers",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      await requireAdmin(db, request.user!.sub);
+      const subs = await db
+        .select()
+        .from(schema.digestSubscribers)
+        .orderBy(desc(schema.digestSubscribers.createdAt));
+      return reply.send({
+        data: subs.map((s) => ({
+          id: s.id,
+          email: s.email,
+          active: s.active,
+          createdAt: s.createdAt.toISOString(),
+        })),
+      });
+    }
+  );
+
+  app.post(
+    "/admin/digest/subscribers",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      await requireAdmin(db, request.user!.sub);
+      const { email } = request.body as { email: string };
+      if (!email || !email.trim()) {
+        return reply.status(400).send({ error: "Email is required" });
+      }
+      const token = randomBytes(32).toString("hex");
+      await db
+        .insert(schema.digestSubscribers)
+        .values({
+          email: email.trim().toLowerCase(),
+          preferences: {},
+          unsubscribeToken: token,
+          active: true,
+        })
+        .onConflictDoUpdate({
+          target: schema.digestSubscribers.email,
+          set: { active: true, unsubscribeToken: token },
+        });
+      return reply.send({ success: true, message: "Subscriber added" });
+    }
+  );
+
+  app.get(
+    "/admin/digest/subscribers/export",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      await requireAdmin(db, request.user!.sub);
+      const subs = await db
+        .select({ email: schema.digestSubscribers.email, active: schema.digestSubscribers.active, createdAt: schema.digestSubscribers.createdAt })
+        .from(schema.digestSubscribers)
+        .orderBy(desc(schema.digestSubscribers.createdAt));
+      const csv = ["email,active,subscribed_at", ...subs.map((s) => `${s.email},${s.active},${s.createdAt.toISOString()}`)].join("\n");
+      reply.header("Content-Type", "text/csv");
+      reply.header("Content-Disposition", 'attachment; filename="digest-subscribers.csv"');
+      return reply.send(csv);
+    }
+  );
+
+  app.delete(
+    "/admin/digest/subscribers/:id",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      await requireAdmin(db, request.user!.sub);
+      const { id } = request.params as { id: string };
+      await db
+        .delete(schema.digestSubscribers)
+        .where(eq(schema.digestSubscribers.id, id));
+      return reply.status(204).send();
+    }
+  );
+
+  // ── Admin: Digest settings (email template, sponsors, links, header image) ──
+
+  const DEFAULT_DIGEST_SETTINGS = {
+    emailHeader: "",
+    emailFooter: "",
+    headerImageUrl: "",
+    sponsors: [] as { name: string; url: string; logoUrl: string }[],
+    extraLinks: [] as { label: string; url: string }[],
+  };
+
+  app.get(
+    "/admin/digest/settings",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      await requireAdmin(db, request.user!.sub);
+      const [row] = await db
+        .select()
+        .from(schema.appSettings)
+        .where(eq(schema.appSettings.key, "digest_settings"));
+      const settings = row?.value ? { ...DEFAULT_DIGEST_SETTINGS, ...JSON.parse(row.value) } : DEFAULT_DIGEST_SETTINGS;
+      return reply.send(settings);
+    }
+  );
+
+  app.put(
+    "/admin/digest/settings",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      await requireAdmin(db, request.user!.sub);
+      const body = request.body as typeof DEFAULT_DIGEST_SETTINGS;
+      const settings = {
+        emailHeader: body.emailHeader ?? "",
+        emailFooter: body.emailFooter ?? "",
+        headerImageUrl: body.headerImageUrl ?? "",
+        sponsors: Array.isArray(body.sponsors) ? body.sponsors : [],
+        extraLinks: Array.isArray(body.extraLinks) ? body.extraLinks : [],
+      };
+      const value = JSON.stringify(settings);
+      const [existing] = await db
+        .select()
+        .from(schema.appSettings)
+        .where(eq(schema.appSettings.key, "digest_settings"));
+      if (existing) {
+        await db
+          .update(schema.appSettings)
+          .set({ value, updatedAt: new Date() })
+          .where(eq(schema.appSettings.key, "digest_settings"));
+      } else {
+        await db.insert(schema.appSettings).values({ key: "digest_settings", value });
+      }
+      return reply.send(settings);
     }
   );
 }
