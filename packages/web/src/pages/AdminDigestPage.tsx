@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { ArrowLeft, Mail, Plus, Trash2, Download, Image } from "lucide-react";
+import { ImageUrlOrUpload } from "@/components/ImageUrlOrUpload";
 import { useStore } from "@/lib/store";
 import { digestAdminApi, type DigestSubscriber, type DigestSettings } from "@/lib/api";
 
@@ -292,17 +293,18 @@ export default function AdminDigestPage() {
               <div className="space-y-6">
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-gray-700">
-                    Header image URL
+                    Header image
                   </label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-start">
                     <Image className="h-5 w-5 text-gray-400 mt-2.5 shrink-0" />
-                    <input
-                      type="url"
-                      value={settings.headerImageUrl}
-                      onChange={(e) => updateSettingsField("headerImageUrl", e.target.value)}
-                      placeholder="https://..."
-                      className={inputCls}
-                    />
+                    <div className="flex-1 min-w-0">
+                      <ImageUrlOrUpload
+                        value={settings.headerImageUrl}
+                        onChange={(url) => updateSettingsField("headerImageUrl", url)}
+                        placeholder="https://... or upload"
+                        className={inputCls + " w-full"}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -346,29 +348,33 @@ export default function AdminDigestPage() {
                     {settings.sponsors.map((sp, i) => (
                       <div
                         key={i}
-                        className="flex flex-wrap gap-3 items-start rounded-xl border border-gray-100 p-3 bg-gray-50/50"
+                        className="flex flex-col gap-3 rounded-xl border border-gray-100 p-4 bg-gray-50/50"
                       >
-                        <input
-                          type="text"
-                          value={sp.name}
-                          onChange={(e) => updateSponsor(i, "name", e.target.value)}
-                          placeholder="Sponsor name"
-                          className={inputCls + " flex-1 min-w-[120px]"}
-                        />
-                        <input
-                          type="url"
-                          value={sp.url}
-                          onChange={(e) => updateSponsor(i, "url", e.target.value)}
-                          placeholder="Website URL"
-                          className={inputCls + " flex-1 min-w-[120px]"}
-                        />
-                        <input
-                          type="url"
-                          value={sp.logoUrl ?? ""}
-                          onChange={(e) => updateSponsor(i, "logoUrl", e.target.value)}
-                          placeholder="Logo URL"
-                          className={inputCls + " flex-1 min-w-[120px]"}
-                        />
+                        <div className="flex flex-wrap gap-3">
+                          <input
+                            type="text"
+                            value={sp.name}
+                            onChange={(e) => updateSponsor(i, "name", e.target.value)}
+                            placeholder="Sponsor name"
+                            className={inputCls + " flex-1 min-w-[120px]"}
+                          />
+                          <input
+                            type="url"
+                            value={sp.url}
+                            onChange={(e) => updateSponsor(i, "url", e.target.value)}
+                            placeholder="Website URL"
+                            className={inputCls + " flex-1 min-w-[120px]"}
+                          />
+                        </div>
+                        <div>
+                          <span className="text-xs font-semibold text-gray-500 block mb-1">Logo</span>
+                          <ImageUrlOrUpload
+                            value={sp.logoUrl ?? ""}
+                            onChange={(url) => updateSponsor(i, "logoUrl", url)}
+                            placeholder="Logo URL or upload"
+                            className={inputCls + " flex-1 min-w-0"}
+                          />
+                        </div>
                         <button
                           onClick={() => removeSponsor(i)}
                           className="text-red-600 hover:text-red-700 text-sm font-semibold"
@@ -400,13 +406,15 @@ export default function AdminDigestPage() {
                         className="flex flex-col gap-3 rounded-xl border border-gray-100 p-4 bg-gray-50/50"
                       >
                         <div className="flex flex-wrap gap-3">
-                          <input
-                            type="url"
-                            value={n.imageUrl}
-                            onChange={(e) => updateLatestNews(i, "imageUrl", e.target.value)}
-                            placeholder="Image URL"
-                            className={inputCls + " flex-1 min-w-[120px]"}
-                          />
+                          <div className="flex-1 min-w-[200px]">
+                            <span className="text-xs font-semibold text-gray-500 block mb-1">Image</span>
+                            <ImageUrlOrUpload
+                              value={n.imageUrl}
+                              onChange={(url) => updateLatestNews(i, "imageUrl", url)}
+                              placeholder="Image URL or upload"
+                              className={inputCls + " w-full"}
+                            />
+                          </div>
                           <input
                             type="text"
                             value={n.title}

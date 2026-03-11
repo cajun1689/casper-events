@@ -58,7 +58,7 @@ export async function uploadRoutes(app: FastifyInstance) {
         });
       }
 
-      const target = folder === "logos" ? "logos" : "events";
+      const target = folder === "logos" ? "logos" : folder === "digest" ? "digest" : "events";
       const result = await presign(target, filename, contentType, fileSize);
       return reply.send(result);
     }
