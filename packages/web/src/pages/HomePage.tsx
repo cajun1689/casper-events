@@ -133,6 +133,11 @@ export default function HomePage() {
     );
   }, [events, selectedCategories]);
 
+  const upcomingEvents = useMemo(() => {
+    const now = new Date();
+    return filteredEvents.filter((e) => new Date(e.startAt) >= now);
+  }, [filteredEvents]);
+
   function navigatePrev() {
     if (viewMode === "week") {
       setCurrentDate((d) => subWeeks(d, 1));
@@ -306,10 +311,10 @@ export default function HomePage() {
             </div>
 
             {/* Event cards below calendar */}
-            {showCardGrid && filteredEvents.length > 0 && (
+            {showCardGrid && upcomingEvents.length > 0 && (
               <div className="mt-4">
                 <EventCardGrid
-                  events={filteredEvents}
+                  events={upcomingEvents}
                   categories={categories}
                   expandedEventId={expandedEventId}
                   onEventClick={handleEventClick}

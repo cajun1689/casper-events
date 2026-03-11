@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CalendarHeart, Users, Code2, Heart, Building2, Globe, Share2, Printer, MapPin, Award, LayoutGrid, Mail, CalendarPlus, Upload } from "lucide-react";
+import { CalendarHeart, Users, Code2, Heart, Building2, Globe, Share2, Printer, MapPin, Award, LayoutGrid, Mail, CalendarPlus } from "lucide-react";
 
 export default function AboutPage() {
   return (
@@ -89,12 +89,6 @@ export default function AboutPage() {
               title: "Weekly Digest",
               desc: "Subscribe to a weekly email digest of upcoming events. Get a curated list delivered to your inbox every Monday with event cards, images, and links.",
               gradient: "from-teal-500 to-teal-600",
-            },
-            {
-              icon: Upload,
-              title: "Submit an Event",
-              desc: "Anyone can submit an event for consideration. If you're not an organization yet, you can still suggest events — we'll review and add them.",
-              gradient: "from-slate-500 to-slate-600",
             },
           ].map((item) => (
             <div key={item.title} className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm">

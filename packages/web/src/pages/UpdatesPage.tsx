@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Sparkles, Mail, CalendarPlus, LayoutGrid } from "lucide-react";
+import { ArrowLeft, Sparkles, Mail, CalendarPlus } from "lucide-react";
 
 const updates = [
   {
@@ -35,18 +35,6 @@ const updates = [
       {
         title: "Approval workflow",
         desc: "Optional approval step for Google Calendar events — control what gets published before it goes live.",
-      },
-    ],
-  },
-  {
-    date: "March 2026",
-    title: "Public Event Submission",
-    icon: LayoutGrid,
-    gradient: "from-violet-500 to-violet-600",
-    items: [
-      {
-        title: "Submit without an account",
-        desc: "Anyone can submit an event for consideration. If you're not an organization yet, you can still suggest events — we'll review and add them.",
       },
     ],
   },
