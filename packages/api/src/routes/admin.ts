@@ -662,4 +662,48 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.send(settings);
     }
   );
+
+  // ── Admin: Site sponsors (main page) ───────────────────────
+
+  const DEFAULT_SITE_SPONSORS: { name: string; logoUrl: string; url: string; level: "presenting" | "gold" | "silver" | "bronze" | "community"; sortOrder: number }[] = [];
+
+  app.get(
+    "/admin/site-sponsors",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      await requireAdmin(db, request.user!.sub);
+      const [row] = await db
+        .select()
+        .from(schema.appSettings)
+        .where(eq(schema.appSettings.key, "site_sponsors"));
+      const sponsors = row?.value ? JSON.parse(row.value) : DEFAULT_SITE_SPONSORS;
+      return reply.send({ data: sponsors });
+    }
+  );
+
+  app.put(
+    "/admin/site-sponsors",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const db = await getDb();
+      await requireAdmin(db, request.user!.sub);
+      const body = request.body as { data: typeof DEFAULT_SITE_SPONSORS };
+      const sponsors = Array.isArray(body?.data) ? body.data : [];
+      const value = JSON.stringify(sponsors);
+      const [existing] = await db
+        .select()
+        .from(schema.appSettings)
+        .where(eq(schema.appSettings.key, "site_sponsors"));
+      if (existing) {
+        await db
+          .update(schema.appSettings)
+          .set({ value, updatedAt: new Date() })
+          .where(eq(schema.appSettings.key, "site_sponsors"));
+      } else {
+        await db.insert(schema.appSettings).values({ key: "site_sponsors", value });
+      }
+      return reply.send({ data: sponsors });
+    }
+  );
 }

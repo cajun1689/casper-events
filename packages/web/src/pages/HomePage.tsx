@@ -76,6 +76,7 @@ import { CategoryFilter } from "@/components/CategoryFilter";
 import { ViewToggle } from "@/components/ViewToggle";
 import { EventCardGrid } from "@/components/EventCardGrid";
 import { DigestSignup } from "@/components/DigestSignup";
+import { SiteSponsors } from "@/components/SiteSponsors";
 
 export default function HomePage() {
   const {
@@ -323,6 +324,9 @@ export default function HomePage() {
                 />
               </div>
             )}
+
+            {/* Site sponsors */}
+            <SiteSponsors />
 
             {/* Digest signup */}
             <div className="mt-12">

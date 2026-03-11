@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Shield, CalendarCheck, Building2, Tags, BarChart3, Ticket, Mail } from "lucide-react";
+import { Shield, CalendarCheck, Building2, Tags, BarChart3, Ticket, Mail, Award } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { adminApi } from "@/lib/api";
 
@@ -21,6 +21,7 @@ export default function AdminPage() {
     { to: "/admin/categories", label: "Categories", desc: "Add or edit event categories", icon: Tags, gradient: "from-emerald-500 to-emerald-600" },
     { to: "/admin/beta", label: "Beta & Invite Codes", desc: "Toggle beta mode and create invite codes", icon: Ticket, gradient: "from-amber-500 to-amber-600" },
     { to: "/admin/digest", label: "Digest Subscribers", desc: "Manage digest subscribers and email content", icon: Mail, gradient: "from-teal-500 to-teal-600", count: stats?.digestSubscribers },
+    { to: "/admin/site-sponsors", label: "Site Sponsors", desc: "Sponsors shown on the main events page", icon: Award, gradient: "from-amber-500 to-amber-600" },
   ];
 
   return (

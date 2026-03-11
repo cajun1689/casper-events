@@ -192,6 +192,18 @@ export const digestApi = {
     api.post<{ success: boolean; message: string }>("/digest/subscribe", data),
 };
 
+export interface SiteSponsor {
+  name: string;
+  logoUrl: string;
+  url: string;
+  level: "presenting" | "gold" | "silver" | "bronze" | "community";
+  sortOrder: number;
+}
+
+export const siteSponsorsApi = {
+  list: () => api.get<{ data: SiteSponsor[] }>("/site-sponsors"),
+};
+
 export const publicEventsApi = {
   submit: (data: {
     title: string;
@@ -290,4 +302,8 @@ export const adminApi = {
     ),
   updateOrganization: (id: string, data: { name?: string; slug?: string; logoUrl?: string | null; autoApprove?: boolean; communityHub?: boolean }) =>
     api.put<OrganizationPublic>(`/admin/organizations/${id}`, data),
+  getSiteSponsors: () =>
+    api.get<{ data: SiteSponsor[] }>("/admin/site-sponsors"),
+  updateSiteSponsors: (sponsors: SiteSponsor[]) =>
+    api.put<{ data: SiteSponsor[] }>("/admin/site-sponsors", { data: sponsors }),
 };
