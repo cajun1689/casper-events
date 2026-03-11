@@ -240,7 +240,7 @@ export default function HomePage() {
               <Printer className="h-4 w-4" />
               <span className="hidden sm:inline">Print</span>
             </button>
-            <ViewToggle current={viewMode} onChange={handleViewChange} />
+            <ViewToggle current={viewMode} onChange={handleViewChange} excludeViews={["week"]} />
           </div>
         </div>
 

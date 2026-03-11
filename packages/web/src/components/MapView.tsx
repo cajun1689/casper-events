@@ -44,6 +44,7 @@ export function MapView({ events, onEventClick }: MapViewProps) {
     (e) => e.latitude != null && e.longitude != null && !Number.isNaN(e.latitude) && !Number.isNaN(e.longitude)
   );
   const coordsKey = withCoords.map((e) => `${e.id}`).sort().join(",");
+  const eventsById = Object.fromEntries(withCoords.map((e) => [e.id, e]));
 
   useEffect(() => {
     if (!mapContainerRef.current || withCoords.length === 0) return;
@@ -62,6 +63,7 @@ export function MapView({ events, onEventClick }: MapViewProps) {
       const color = getSolidForMarker(resolveColor(event));
       const el = document.createElement("div");
       el.className = "event-marker";
+      el.setAttribute("data-event-id", event.id);
       el.style.cssText = `
         width: 24px; height: 24px;
         background: ${color};
@@ -70,40 +72,55 @@ export function MapView({ events, onEventClick }: MapViewProps) {
         transform: rotate(-45deg);
         box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         cursor: pointer;
+        pointer-events: auto;
       `;
 
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat([event.longitude!, event.latitude!])
         .addTo(map);
 
-      el.addEventListener("click", () => {
-        onEventClick?.(event.id);
-        if (popupRef.current) {
-          popupRef.current.remove();
-          popupRef.current = null;
-        }
-        const title = escapeHtml(event.title);
-        const venue = event.venueName ? escapeHtml(event.venueName) : "";
-        const timeStr = format(parseISO(event.startAt), "EEE, MMM d") + (event.allDay ? " · All day" : ` · ${format(parseISO(event.startAt), "h:mm a")}`);
-        const cats = (event.categories ?? []).map((c) => escapeHtml(c.name)).join(", ");
-        const popup = new maplibregl.Popup({ offset: 25, closeButton: true })
-          .setLngLat([event.longitude!, event.latitude!])
-          .setHTML(
-            `<div style="min-width:220px;font-family:system-ui,sans-serif">
-              <a href="/events/${event.id}" style="font-weight:600;font-size:15px;color:#1f2937;text-decoration:none;display:block" onmouseover="this.style.color='#4f46e5'" onmouseout="this.style.color='#1f2937'">${title}</a>
-              <p style="margin:6px 0 0;font-size:13px;color:#6b7280">${timeStr}</p>
-              ${venue ? `<p style="margin:2px 0 0;font-size:12px;color:#9ca3af">${venue}</p>` : ""}
-              ${cats ? `<p style="margin:4px 0 0;font-size:11px;color:#9ca3af">${cats}</p>` : ""}
-              <a href="/events/${event.id}" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:600;color:#4f46e5;text-decoration:none">View details →</a>
-            </div>`
-          )
-          .addTo(map);
-        popupRef.current = popup;
-        popup.on("close", () => { popupRef.current = null; });
-      });
-
       markers.push(marker);
     }
+
+    function showPopupForEvent(event: (typeof withCoords)[0]) {
+      onEventClick?.(event.id);
+      if (popupRef.current) {
+        popupRef.current.remove();
+        popupRef.current = null;
+      }
+      const title = escapeHtml(event.title);
+      const venue = event.venueName ? escapeHtml(event.venueName) : "";
+      const timeStr = format(parseISO(event.startAt), "EEE, MMM d") + (event.allDay ? " · All day" : ` · ${format(parseISO(event.startAt), "h:mm a")}`);
+      const cats = (event.categories ?? []).map((c) => escapeHtml(c.name)).join(", ");
+      const popup = new maplibregl.Popup({ offset: 25, closeButton: true })
+        .setLngLat([event.longitude!, event.latitude!])
+        .setHTML(
+          `<div style="min-width:220px;font-family:system-ui,sans-serif">
+            <a href="/events/${event.id}" style="font-weight:600;font-size:15px;color:#1f2937;text-decoration:none;display:block" onmouseover="this.style.color='#4f46e5'" onmouseout="this.style.color='#1f2937'">${title}</a>
+            <p style="margin:6px 0 0;font-size:13px;color:#6b7280">${timeStr}</p>
+            ${venue ? `<p style="margin:2px 0 0;font-size:12px;color:#9ca3af">${venue}</p>` : ""}
+            ${cats ? `<p style="margin:4px 0 0;font-size:11px;color:#9ca3af">${cats}</p>` : ""}
+            <a href="/events/${event.id}" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:600;color:#4f46e5;text-decoration:none">View details →</a>
+          </div>`
+        )
+        .addTo(map);
+      popupRef.current = popup;
+      popup.on("close", () => { popupRef.current = null; });
+    }
+
+    const handleContainerClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const clickedMarker = target?.closest?.("[data-event-id]");
+      const eventId = clickedMarker?.getAttribute?.("data-event-id");
+      if (eventId && eventsById[eventId]) {
+        e.stopPropagation();
+        e.preventDefault();
+        showPopupForEvent(eventsById[eventId]);
+      }
+    };
+
+    const container = map.getContainer();
+    container.addEventListener("click", handleContainerClick, true);
 
     if (withCoords.length === 1) {
       map.flyTo({ center: [withCoords[0].longitude!, withCoords[0].latitude!], zoom: 14 });
@@ -123,6 +140,7 @@ export function MapView({ events, onEventClick }: MapViewProps) {
     markersRef.current = markers;
 
     return () => {
+      container.removeEventListener("click", handleContainerClick, true);
       if (popupRef.current) {
         popupRef.current.remove();
         popupRef.current = null;

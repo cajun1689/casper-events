@@ -4,9 +4,11 @@ import clsx from "clsx";
 interface ViewToggleProps {
   current: string;
   onChange: (mode: string) => void;
+  /** Views to hide (e.g. ["week"] on main page) */
+  excludeViews?: string[];
 }
 
-const views = [
+const ALL_VIEWS = [
   { key: "month", label: "Month", icon: Calendar },
   { key: "week", label: "Week", icon: CalendarDays },
   { key: "list", label: "List", icon: List },
@@ -14,7 +16,10 @@ const views = [
   { key: "map", label: "Map", icon: MapPin },
 ] as const;
 
-export function ViewToggle({ current, onChange }: ViewToggleProps) {
+export function ViewToggle({ current, onChange, excludeViews = [] }: ViewToggleProps) {
+  const views = excludeViews.length
+    ? ALL_VIEWS.filter((v) => !excludeViews.includes(v.key))
+    : ALL_VIEWS;
   return (
     <div className="inline-flex rounded-xl border border-gray-200/80 bg-white/50 p-1 shadow-sm backdrop-blur-sm">
       {views.map(({ key, label, icon: Icon }) => (
