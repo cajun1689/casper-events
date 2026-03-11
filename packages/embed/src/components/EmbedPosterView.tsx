@@ -21,7 +21,7 @@ function groupEventsByMonth(events: EmbedEvent[]): Map<string, EmbedEvent[]> {
   const groups = new Map<string, EmbedEvent[]>();
   const sorted = [...events].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   for (const event of sorted) {
-    const key = format(parseISO(event.startAt), "yyyy-MM");
+    const key = event.startAt.slice(0, 7);
     const list = groups.get(key) ?? [];
     list.push(event);
     groups.set(key, list);
@@ -95,7 +95,9 @@ export function EmbedPosterView({
         onMonthSelect={scrollToMonth}
         onCategoryFilter={(slugs) => setCategoryFilter(slugs)}
       />
-      {Array.from(grouped.entries()).map(([monthKey, monthEvents]) => {
+      {Array.from(grouped.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([monthKey, monthEvents]) => {
         const firstDate = parseISO(monthEvents[0].startAt);
         const monthLabel = format(firstDate, "MMMM yyyy");
         return (
