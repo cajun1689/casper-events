@@ -222,6 +222,7 @@ export interface DigestSettings {
   headerImageUrl: string;
   sponsors: { name: string; url: string; logoUrl?: string }[];
   extraLinks: { label: string; url: string }[];
+  latestNews: { imageUrl: string; title: string; author: string; date: string; summary: string; url?: string }[];
 }
 
 export const digestAdminApi = {

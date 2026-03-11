@@ -20,6 +20,7 @@ import EmbedSettingsPage from "@/pages/EmbedSettingsPage";
 import FacebookSettingsPage from "@/pages/FacebookSettingsPage";
 import GoogleCalendarSettingsPage from "@/pages/GoogleCalendarSettingsPage";
 import AboutPage from "@/pages/AboutPage";
+import UpdatesPage from "@/pages/UpdatesPage";
 import SubmitEventPage from "@/pages/SubmitEventPage";
 import UnsubscribedPage from "@/pages/UnsubscribedPage";
 import PrivacyPage from "@/pages/PrivacyPage";
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="/admin/beta" element={<AdminBetaPage />} />
             <Route path="/admin/digest" element={<AdminDigestPage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/updates" element={<UpdatesPage />} />
             <Route path="/submit" element={<SubmitEventPage />} />
             <Route path="/unsubscribed" element={<UnsubscribedPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />

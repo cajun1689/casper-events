@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CalendarHeart, Users, Code2, Heart, Building2, Globe, Share2, Printer, MapPin, Award, LayoutGrid } from "lucide-react";
+import { CalendarHeart, Users, Code2, Heart, Building2, Globe, Share2, Printer, MapPin, Award, LayoutGrid, Mail, CalendarPlus, Upload } from "lucide-react";
 
 export default function AboutPage() {
   return (
@@ -84,6 +84,18 @@ export default function AboutPage() {
               desc: "No ads, no subscriptions, no tracking. Casper Events is a community resource, funded by our nonprofit mission.",
               gradient: "from-rose-500 to-rose-600",
             },
+            {
+              icon: Mail,
+              title: "Weekly Digest",
+              desc: "Subscribe to a weekly email digest of upcoming events. Get a curated list delivered to your inbox every Monday with event cards, images, and links.",
+              gradient: "from-teal-500 to-teal-600",
+            },
+            {
+              icon: Upload,
+              title: "Submit an Event",
+              desc: "Anyone can submit an event for consideration. If you're not an organization yet, you can still suggest events — we'll review and add them.",
+              gradient: "from-slate-500 to-slate-600",
+            },
           ].map((item) => (
             <div key={item.title} className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm">
               <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${item.gradient} shadow-lg`}>
@@ -143,6 +155,18 @@ export default function AboutPage() {
               desc: "Connect with other organizations to show each other's events on your embedded calendar. Great for coalitions, chambers, and partner networks.",
               gradient: "from-teal-500 to-teal-600",
             },
+            {
+              icon: CalendarPlus,
+              title: "Google Calendar Sync",
+              desc: "Connect your Google Calendar to sync events automatically. Events you create or approve can be published directly to Google Calendar.",
+              gradient: "from-green-500 to-green-600",
+            },
+            {
+              icon: Mail,
+              title: "Digest Newsletter Admin",
+              desc: "Admins can manage digest subscribers, export lists, add or remove subscribers manually, and customize the weekly email with sponsors, links, and a Latest News section.",
+              gradient: "from-teal-500 to-teal-600",
+            },
           ].map((item) => (
             <div key={item.title} className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm">
               <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${item.gradient} shadow-lg`}>
@@ -162,6 +186,27 @@ export default function AboutPage() {
           >
             Sign Up for Free
           </Link>
+        </div>
+      </section>
+
+      {/* Updates */}
+      <section className="mb-12 rounded-2xl border border-gray-200/60 bg-white/80 p-8 shadow-sm backdrop-blur-sm">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 shadow-lg">
+            <LayoutGrid className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h2 className="mb-2 text-xl font-extrabold text-gray-900">What's New</h2>
+            <p className="text-sm leading-relaxed text-gray-600">
+              We're constantly improving Casper Events. Check out our updates page for the latest features, improvements, and announcements.
+            </p>
+            <Link
+              to="/updates"
+              className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600 transition-colors hover:text-primary-700"
+            >
+              View updates &rarr;
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -200,6 +245,10 @@ export default function AboutPage() {
           </a>
           <span className="text-gray-300">·</span>
           <span className="text-gray-500">Casper, Wyoming</span>
+          <span className="text-gray-300">·</span>
+          <Link to="/updates" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">
+            Updates
+          </Link>
           <span className="text-gray-300">·</span>
           <Link to="/privacy" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">
             Privacy Policy

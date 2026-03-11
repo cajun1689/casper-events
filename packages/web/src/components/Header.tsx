@@ -37,6 +37,7 @@ export function Header() {
               { to: "/organizations", label: "Organizations" },
               ...(user ? [{ to: "/dashboard/events/new", label: "Submit Event" }] : []),
               { to: "/about", label: "About" },
+              { to: "/updates", label: "Updates" },
             ].map((link) => (
               <Link
                 key={link.to}
@@ -112,6 +113,7 @@ export function Header() {
             { to: "/organizations", label: "Organizations" },
             ...(user ? [{ to: "/dashboard/events/new", label: "Submit Event" }] : []),
             { to: "/about", label: "About" },
+            { to: "/updates", label: "Updates" },
             ...(!user ? [{ to: "/login", label: "Login" }] : []),
           ].map((link) => (
             <Link

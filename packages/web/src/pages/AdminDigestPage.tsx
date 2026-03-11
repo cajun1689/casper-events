@@ -156,6 +156,32 @@ export default function AdminDigestPage() {
     });
   }
 
+  function addLatestNews() {
+    setSettings((prev) =>
+      prev
+        ? {
+            ...prev,
+            latestNews: [...prev.latestNews, { imageUrl: "", title: "", author: "", date: "", summary: "", url: "" }],
+          }
+        : null
+    );
+  }
+
+  function removeLatestNews(i: number) {
+    setSettings((prev) =>
+      prev ? { ...prev, latestNews: prev.latestNews.filter((_, j) => j !== i) } : null
+    );
+  }
+
+  function updateLatestNews(i: number, field: "imageUrl" | "title" | "author" | "date" | "summary" | "url", value: string) {
+    setSettings((prev) => {
+      if (!prev) return null;
+      const next = [...prev.latestNews];
+      next[i] = { ...next[i], [field]: value };
+      return { ...prev, latestNews: next };
+    });
+  }
+
   const inputCls =
     "w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm transition-all focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-100";
 
@@ -346,6 +372,82 @@ export default function AdminDigestPage() {
                         <button
                           onClick={() => removeSponsor(i)}
                           className="text-red-600 hover:text-red-700 text-sm font-semibold"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-semibold text-gray-700">Latest News</label>
+                    <button
+                      onClick={addLatestNews}
+                      className="text-sm font-semibold text-primary-600 hover:text-primary-700"
+                    >
+                      + Add news item
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Optional. Only shown in the digest when items are added. Leave empty to hide this section.
+                  </p>
+                  <div className="space-y-3">
+                    {settings.latestNews.map((n, i) => (
+                      <div
+                        key={i}
+                        className="flex flex-col gap-3 rounded-xl border border-gray-100 p-4 bg-gray-50/50"
+                      >
+                        <div className="flex flex-wrap gap-3">
+                          <input
+                            type="url"
+                            value={n.imageUrl}
+                            onChange={(e) => updateLatestNews(i, "imageUrl", e.target.value)}
+                            placeholder="Image URL"
+                            className={inputCls + " flex-1 min-w-[120px]"}
+                          />
+                          <input
+                            type="text"
+                            value={n.title}
+                            onChange={(e) => updateLatestNews(i, "title", e.target.value)}
+                            placeholder="Title"
+                            className={inputCls + " flex-1 min-w-[120px]"}
+                          />
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                          <input
+                            type="text"
+                            value={n.author}
+                            onChange={(e) => updateLatestNews(i, "author", e.target.value)}
+                            placeholder="Author (e.g. Oil City Staff)"
+                            className={inputCls + " flex-1 min-w-[100px]"}
+                          />
+                          <input
+                            type="text"
+                            value={n.date}
+                            onChange={(e) => updateLatestNews(i, "date", e.target.value)}
+                            placeholder="Date (e.g. 2 days ago)"
+                            className={inputCls + " flex-1 min-w-[100px]"}
+                          />
+                        </div>
+                        <textarea
+                          value={n.summary}
+                          onChange={(e) => updateLatestNews(i, "summary", e.target.value)}
+                          placeholder="Summary"
+                          rows={2}
+                          className={inputCls}
+                        />
+                        <input
+                          type="url"
+                          value={n.url ?? ""}
+                          onChange={(e) => updateLatestNews(i, "url", e.target.value)}
+                          placeholder="Article URL"
+                          className={inputCls}
+                        />
+                        <button
+                          onClick={() => removeLatestNews(i)}
+                          className="text-red-600 hover:text-red-700 text-sm font-semibold self-start"
                         >
                           Remove
                         </button>

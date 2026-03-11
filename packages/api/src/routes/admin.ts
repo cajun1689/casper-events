@@ -613,6 +613,7 @@ export async function adminRoutes(app: FastifyInstance) {
     headerImageUrl: "",
     sponsors: [] as { name: string; url: string; logoUrl: string }[],
     extraLinks: [] as { label: string; url: string }[],
+    latestNews: [] as { imageUrl: string; title: string; author: string; date: string; summary: string; url?: string }[],
   };
 
   app.get(
@@ -643,6 +644,7 @@ export async function adminRoutes(app: FastifyInstance) {
         headerImageUrl: body.headerImageUrl ?? "",
         sponsors: Array.isArray(body.sponsors) ? body.sponsors : [],
         extraLinks: Array.isArray(body.extraLinks) ? body.extraLinks : [],
+        latestNews: Array.isArray(body.latestNews) ? body.latestNews : [],
       };
       const value = JSON.stringify(settings);
       const [existing] = await db

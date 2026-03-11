@@ -19,11 +19,13 @@ export async function handler() {
     .select({
       id: schema.events.id,
       title: schema.events.title,
+      description: schema.events.description,
       startAt: schema.events.startAt,
       endAt: schema.events.endAt,
       allDay: schema.events.allDay,
       venueName: schema.events.venueName,
       address: schema.events.address,
+      imageUrl: schema.events.imageUrl,
     })
     .from(schema.events)
     .innerJoin(
@@ -152,6 +154,7 @@ interface DigestSettings {
   headerImageUrl: string;
   sponsors: { name: string; url: string; logoUrl?: string }[];
   extraLinks: { label: string; url: string }[];
+  latestNews: { imageUrl: string; title: string; author: string; date: string; summary: string; url?: string }[];
 }
 
 async function loadDigestSettings(db: Awaited<ReturnType<typeof getDb>>): Promise<DigestSettings> {
@@ -165,6 +168,7 @@ async function loadDigestSettings(db: Awaited<ReturnType<typeof getDb>>): Promis
     headerImageUrl: "",
     sponsors: [],
     extraLinks: [],
+    latestNews: [],
   };
   if (!row?.value) return defaultSettings;
   try {
@@ -187,8 +191,18 @@ function groupByDay(
   return map;
 }
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function truncateSummary(text: string, maxLen: number): string {
+  const plain = stripHtml(text || "");
+  if (plain.length <= maxLen) return plain;
+  return plain.slice(0, maxLen).trim() + "...";
+}
+
 function buildDigestHtml(
-  eventsByDay: Map<string, { id: string; title: string; startAt: Date; endAt: Date | null; allDay: boolean; venueName: string | null; address: string | null }[]>,
+  eventsByDay: Map<string, { id: string; title: string; description: string | null; startAt: Date; endAt: Date | null; allDay: boolean; venueName: string | null; address: string | null; imageUrl: string | null }[]>,
   categoriesMap: Record<string, { name: string; slug: string }[]>,
   settings: DigestSettings
 ): string {
@@ -208,13 +222,46 @@ function buildDigestHtml(
             hour: "numeric",
             minute: "2-digit",
           });
-      const cats = (categoriesMap[e.id] ?? []).map((c) => c.name).join(", ");
+      const metadata = [timeStr, e.venueName].filter(Boolean).join(" · ");
+      const summary = truncateSummary(e.description || "", 120);
+      const imgUrl = e.imageUrl?.trim() || "";
+      const eventUrl = `${WEB_URL}/events/${e.id}`;
+
       body += `
-        <div style="margin-bottom:16px;padding:12px;background:#f9fafb;border-radius:8px">
-          <a href="${WEB_URL}/events/${e.id}" style="font-weight:600;color:#4f46e5;text-decoration:none">${escapeHtml(e.title)}</a>
-          <div style="font-size:13px;color:#6b7280;margin-top:4px">${timeStr}${e.venueName ? ` · ${escapeHtml(e.venueName)}` : ""}</div>
-          ${cats ? `<div style="font-size:12px;color:#9ca3af;margin-top:2px">${escapeHtml(cats)}</div>` : ""}
-        </div>`;
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:24px;border-collapse:collapse">
+<tr>
+  <td width="100" valign="top" style="padding-right:16px;vertical-align:top">
+    ${imgUrl ? `<a href="${eventUrl}"><img src="${escapeHtml(imgUrl)}" alt="" width="100" height="100" style="width:100px;height:100px;object-fit:cover;border-radius:8px;display:block" /></a>` : `<div style="width:100px;height:100px;background:#e5e7eb;border-radius:8px"></div>`}
+  </td>
+  <td valign="top" style="vertical-align:top">
+    <a href="${eventUrl}" style="font-weight:600;font-size:16px;color:#1f2937;text-decoration:none;display:block;margin-bottom:4px">${escapeHtml(e.title)}</a>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:6px">${escapeHtml(metadata)}</div>
+    ${summary ? `<div style="font-size:14px;color:#4b5563;line-height:1.5">${escapeHtml(summary)}</div>` : ""}
+  </td>
+</tr>
+</table>`;
+    }
+  }
+
+  let latestNewsHtml = "";
+  if (settings.latestNews?.length) {
+    latestNewsHtml = `<h2 style="margin:32px 0 12px;font-size:18px;color:#1f2937">Latest News</h2>`;
+    for (const n of settings.latestNews) {
+      const newsUrl = n.url?.trim() || "#";
+      const imgUrl = n.imageUrl?.trim() || "";
+      latestNewsHtml += `
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:24px;border-collapse:collapse">
+<tr>
+  <td width="100" valign="top" style="padding-right:16px;vertical-align:top">
+    ${imgUrl ? `<a href="${escapeHtml(newsUrl)}"><img src="${escapeHtml(imgUrl)}" alt="" width="100" height="100" style="width:100px;height:100px;object-fit:cover;border-radius:8px;display:block" /></a>` : `<div style="width:100px;height:100px;background:#e5e7eb;border-radius:8px"></div>`}
+  </td>
+  <td valign="top" style="vertical-align:top">
+    <a href="${escapeHtml(newsUrl)}" style="font-weight:600;font-size:16px;color:#1f2937;text-decoration:none;display:block;margin-bottom:4px">${escapeHtml(n.title)}</a>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:6px">by ${escapeHtml(n.author)} ${escapeHtml(n.date)}</div>
+    ${n.summary?.trim() ? `<div style="font-size:14px;color:#4b5563;line-height:1.5">${escapeHtml(n.summary)}</div>` : ""}
+  </td>
+</tr>
+</table>`;
     }
   }
 
@@ -256,6 +303,7 @@ function buildDigestHtml(
   <h1 style="font-size:24px;margin-bottom:8px">This week's events</h1>
   <p style="color:#6b7280;margin-bottom:24px">Here are the upcoming events in your community.</p>
   ${body}
+  ${latestNewsHtml}
   ${customFooter}
   ${sponsorsHtml}
   ${extraLinksHtml}
