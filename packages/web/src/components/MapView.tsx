@@ -91,10 +91,15 @@ export function MapView({ events, onEventClick }: MapViewProps) {
       const venue = event.venueName ? escapeHtml(event.venueName) : "";
       const timeStr = format(parseISO(event.startAt), "EEE, MMM d") + (event.allDay ? " · All day" : ` · ${format(parseISO(event.startAt), "h:mm a")}`);
       const cats = (event.categories ?? []).map((c) => escapeHtml(c.name)).join(", ");
+      const imgUrl = event.imageUrl?.trim();
+      const imgHtml = imgUrl
+        ? `<a href="/events/${event.id}" style="display:block;margin-bottom:8px;border-radius:8px;overflow:hidden;width:140px;height:94px"><img src="${escapeHtml(imgUrl)}" alt="" style="width:140px;height:94px;object-fit:cover;display:block" /></a>`
+        : "";
       const popup = new maplibregl.Popup({ offset: 25, closeButton: true })
         .setLngLat([event.longitude!, event.latitude!])
         .setHTML(
           `<div style="min-width:220px;font-family:system-ui,sans-serif">
+            ${imgHtml}
             <a href="/events/${event.id}" style="font-weight:600;font-size:15px;color:#1f2937;text-decoration:none;display:block" onmouseover="this.style.color='#4f46e5'" onmouseout="this.style.color='#1f2937'">${title}</a>
             <p style="margin:6px 0 0;font-size:13px;color:#6b7280">${timeStr}</p>
             ${venue ? `<p style="margin:2px 0 0;font-size:12px;color:#9ca3af">${venue}</p>` : ""}
