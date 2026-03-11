@@ -44,7 +44,6 @@ export function MapView({ events, onEventClick }: MapViewProps) {
     (e) => e.latitude != null && e.longitude != null && !Number.isNaN(e.latitude) && !Number.isNaN(e.longitude)
   );
   const coordsKey = withCoords.map((e) => `${e.id}`).sort().join(",");
-  const eventsById = Object.fromEntries(withCoords.map((e) => [e.id, e]));
 
   useEffect(() => {
     if (!mapContainerRef.current || withCoords.length === 0) return;
@@ -59,11 +58,11 @@ export function MapView({ events, onEventClick }: MapViewProps) {
     map.addControl(new maplibregl.NavigationControl(), "top-left");
 
     const markers: maplibregl.Marker[] = [];
+    const markerLngLats: [number, number][] = [];
     for (const event of withCoords) {
       const color = getSolidForMarker(resolveColor(event));
       const el = document.createElement("div");
       el.className = "event-marker";
-      el.setAttribute("data-event-id", event.id);
       el.style.cssText = `
         width: 24px; height: 24px;
         background: ${color};
@@ -72,7 +71,6 @@ export function MapView({ events, onEventClick }: MapViewProps) {
         transform: rotate(-45deg);
         box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         cursor: pointer;
-        pointer-events: auto;
       `;
 
       const marker = new maplibregl.Marker({ element: el })
@@ -80,6 +78,7 @@ export function MapView({ events, onEventClick }: MapViewProps) {
         .addTo(map);
 
       markers.push(marker);
+      markerLngLats.push([event.longitude!, event.latitude!]);
     }
 
     function showPopupForEvent(event: (typeof withCoords)[0]) {
@@ -108,19 +107,31 @@ export function MapView({ events, onEventClick }: MapViewProps) {
       popup.on("close", () => { popupRef.current = null; });
     }
 
-    const handleContainerClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const clickedMarker = target?.closest?.("[data-event-id]");
-      const eventId = clickedMarker?.getAttribute?.("data-event-id");
-      if (eventId && eventsById[eventId]) {
-        e.stopPropagation();
-        e.preventDefault();
-        showPopupForEvent(eventsById[eventId]);
+    const handleMapClick = (e: maplibregl.MapMouseEvent) => {
+      const clickPoint = e.point;
+      const hitRadius = 25;
+      let closestEvent: (typeof withCoords)[0] | null = null;
+      let closestDist = Infinity;
+
+      for (let i = 0; i < withCoords.length; i++) {
+        const lngLat = markerLngLats[i];
+        const screenPoint = map.project(lngLat);
+        const dx = clickPoint.x - screenPoint.x;
+        const dy = clickPoint.y - screenPoint.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < hitRadius && dist < closestDist) {
+          closestDist = dist;
+          closestEvent = withCoords[i];
+        }
+      }
+
+      if (closestEvent) {
+        e.originalEvent?.preventDefault?.();
+        showPopupForEvent(closestEvent);
       }
     };
 
-    const container = map.getContainer();
-    container.addEventListener("click", handleContainerClick, true);
+    map.on("click", handleMapClick);
 
     if (withCoords.length === 1) {
       map.flyTo({ center: [withCoords[0].longitude!, withCoords[0].latitude!], zoom: 14 });
@@ -140,7 +151,7 @@ export function MapView({ events, onEventClick }: MapViewProps) {
     markersRef.current = markers;
 
     return () => {
-      container.removeEventListener("click", handleContainerClick, true);
+      map.off("click", handleMapClick);
       if (popupRef.current) {
         popupRef.current.remove();
         popupRef.current = null;
@@ -171,7 +182,7 @@ export function MapView({ events, onEventClick }: MapViewProps) {
   }
 
   return (
-    <div className="h-[500px] w-full overflow-hidden rounded-2xl border border-gray-200/60 bg-gray-50/50">
+    <div className="map-view-container h-[500px] w-full overflow-hidden rounded-2xl border border-gray-200/60 bg-gray-50/50">
       <div ref={mapContainerRef} className="h-full w-full" />
     </div>
   );

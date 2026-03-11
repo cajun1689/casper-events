@@ -108,6 +108,11 @@ body {
   scrollbar-width: none;
 }
 
+/* Map markers: pass clicks through to map canvas so coordinate-based click detection works */
+.map-view-container .maplibregl-marker {
+  pointer-events: none;
+}
+
 /* Rich text / prose styles */
 .prose {
   line-height: 1.7;
