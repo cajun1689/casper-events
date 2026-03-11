@@ -51,9 +51,10 @@ export async function eventRoutes(app: FastifyInstance) {
 
     if (query.status) {
       conditions.push(eq(schema.events.status, query.status));
-    } else if (isOwnOrg || isAdmin) {
-      // Org owners and admins see all statuses for their org
+    } else if (isOwnOrg) {
+      // Org owners see all statuses (including drafts) only when viewing their own org's events
     } else {
+      // Public calendar and other views: only published and approved
       conditions.push(
         inArray(schema.events.status, ["published", "approved"])
       );
@@ -316,7 +317,7 @@ export async function eventRoutes(app: FastifyInstance) {
   });
 
   // Get single event
-  app.get("/events/:id", async (request, reply) => {
+  app.get("/events/:id", { preHandler: optionalAuth }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const db = await getDb();
 
@@ -327,6 +328,16 @@ export async function eventRoutes(app: FastifyInstance) {
 
     if (!event) {
       return reply.status(404).send({ error: "Event not found" });
+    }
+
+    // Draft and rejected events are not publicly visible
+    if (event.status !== "published" && event.status !== "approved") {
+      const userOrg = request.user?.sub ? await resolveUserOrg(db, request.user.sub) : null;
+      const isOwnOrg = userOrg?.orgId === event.orgId;
+      const isAdmin = userOrg?.isAdmin ?? false;
+      if (!isOwnOrg && !isAdmin) {
+        return reply.status(404).send({ error: "Event not found" });
+      }
     }
 
     const [org] = await db

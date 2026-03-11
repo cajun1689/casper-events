@@ -260,7 +260,7 @@ export async function googleCalendarRoutes(app: FastifyInstance) {
         response_type: "code",
         scope: SCOPES.join(" "),
         access_type: "offline",
-        prompt: "consent",
+        prompt: "select_account consent",
         state: request.user!.sub,
       });
 
@@ -275,6 +275,19 @@ export async function googleCalendarRoutes(app: FastifyInstance) {
       code: string;
       state: string;
     };
+
+    if (!code || !cognitoSub) {
+      return reply.status(400).send({
+        error: "Missing code or state. Please try connecting again from the dashboard.",
+      });
+    }
+
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
+      request.log.error({ GOOGLE_REDIRECT_URI: !!GOOGLE_REDIRECT_URI }, "Google OAuth env vars missing");
+      return reply.status(500).send({
+        error: "Google Calendar integration is not configured. Contact support.",
+      });
+    }
 
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -291,7 +304,26 @@ export async function googleCalendarRoutes(app: FastifyInstance) {
     const tokenData = (await tokenRes.json()) as GoogleTokenResponse;
 
     if (tokenData.error) {
-      return reply.status(400).send({ error: tokenData.error_description || tokenData.error });
+      request.log.warn(
+        { error: tokenData.error, description: tokenData.error_description },
+        "Google token exchange failed"
+      );
+      const msg = tokenData.error_description || tokenData.error;
+      let hint: string | undefined;
+      if (tokenData.error === "invalid_grant") {
+        hint = "Code expired or already used. Revoke access at myaccount.google.com/permissions and try again.";
+      } else if (tokenData.error === "redirect_uri_mismatch") {
+        hint = `Redirect URI in Google Console must be exactly: ${GOOGLE_REDIRECT_URI}`;
+      } else if (tokenData.error === "unauthorized_client") {
+        hint = "Check Google Console: OAuth client type, redirect URI, and that your account is a test user if app is in Testing.";
+      } else if (tokenData.error === "invalid_client") {
+        hint = "GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is wrong. Verify SSM params /cyh/google-client-id and /cyh/google-client-secret match Google Console.";
+      }
+      return reply.status(400).send({
+        error: msg,
+        errorCode: tokenData.error,
+        ...(hint && { hint }),
+      });
     }
 
     if (!tokenData.refresh_token) {
@@ -323,6 +355,7 @@ export async function googleCalendarRoutes(app: FastifyInstance) {
         googleTokenExpiresAt: new Date(
           Date.now() + tokenData.expires_in * 1000
         ),
+        requireGoogleEventApproval: true,
         updatedAt: new Date(),
       })
       .where(eq(schema.organizations.id, userOrg.orgId));

@@ -167,6 +167,20 @@ Allows organizations to connect a Google Calendar and automatically import event
 
 Once configured, users connect their Google Calendar from **Dashboard > Google Calendar** in the web app. A scheduled Lambda syncs events every hour automatically.
 
+### Google OAuth troubleshooting (production)
+
+The CDK injects Google credentials from SSM at deploy time. Verify:
+
+```bash
+# Check SSM parameters exist (us-east-1)
+aws ssm get-parameter --name /cyh/google-client-id --query Parameter.Value --output text
+aws ssm get-parameter --name /cyh/google-client-secret --query Parameter.Value --output text
+```
+
+The Lambda receives `GOOGLE_REDIRECT_URI` from CDK (not SSM): `https://api.casperevents.org/v1/auth/google/callback`. This must match exactly in Google Cloud Console → Credentials → OAuth client → Authorized redirect URIs.
+
+If you see "Unauthorized" or token exchange errors, check CloudWatch logs for the API Lambda; the callback now logs the exact Google error.
+
 ## Environment Variables Reference
 
 ### API (Lambda / local)
