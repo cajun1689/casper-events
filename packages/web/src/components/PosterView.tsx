@@ -54,7 +54,7 @@ export function PosterView({ events }: PosterViewProps) {
   const grouped = useMemo(() => {
     const map = new Map<string, EventWithDetails[]>();
     for (const event of sorted) {
-      const key = event.startAt.slice(0, 7);
+      const key = format(parseISO(event.startAt), "yyyy-MM");
       const list = map.get(key) ?? [];
       list.push(event);
       map.set(key, list);
@@ -62,12 +62,17 @@ export function PosterView({ events }: PosterViewProps) {
     return map;
   }, [sorted]);
 
-  const months = useMemo(() => Array.from(grouped.keys()).sort(), [grouped]);
+  const now = new Date();
+  const currentMonthKey = format(now, "yyyy-MM");
 
-  const sortedEntries = useMemo(
-    () => Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b)),
-    [grouped],
-  );
+  const sortedEntries = useMemo(() => {
+    const entries = Array.from(grouped.entries());
+    return entries
+      .filter(([monthKey]) => monthKey >= currentMonthKey)
+      .sort(([a], [b]) => a.localeCompare(b));
+  }, [grouped, currentMonthKey]);
+
+  const months = useMemo(() => sortedEntries.map(([k]) => k), [sortedEntries]);
 
   const scrollToMonth = useCallback((key: string) => {
     setSelectedMonth(key);
