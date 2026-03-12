@@ -16,6 +16,7 @@ function FacebookShareModal({ event, onClose, onShared }: FacebookShareModalProp
   const [message, setMessage] = useState("");
   const [link, setLink] = useState("");
   const [eventUrl, setEventUrl] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,14 +26,16 @@ function FacebookShareModal({ event, onClose, onShared }: FacebookShareModalProp
       setMessage(res.message);
       setLink(res.link);
       setEventUrl(res.eventUrl);
+      setImageUrl(res.imageUrl ?? event.imageUrl ?? null);
       setLoading(false);
     }).catch(() => {
       setMessage(event.title);
       setLink(`https://casperevents.org/events/${event.id}`);
       setEventUrl(`https://casperevents.org/events/${event.id}`);
+      setImageUrl(event.imageUrl ?? null);
       setLoading(false);
     });
-  }, [event.id, event.title]);
+  }, [event.id, event.title, event.imageUrl]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -80,6 +83,14 @@ function FacebookShareModal({ event, onClose, onShared }: FacebookShareModalProp
             </div>
           ) : (
             <>
+              {imageUrl && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-gray-700">Event image (will appear in post)</label>
+                  <div className="aspect-video max-h-40 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                    <img src={imageUrl} alt={event.title} className="h-full w-full object-cover" />
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="mb-1.5 block text-sm font-semibold text-gray-700">Post message</label>
                 <textarea

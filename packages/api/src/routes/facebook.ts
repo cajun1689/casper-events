@@ -51,23 +51,39 @@ async function fbApi(path: string, token: string, method = "GET", body?: Record<
 }
 
 export async function facebookRoutes(app: FastifyInstance) {
+  const ALLOWED_RETURN_ORIGINS = [
+    "https://casperevents.org",
+    "https://www.casperevents.org",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+  ];
+
   // Initiate Facebook OAuth
   app.get(
     "/auth/facebook/connect",
     { preHandler: requireAuth },
     async (request, reply) => {
+      const returnOrigin = (request.query as { return_origin?: string }).return_origin;
+      const frontendOrigin = returnOrigin && ALLOWED_RETURN_ORIGINS.includes(returnOrigin)
+        ? returnOrigin
+        : process.env.CORS_ORIGIN || "https://casperevents.org";
+
       const scopes = [
         "pages_show_list",
         "pages_read_engagement",
         "pages_manage_posts",
       ].join(",");
 
+      const state = `${request.user!.sub}|${frontendOrigin}`;
+
       const url =
         `https://www.facebook.com/${FB_API_VERSION}/dialog/oauth?` +
         `client_id=${FB_APP_ID}` +
         `&redirect_uri=${encodeURIComponent(FB_REDIRECT_URI)}` +
         `&scope=${scopes}` +
-        `&state=${request.user!.sub}`;
+        `&state=${encodeURIComponent(state)}`;
 
       return reply.send({ url });
     }
@@ -75,10 +91,16 @@ export async function facebookRoutes(app: FastifyInstance) {
 
   // Facebook OAuth callback
   app.get("/auth/facebook/callback", async (request, reply) => {
-    const { code, state: cognitoSub } = request.query as {
+    const { code, state: stateParam } = request.query as {
       code: string;
       state: string;
     };
+
+    const stateParts = stateParam?.split("|") ?? [];
+    const cognitoSub = stateParts[0] ?? stateParam;
+    const frontendOrigin = stateParts[1] && ALLOWED_RETURN_ORIGINS.includes(stateParts[1])
+      ? stateParts[1]
+      : process.env.CORS_ORIGIN || "https://casperevents.org";
 
     const tokenUrl =
       `https://graph.facebook.com/${FB_API_VERSION}/oauth/access_token?` +
@@ -138,8 +160,7 @@ export async function facebookRoutes(app: FastifyInstance) {
       })
       .where(eq(schema.organizations.id, userOrg.orgId));
 
-    const frontendUrl = process.env.CORS_ORIGIN || "https://casperevents.org";
-    return reply.redirect(`${frontendUrl}/dashboard/facebook?facebook=connected`);
+    return reply.redirect(`${frontendOrigin}/dashboard/facebook?facebook=connected`);
   });
 
   // Create Facebook Event for an existing event
@@ -299,10 +320,15 @@ export async function facebookRoutes(app: FastifyInstance) {
         ? `https://www.facebook.com/events/${event.facebookEventId}`
         : eventUrl;
 
+      const imageUrl = event.imageUrl
+        ? (event.imageUrl.startsWith("http") ? event.imageUrl : `https://casperevents.org${event.imageUrl}`)
+        : null;
+
       return reply.send({
         message: lines.join("\n"),
         link,
         eventUrl,
+        imageUrl,
       });
     }
   );
@@ -370,14 +396,28 @@ export async function facebookRoutes(app: FastifyInstance) {
         ? `https://www.facebook.com/events/${event.facebookEventId}`
         : eventUrl);
 
-      const postBody: Record<string, unknown> = { message, link };
+      // When event has an image, post as a photo so the image appears in the feed
+      const imageFullUrl = event.imageUrl
+        ? (event.imageUrl.startsWith("http") ? event.imageUrl : `https://casperevents.org${event.imageUrl}`)
+        : null;
 
-      const postResult = (await fbApi(
-        `/${org.facebookPageId}/feed`,
-        org.facebookPageToken,
-        "POST",
-        postBody,
-      )) as { id?: string; error?: { message: string } };
+      let postResult: { id?: string; error?: { message: string } };
+      if (imageFullUrl) {
+        postResult = (await fbApi(
+          `/${org.facebookPageId}/photos`,
+          org.facebookPageToken,
+          "POST",
+          { url: imageFullUrl, message },
+        )) as { id?: string; error?: { message: string } };
+      } else {
+        const postBody: Record<string, unknown> = { message, link };
+        postResult = (await fbApi(
+          `/${org.facebookPageId}/feed`,
+          org.facebookPageToken,
+          "POST",
+          postBody,
+        )) as { id?: string; error?: { message: string } };
+      }
 
       if (postResult.error) {
         return reply.status(400).send({ error: postResult.error.message });

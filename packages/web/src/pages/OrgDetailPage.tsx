@@ -17,7 +17,9 @@ export default function OrgDetailPage() {
       setOrg(data);
       return eventsApi.list({ orgId: data.id });
     }).then((res) => {
-      setEvents(res.data);
+      const now = new Date();
+      const upcoming = res.data.filter((e) => new Date(e.startAt) >= now);
+      setEvents(upcoming);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [slug]);

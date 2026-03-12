@@ -1,5 +1,8 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Header } from "@/components/Header";
+import { useStore } from "@/lib/store";
+import { authApi } from "@/lib/api";
 import HomePage from "@/pages/HomePage";
 import EventDetailPage from "@/pages/EventDetailPage";
 import OrganizationsPage from "@/pages/OrganizationsPage";
@@ -27,9 +30,36 @@ import UnsubscribedPage from "@/pages/UnsubscribedPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 
+function AuthRehydrator() {
+  const { token, user, setAuth, logout } = useStore();
+
+  useEffect(() => {
+    if (!token || user) return;
+    authApi
+      .me()
+      .then((profile) => {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        setAuth(
+          token,
+          {
+            sub: payload.sub,
+            email: payload.email,
+            name: payload.name,
+            isAdmin: (profile.user as Record<string, unknown>)?.isAdmin as boolean,
+          },
+          profile.organization as { id: string; name: string; slug: string; status?: string } | null
+        );
+      })
+      .catch(() => logout());
+  }, [token, user, setAuth, logout]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <AuthRehydrator />
       <div className="min-h-screen">
         <Header />
         <main className="animate-fade-in">

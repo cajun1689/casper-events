@@ -249,11 +249,27 @@ export async function syncGoogleCalendarEvents(
   } while (pageToken);
 }
 
+const ALLOWED_RETURN_ORIGINS = [
+  "https://casperevents.org",
+  "https://www.casperevents.org",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:3000",
+];
+
 export async function googleCalendarRoutes(app: FastifyInstance) {
   app.get(
     "/auth/google/connect",
     { preHandler: requireAuth },
     async (request, reply) => {
+      const returnOrigin = (request.query as { return_origin?: string }).return_origin;
+      const frontendOrigin = returnOrigin && ALLOWED_RETURN_ORIGINS.includes(returnOrigin)
+        ? returnOrigin
+        : process.env.CORS_ORIGIN || "https://casperevents.org";
+
+      const state = `${request.user!.sub}|${frontendOrigin}`;
+
       const params = new URLSearchParams({
         client_id: GOOGLE_CLIENT_ID,
         redirect_uri: GOOGLE_REDIRECT_URI,
@@ -261,7 +277,7 @@ export async function googleCalendarRoutes(app: FastifyInstance) {
         scope: SCOPES.join(" "),
         access_type: "offline",
         prompt: "select_account consent",
-        state: request.user!.sub,
+        state,
       });
 
       return reply.send({
@@ -271,10 +287,16 @@ export async function googleCalendarRoutes(app: FastifyInstance) {
   );
 
   app.get("/auth/google/callback", async (request, reply) => {
-    const { code, state: cognitoSub } = request.query as {
+    const { code, state: stateParam } = request.query as {
       code: string;
       state: string;
     };
+
+    const stateParts = stateParam?.split("|") ?? [];
+    const cognitoSub = stateParts[0] ?? stateParam;
+    const frontendOrigin = stateParts[1] && ALLOWED_RETURN_ORIGINS.includes(stateParts[1])
+      ? stateParts[1]
+      : process.env.CORS_ORIGIN || "https://casperevents.org";
 
     if (!code || !cognitoSub) {
       return reply.status(400).send({
@@ -360,9 +382,8 @@ export async function googleCalendarRoutes(app: FastifyInstance) {
       })
       .where(eq(schema.organizations.id, userOrg.orgId));
 
-    const frontendUrl = process.env.CORS_ORIGIN || "https://casperevents.org";
     return reply.redirect(
-      `${frontendUrl}/dashboard/google-calendar?google=connected`
+      `${frontendOrigin}/dashboard/google-calendar?google=connected`
     );
   });
 

@@ -85,7 +85,7 @@ export const eventsApi = {
       body,
     ),
   getFacebookPreview: (id: string) =>
-    api.get<{ message: string; link: string; eventUrl: string }>(
+    api.get<{ message: string; link: string; eventUrl: string; imageUrl?: string | null }>(
       `/events/${id}/facebook/preview`,
     ),
 };

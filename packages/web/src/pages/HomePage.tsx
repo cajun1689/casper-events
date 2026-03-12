@@ -229,9 +229,9 @@ export default function HomePage() {
           )}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => printCalendar({
+              onClick={() =>               printCalendar({
                 currentDate,
-                events: filteredEvents,
+                events: upcomingEvents,
                 title: "Community Calendar",
                 primaryColor: "#4f46e5",
               })}
@@ -286,7 +286,7 @@ export default function HomePage() {
               {viewMode === "month" && (
                 <MonthView
                   currentDate={currentDate}
-                  events={filteredEvents}
+                  events={upcomingEvents}
                   onDateClick={handleDateClick}
                   onEventClick={handleEventClick}
                   selectedEventId={expandedEventId}
@@ -295,19 +295,19 @@ export default function HomePage() {
               {viewMode === "week" && (
                 <WeekView
                   currentDate={currentDate}
-                  events={filteredEvents}
+                  events={upcomingEvents}
                   onEventClick={handleEventClick}
                   selectedEventId={expandedEventId}
                 />
               )}
               {viewMode === "list" && (
-                <ListView events={filteredEvents} />
+                <ListView events={upcomingEvents} />
               )}
               {viewMode === "poster" && (
-                <PosterView events={filteredEvents} />
+                <PosterView events={upcomingEvents} />
               )}
               {viewMode === "map" && (
-                <MapView events={filteredEvents} onEventClick={handleEventClick} />
+                <MapView events={upcomingEvents} onEventClick={handleEventClick} />
               )}
             </div>
 

@@ -87,7 +87,8 @@ export default function GoogleCalendarSettingsPage() {
     setConnecting(true);
     setError(null);
     try {
-      const res = await api.get<{ url: string }>("/auth/google/connect");
+      const returnOrigin = encodeURIComponent(window.location.origin);
+      const res = await api.get<{ url: string }>(`/auth/google/connect?return_origin=${returnOrigin}`);
       if (res.url) {
         window.location.href = res.url;
       } else {

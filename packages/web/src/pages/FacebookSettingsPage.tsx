@@ -42,7 +42,8 @@ export default function FacebookSettingsPage() {
     setConnecting(true);
     setError(null);
     try {
-      const res = await api.get<{ url: string }>("/auth/facebook/connect");
+      const returnOrigin = encodeURIComponent(window.location.origin);
+      const res = await api.get<{ url: string }>(`/auth/facebook/connect?return_origin=${returnOrigin}`);
       if (res.url) {
         window.location.href = res.url;
       } else {

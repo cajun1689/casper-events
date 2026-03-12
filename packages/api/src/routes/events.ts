@@ -64,6 +64,11 @@ export async function eventRoutes(app: FastifyInstance) {
       conditions.push(eq(schema.events.orgId, query.orgId));
     }
 
+    // Public calendar: exclude past events unless a date range is explicitly set
+    if (!query.startAfter && !isOwnOrg && !isAdmin) {
+      conditions.push(gte(schema.events.startAt, new Date()));
+    }
+
     if (query.startAfter) {
       conditions.push(gte(schema.events.startAt, new Date(query.startAfter)));
     }
