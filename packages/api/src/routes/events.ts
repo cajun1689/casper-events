@@ -64,12 +64,14 @@ export async function eventRoutes(app: FastifyInstance) {
       conditions.push(eq(schema.events.orgId, query.orgId));
     }
 
-    // Public calendar: exclude past events unless a date range is explicitly set
-    // Include all events whose start date is today (UTC) or later
+    // Public calendar: exclude past events unless a date range is explicitly set.
+    // Roll the cutoff back 24h so events from "today" in any US timezone (especially
+    // Mountain) stay visible through 11:59 PM local; client-side handles the exact cutoff.
     if (!query.startAfter && !isOwnOrg && !isAdmin) {
       const now = new Date();
       const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-      conditions.push(gte(schema.events.startAt, startOfToday));
+      const cutoff = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000);
+      conditions.push(gte(schema.events.startAt, cutoff));
     }
 
     // Use start of UTC day for startAfter so all-day events (stored at midnight UTC) are included
