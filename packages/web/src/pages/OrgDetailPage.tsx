@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Globe, Mail, MapPin, Phone, ArrowLeft } from "lucide-react";
-import { startOfDay, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { organizationsApi, eventsApi } from "@/lib/api";
 import type { OrganizationPublic, EventWithDetails } from "@cyh/shared";
 import { ListView } from "@/components/ListView";
@@ -19,10 +19,10 @@ export default function OrgDetailPage() {
       return eventsApi.list({ orgId: data.id });
     }).then((res) => {
       const now = new Date();
-      const todayStart = startOfDay(now);
+      const todayStr = format(now, "yyyy-MM-dd");
       const upcoming = res.data.filter((e) => {
-        const start = parseISO(e.startAt);
-        if (e.allDay) return startOfDay(start) >= todayStart;
+        const start = new Date(e.startAt);
+        if (e.allDay) return e.startAt.slice(0, 10) >= todayStr;
         return start >= now;
       });
       setEvents(upcoming);

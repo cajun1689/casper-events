@@ -136,11 +136,12 @@ export default function HomePage() {
 
   const upcomingEvents = useMemo(() => {
     const now = new Date();
-    const todayStart = startOfDay(now);
+    const todayStr = format(now, "yyyy-MM-dd");
     return filteredEvents.filter((e) => {
       const start = new Date(e.startAt);
       if (e.allDay) {
-        return startOfDay(start) >= todayStart;
+        const eventDateStr = e.startAt.slice(0, 10);
+        return eventDateStr >= todayStr;
       }
       return start >= now;
     });
