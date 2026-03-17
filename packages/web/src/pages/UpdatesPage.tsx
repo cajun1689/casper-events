@@ -1,7 +1,31 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Sparkles, Mail, CalendarPlus } from "lucide-react";
+import { ArrowLeft, Sparkles, Mail, CalendarPlus, LayoutGrid } from "lucide-react";
 
 const updates = [
+  {
+    date: "March 17, 2026",
+    title: "Calendar & Poster View Improvements",
+    icon: LayoutGrid,
+    gradient: "from-indigo-500 to-indigo-600",
+    items: [
+      {
+        title: "Card snippet field",
+        desc: "New optional 'Card Snippet' on events lets you write custom preview text for poster cards. If left blank, a cleaned-up version of the description is shown automatically.",
+      },
+      {
+        title: "Richer poster cards",
+        desc: "Poster cards now show the event description, full venue address, and cost — giving visitors more at-a-glance info without clicking through.",
+      },
+      {
+        title: "All-day & timezone event fix",
+        desc: "Events now display on the correct date regardless of timezone. Previously, all-day events and events earlier in the day could appear on the wrong date or disappear after their start time.",
+      },
+      {
+        title: "Events visible all day",
+        desc: "Events stay on the calendar through 11:59 PM local time. No more disappearing 5 minutes after they start.",
+      },
+    ],
+  },
   {
     date: "March 2026",
     title: "Digest Newsletter Overhaul",
