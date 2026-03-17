@@ -99,6 +99,13 @@
       "when": 1773169000000,
       "tag": "0014_event_color_gradient",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1774000000000,
+      "tag": "0015_add_event_snippet",
+      "breakpoints": true
     }
   ]
 }
