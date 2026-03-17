@@ -77,8 +77,11 @@ export async function eventRoutes(app: FastifyInstance) {
       );
     }
 
+    // Use start of UTC day for startAfter so all-day events (stored at midnight UTC) are included
     if (query.startAfter) {
-      conditions.push(gte(schema.events.startAt, new Date(query.startAfter)));
+      const d = new Date(query.startAfter);
+      const startOfDayUtc = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+      conditions.push(gte(schema.events.startAt, startOfDayUtc));
     }
 
     if (query.startBefore) {

@@ -41,6 +41,13 @@ export async function embedRoutes(app: FastifyInstance) {
 
     let events;
 
+    const now = new Date();
+    const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const dateFilter = or(
+      and(eq(schema.events.allDay, true), gte(schema.events.startAt, startOfToday)),
+      and(eq(schema.events.allDay, false), gte(schema.events.startAt, now))
+    )!;
+
     if (requestingOrg?.communityHub) {
       events = await db
         .select()
@@ -48,7 +55,7 @@ export async function embedRoutes(app: FastifyInstance) {
         .where(
           and(
             inArray(schema.events.status, ["published", "approved"]),
-            gte(schema.events.startAt, new Date())
+            dateFilter
           )
         )
         .orderBy(asc(schema.events.startAt))
@@ -83,7 +90,7 @@ export async function embedRoutes(app: FastifyInstance) {
           and(
             inArray(schema.events.orgId, orgIds),
             inArray(schema.events.status, ["published", "approved"]),
-            gte(schema.events.startAt, new Date())
+            dateFilter
           )
         )
         .orderBy(asc(schema.events.startAt))
