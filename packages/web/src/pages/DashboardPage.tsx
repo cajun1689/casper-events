@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, CalendarDays, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Facebook, Share2, Calendar, Pencil, Trash2, X, ExternalLink } from "lucide-react";
+import { Plus, CalendarDays, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Facebook, Share2, Calendar, Pencil, Trash2, X, ExternalLink, ChevronDown, ChevronRight, History } from "lucide-react";
+import { startOfDay, parseISO } from "date-fns";
 import clsx from "clsx";
 import { useStore } from "@/lib/store";
 import { eventsApi, api } from "@/lib/api";
@@ -165,6 +166,7 @@ export default function DashboardPage() {
   const [fbShareEvent, setFbShareEvent] = useState<EventWithDetails | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [showPastEvents, setShowPastEvents] = useState(false);
 
   useEffect(() => {
     if (!token) { navigate("/login"); return; }
@@ -206,6 +208,24 @@ export default function DashboardPage() {
     approved: events.filter((e) => e.status === "approved").length,
     pending: events.filter((e) => e.status === "draft").length,
   };
+
+  const { upcomingEvents, pastEvents } = useMemo(() => {
+    const now = new Date();
+    const todayStart = startOfDay(now);
+    const upcoming: EventWithDetails[] = [];
+    const past: EventWithDetails[] = [];
+    for (const e of events) {
+      const start = parseISO(e.startAt);
+      const end = e.endAt ? parseISO(e.endAt) : null;
+      const isPast = e.allDay
+        ? startOfDay(start) < todayStart
+        : (end ?? start) < now;
+      if (isPast) past.push(e);
+      else upcoming.push(e);
+    }
+    past.sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime());
+    return { upcomingEvents: upcoming, pastEvents: past };
+  }, [events]);
 
   if (!organization) {
     return (
@@ -321,9 +341,6 @@ export default function DashboardPage() {
 
       {/* Events list */}
       <div className="rounded-2xl border border-gray-200/60 bg-white/70 shadow-sm backdrop-blur-sm">
-        <div className="border-b border-gray-100 px-6 py-4">
-          <h2 className="text-lg font-bold text-gray-900">Your Events</h2>
-        </div>
         {loading ? (
           <div className="space-y-3 p-6">
             {[1, 2, 3].map((i) => <div key={i} className="skeleton h-16 w-full" />)}
@@ -335,53 +352,129 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-400 mt-1">Create your first event to get started.</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
-            {events.map((event) => (
-              <div key={event.id} className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-primary-50/30">
-                <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 text-primary-700">
-                  <span className="text-[9px] font-bold uppercase leading-none">{new Date(event.startAt).toLocaleDateString("en", { month: "short" })}</span>
-                  <span className="text-base font-extrabold leading-tight">{new Date(event.startAt).getDate()}</span>
-                </div>
-                <Link to={`/events/${event.id}`} className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-gray-900 hover:text-primary-600 transition-colors">{event.title}</p>
-                  <p className="text-xs text-gray-400">{event.venueName ?? "No venue"}</p>
-                </Link>
-                <div className="flex items-center gap-1.5">
-                  {fbConnected && (
-                    <button
-                      onClick={(e) => openFbShare(event, e)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-blue-50 hover:text-[#1877F2]"
-                      title="Share to Facebook"
-                    >
-                      <Facebook className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                  <Link
-                    to={`/dashboard/events/${event.id}/edit`}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-primary-50 hover:text-primary-600"
-                    title="Edit"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Link>
-                  <button
-                    onClick={() => setDeleteId(event.id)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-red-50 hover:text-red-600"
-                    title="Delete"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                  <span className={`ml-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                    event.status === "approved" ? "bg-emerald-50 text-emerald-600" :
-                    event.status === "published" ? "bg-blue-50 text-blue-600" :
-                    event.status === "rejected" ? "bg-red-50 text-red-600" :
-                    "bg-gray-100 text-gray-500"
-                  }`}>
-                    {event.status}
-                  </span>
-                </div>
+          <>
+            {/* Upcoming Events */}
+            <div className="border-b border-gray-100 px-6 py-4">
+              <h2 className="text-lg font-bold text-gray-900">Upcoming Events</h2>
+              <p className="text-xs text-gray-500 mt-0.5">{upcomingEvents.length} event{upcomingEvents.length !== 1 ? "s" : ""}</p>
+            </div>
+            {upcomingEvents.length === 0 ? (
+              <div className="px-6 py-8 text-center">
+                <CalendarDays className="mx-auto h-10 w-10 text-gray-300" />
+                <p className="mt-2 text-sm font-semibold text-gray-500">No upcoming events</p>
+                <p className="text-xs text-gray-400">Create a new event or check past events below.</p>
               </div>
-            ))}
-          </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {upcomingEvents.map((event) => (
+                  <div key={event.id} className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-primary-50/30">
+                    <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 text-primary-700">
+                      <span className="text-[9px] font-bold uppercase leading-none">{new Date(event.startAt).toLocaleDateString("en", { month: "short" })}</span>
+                      <span className="text-base font-extrabold leading-tight">{new Date(event.startAt).getDate()}</span>
+                    </div>
+                    <Link to={`/events/${event.id}`} className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-gray-900 hover:text-primary-600 transition-colors">{event.title}</p>
+                      <p className="text-xs text-gray-400">{event.venueName ?? "No venue"}</p>
+                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      {fbConnected && (
+                        <button
+                          onClick={(e) => openFbShare(event, e)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-blue-50 hover:text-[#1877F2]"
+                          title="Share to Facebook"
+                        >
+                          <Facebook className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      <Link
+                        to={`/dashboard/events/${event.id}/edit`}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-primary-50 hover:text-primary-600"
+                        title="Edit"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Link>
+                      <button
+                        onClick={() => setDeleteId(event.id)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-red-50 hover:text-red-600"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                      <span className={`ml-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                        event.status === "approved" ? "bg-emerald-50 text-emerald-600" :
+                        event.status === "published" ? "bg-blue-50 text-blue-600" :
+                        event.status === "rejected" ? "bg-red-50 text-red-600" :
+                        "bg-gray-100 text-gray-500"
+                      }`}>
+                        {event.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Past Events - collapsible */}
+            {pastEvents.length > 0 && (
+              <div className="border-t border-gray-200/60">
+                <button
+                  onClick={() => setShowPastEvents(!showPastEvents)}
+                  className="flex w-full items-center gap-3 px-6 py-4 text-left transition-colors hover:bg-gray-50/80"
+                >
+                  <History className="h-5 w-5 text-gray-400" />
+                  <div className="flex-1">
+                    <h2 className="text-base font-bold text-gray-700">Past Events</h2>
+                    <p className="text-xs text-gray-500">{pastEvents.length} event{pastEvents.length !== 1 ? "s" : ""}</p>
+                  </div>
+                  {showPastEvents ? (
+                    <ChevronDown className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                  )}
+                </button>
+                {showPastEvents && (
+                  <div className="divide-y divide-gray-100 border-t border-gray-100">
+                    {pastEvents.map((event) => (
+                      <div key={event.id} className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-gray-50/50 bg-gray-50/30">
+                        <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-gray-200/80 text-gray-600">
+                          <span className="text-[9px] font-bold uppercase leading-none">{new Date(event.startAt).toLocaleDateString("en", { month: "short" })}</span>
+                          <span className="text-base font-extrabold leading-tight">{new Date(event.startAt).getDate()}</span>
+                        </div>
+                        <Link to={`/events/${event.id}`} className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-bold text-gray-700 hover:text-primary-600 transition-colors">{event.title}</p>
+                          <p className="text-xs text-gray-400">{event.venueName ?? "No venue"}</p>
+                        </Link>
+                        <div className="flex items-center gap-1.5">
+                          <Link
+                            to={`/dashboard/events/${event.id}/edit`}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                            title="Edit"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Link>
+                          <button
+                            onClick={() => setDeleteId(event.id)}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-red-50 hover:text-red-600"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                          <span className={`ml-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                            event.status === "approved" ? "bg-emerald-50 text-emerald-600" :
+                            event.status === "published" ? "bg-blue-50 text-blue-600" :
+                            event.status === "rejected" ? "bg-red-50 text-red-600" :
+                            "bg-gray-100 text-gray-500"
+                          }`}>
+                            {event.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 

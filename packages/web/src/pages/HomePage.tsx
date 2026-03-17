@@ -136,7 +136,14 @@ export default function HomePage() {
 
   const upcomingEvents = useMemo(() => {
     const now = new Date();
-    return filteredEvents.filter((e) => new Date(e.startAt) >= now);
+    const todayStart = startOfDay(now);
+    return filteredEvents.filter((e) => {
+      const start = new Date(e.startAt);
+      if (e.allDay) {
+        return startOfDay(start) >= todayStart;
+      }
+      return start >= now;
+    });
   }, [filteredEvents]);
 
   function navigatePrev() {
