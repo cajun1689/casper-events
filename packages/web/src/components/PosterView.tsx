@@ -184,6 +184,11 @@ function PosterCard({ event }: { event: EventWithDetails }) {
             {event.subtitle}
           </p>
         )}
+        {event.description && (
+          <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed" style={{ opacity: 0.75 }}>
+            {event.description.replace(/https?:\/\/\S+/g, "").replace(/\n{2,}/g, " ").trim()}
+          </p>
+        )}
       </div>
 
       {/* Poster image - gradient overlay for glossy look */}
@@ -243,10 +248,18 @@ function PosterCard({ event }: { event: EventWithDetails }) {
       {/* Time and location */}
       <div className="mt-auto flex flex-col gap-1 pl-20 pr-4 py-3 text-xs font-semibold" style={{ opacity: 0.95 }}>
         <span>• {timeLabel}</span>
-        {event.venueName && (
-          <span className="flex items-center gap-1">
-            <MapPin className="h-3 w-3" /> {event.venueName}
+        {(event.venueName || event.address) && (
+          <span className="flex items-start gap-1">
+            <MapPin className="mt-0.5 h-3 w-3 flex-shrink-0" />
+            <span className="line-clamp-2">
+              {event.venueName}
+              {event.venueName && event.address && <span style={{ opacity: 0.7 }}> · </span>}
+              {event.address && <span style={{ opacity: 0.8 }}>{event.address}</span>}
+            </span>
           </span>
+        )}
+        {event.cost && (
+          <span style={{ opacity: 0.8 }}>• {event.cost}</span>
         )}
       </div>
 
