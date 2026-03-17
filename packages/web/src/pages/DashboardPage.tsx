@@ -317,6 +317,22 @@ export default function DashboardPage() {
           <p className="mt-1 text-sm text-amber-600">
             <Link to="/admin" className="font-bold underline hover:no-underline">Open Admin Dashboard</Link> to review events and manage organizations.
           </p>
+          <button
+            onClick={async () => {
+              try {
+                const token = localStorage.getItem("cyh_token");
+                const res = await fetch(`${import.meta.env.VITE_API_URL || "/api"}/admin/geocode-backfill`, {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                const data = await res.json();
+                alert(`Geocoded ${data.updated} of ${data.total} events`);
+              } catch { alert("Geocode failed"); }
+            }}
+            className="mt-2 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white transition-all hover:bg-amber-700"
+          >
+            Geocode Events (Map)
+          </button>
         </div>
       )}
 
