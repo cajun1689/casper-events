@@ -43,7 +43,7 @@ export function printCalendar({ currentDate, events, title, primaryColor = "#4f4
 
   const eventsByDate = new Map<string, PrintEvent[]>();
   for (const event of events) {
-    const key = format(parseISO(event.startAt), "yyyy-MM-dd");
+    const key = event.startAt.slice(0, 10);
     const list = eventsByDate.get(key) ?? [];
     list.push(event);
     eventsByDate.set(key, list);

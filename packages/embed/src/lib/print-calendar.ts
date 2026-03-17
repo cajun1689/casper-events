@@ -30,7 +30,7 @@ export function printEmbedCalendar({ currentDate, events, primaryColor = "#4f46e
 
   const eventsByDate = new Map<string, EmbedEvent[]>();
   for (const ev of events) {
-    const key = format(parseISO(ev.startAt), "yyyy-MM-dd");
+    const key = ev.startAt.slice(0, 10);
     const list = eventsByDate.get(key) ?? [];
     list.push(ev);
     eventsByDate.set(key, list);

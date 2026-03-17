@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  eachDayOfInterval, format, isSameMonth, isSameDay, isToday, parseISO,
+  eachDayOfInterval, format, isSameMonth, isSameDay, isToday,
   addMonths, subMonths,
 } from "date-fns";
 import type { EmbedEvent, ContentToggles } from "../types";
@@ -39,7 +39,7 @@ export function EmbedMonthView({ events, onMonthChange, firstDayOfWeek = "sunday
 
   const eventsByDate = new Map<string, EmbedEvent[]>();
   for (const event of events) {
-    const key = format(parseISO(event.startAt), "yyyy-MM-dd");
+    const key = event.startAt.slice(0, 10);
     const list = eventsByDate.get(key) ?? [];
     list.push(event);
     eventsByDate.set(key, list);

@@ -20,7 +20,7 @@ function groupEventsByDate(events: EmbedEvent[]): Map<string, EmbedEvent[]> {
   const groups = new Map<string, EmbedEvent[]>();
   const sorted = [...events].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   for (const event of sorted) {
-    const key = format(parseISO(event.startAt), "yyyy-MM-dd");
+    const key = event.startAt.slice(0, 10);
     const list = groups.get(key) ?? [];
     list.push(event);
     groups.set(key, list);

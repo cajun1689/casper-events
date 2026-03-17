@@ -54,7 +54,7 @@ export function PosterView({ events }: PosterViewProps) {
   const grouped = useMemo(() => {
     const map = new Map<string, EventWithDetails[]>();
     for (const event of sorted) {
-      const key = format(parseISO(event.startAt), "yyyy-MM");
+      const key = event.startAt.slice(0, 7);
       const list = map.get(key) ?? [];
       list.push(event);
       map.set(key, list);

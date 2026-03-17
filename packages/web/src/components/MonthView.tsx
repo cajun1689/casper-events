@@ -7,7 +7,6 @@ import {
   format,
   isSameMonth,
   isToday,
-  parseISO,
 } from "date-fns";
 import clsx from "clsx";
 import type { EventWithDetails } from "@cyh/shared";
@@ -31,7 +30,7 @@ export function MonthView({ events, currentDate, onDateClick, onEventClick, sele
 
   const eventsByDate = new Map<string, EventWithDetails[]>();
   for (const event of events) {
-    const key = format(parseISO(event.startAt), "yyyy-MM-dd");
+    const key = event.startAt.slice(0, 10);
     const list = eventsByDate.get(key) ?? [];
     list.push(event);
     eventsByDate.set(key, list);

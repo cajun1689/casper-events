@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import type { EmbedEvent } from "../types";
 
 interface EmbedPosterFiltersProps {
@@ -24,7 +24,7 @@ export function EmbedPosterFilters({
   const months = React.useMemo(() => {
     const set = new Set<string>();
     for (const e of events) {
-      set.add(format(parseISO(e.startAt), "yyyy-MM"));
+      set.add(e.startAt.slice(0, 7));
     }
     return Array.from(set).sort();
   }, [events]);

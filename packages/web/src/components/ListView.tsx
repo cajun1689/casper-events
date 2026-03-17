@@ -10,7 +10,7 @@ export function ListView({ events }: ListViewProps) {
   const grouped = new Map<string, EventWithDetails[]>();
 
   for (const event of events) {
-    const key = format(parseISO(event.startAt), "yyyy-MM-dd");
+    const key = event.startAt.slice(0, 10);
     const list = grouped.get(key) ?? [];
     list.push(event);
     grouped.set(key, list);
