@@ -21,6 +21,7 @@ export interface EventWithDetails {
   recurrenceRule: string | null;
   color: string | null;
   subtitle: string | null;
+  snippet: string | null;
   externalUrl: string | null;
   externalUrlText: string | null;
   externalUrlCaption: string | null;

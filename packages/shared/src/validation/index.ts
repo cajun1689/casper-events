@@ -42,6 +42,7 @@ export const createEventSchema = z
     recurrenceRule: z.string().max(255).nullish(),
     color: z.string().max(200).nullish(),
     subtitle: z.string().max(255).nullish(),
+    snippet: z.string().max(500).nullish(),
     externalUrl: z.string().max(500).nullish(),
     externalUrlText: z.string().max(100).nullish(),
     externalUrlCaption: z.string().max(255).nullish(),

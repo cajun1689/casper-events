@@ -128,6 +128,7 @@ export const events = pgTable(
     recurrenceParentId: uuid("recurrence_parent_id"),
     color: varchar("color", { length: 200 }),
     subtitle: varchar("subtitle", { length: 255 }),
+    snippet: varchar("snippet", { length: 500 }),
     externalUrl: varchar("external_url", { length: 500 }),
     externalUrlText: varchar("external_url_text", { length: 100 }),
     externalUrlCaption: varchar("external_url_caption", { length: 255 }),

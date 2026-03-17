@@ -34,7 +34,7 @@ export default function CreateEventPage() {
     allDay: false, venueName: "", address: "", latitude: null as number | null, longitude: null as number | null,
     cost: "", ticketUrl: "", imageUrl: "",
     isOnline: false, onlineEventUrl: "", publishToFacebook: false,
-    color: "", subtitle: "", externalUrl: "", externalUrlText: "", externalUrlCaption: "",
+    color: "", subtitle: "", snippet: "", externalUrl: "", externalUrlText: "", externalUrlCaption: "",
     featured: false,
     schedulePublish: false,
     publishAtDate: "", publishAtTime: "",
@@ -100,7 +100,7 @@ export default function CreateEventPage() {
         publishToFacebook: form.publishToFacebook,
         categoryIds: selectedCats,
         orgCategoryIds: selectedOrgCats,
-        color: form.color || null, subtitle: form.subtitle || null,
+        color: form.color || null, subtitle: form.subtitle || null, snippet: form.snippet || null,
         externalUrl: form.externalUrl || null, externalUrlText: form.externalUrlText || null,
         externalUrlCaption: form.externalUrlCaption || null,
         featured: form.featured,
@@ -418,6 +418,12 @@ export default function CreateEventPage() {
             <label htmlFor="subtitle" className="mb-1.5 block text-sm font-semibold text-gray-700">Subtitle</label>
             <p className="mb-1 text-xs text-gray-500">Short tagline shown under the title, e.g. &quot;Happy St. Patrick&apos;s Day!&quot;</p>
             <input id="subtitle" type="text" maxLength={255} value={form.subtitle} onChange={(e) => update("subtitle", e.target.value)} className={inputCls} placeholder="Optional tagline" />
+          </div>
+
+          <div>
+            <label htmlFor="snippet" className="mb-1.5 block text-sm font-semibold text-gray-700">Card Snippet</label>
+            <p className="mb-1 text-xs text-gray-500">Short preview text shown on the poster card. If blank, the first few lines of the description are used.</p>
+            <textarea id="snippet" maxLength={500} rows={2} value={form.snippet} onChange={(e) => update("snippet", e.target.value)} className={inputCls} placeholder="Optional — auto-generated from description if empty" />
           </div>
 
           <div>

@@ -198,6 +198,7 @@ export async function embedRoutes(app: FastifyInstance) {
       organization: orgsMap[e.orgId] ? { name: orgsMap[e.orgId].name, slug: orgsMap[e.orgId].slug, logoUrl: orgsMap[e.orgId].logoUrl } : null,
       color: e.color ?? null,
       subtitle: e.subtitle ?? null,
+      snippet: e.snippet ?? null,
       externalUrl: e.externalUrl ?? null,
       externalUrlText: e.externalUrlText ?? null,
       externalUrlCaption: e.externalUrlCaption ?? null,

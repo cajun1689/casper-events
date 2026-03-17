@@ -42,6 +42,17 @@ function getSolidFromGradient(value: string): string {
   return match ? match[0] : "#4f46e5";
 }
 
+function cleanDescription(raw: string): string {
+  return raw
+    .replace(/<[^>]+>/g, "")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/_{2,}/g, "")
+    .replace(/\n{2,}/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 export function PosterView({ events }: PosterViewProps) {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const monthRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -184,9 +195,9 @@ function PosterCard({ event }: { event: EventWithDetails }) {
             {event.subtitle}
           </p>
         )}
-        {event.description && (
+        {(event.snippet || event.description) && (
           <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed" style={{ opacity: 0.75 }}>
-            {event.description.replace(/https?:\/\/\S+/g, "").replace(/\n{2,}/g, " ").trim()}
+            {event.snippet || cleanDescription(event.description ?? "")}
           </p>
         )}
       </div>
