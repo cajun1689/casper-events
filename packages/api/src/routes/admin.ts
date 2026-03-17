@@ -1,11 +1,12 @@
 import { FastifyInstance } from "fastify";
-import { eq, inArray, sql, desc } from "drizzle-orm";
+import { eq, and, isNull, isNotNull, inArray, sql, desc } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import * as schema from "@cyh/shared/db";
 import { reviewEventSchema, createCategorySchema } from "@cyh/shared";
 import { getDb } from "../db/connection.js";
 import { requireAuth } from "../middleware/auth.js";
 import { resolveUserOrg } from "../services/user-org.js";
+import { geocodeAddress } from "../services/geocode.js";
 import {
   CognitoIdentityProviderClient,
   AdminCreateUserCommand,
@@ -706,4 +707,35 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.send({ data: sponsors });
     }
   );
+
+  app.post("/admin/geocode-backfill", { preHandler: requireAuth }, async (request, reply) => {
+    const db = await getDb();
+    const userOrg = await resolveUserOrg(db, request.user!.sub);
+    if (!userOrg?.isAdmin) return reply.status(403).send({ error: "Admin only" });
+
+    const rows = await db
+      .select({ id: schema.events.id, address: schema.events.address, venueName: schema.events.venueName })
+      .from(schema.events)
+      .where(
+        and(
+          isNull(schema.events.latitude),
+          isNotNull(schema.events.address)
+        )
+      );
+
+    let updated = 0;
+    for (const row of rows) {
+      const query = row.address || row.venueName || "";
+      if (!query) continue;
+      const geo = await geocodeAddress(query);
+      if (geo) {
+        await db.update(schema.events)
+          .set({ latitude: geo.lat, longitude: geo.lon })
+          .where(eq(schema.events.id, row.id));
+        updated++;
+      }
+    }
+
+    return reply.send({ total: rows.length, updated });
+  });
 }

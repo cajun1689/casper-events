@@ -6,6 +6,7 @@ import * as schema from "@cyh/shared/db";
 import { getDb } from "../db/connection.js";
 import { requireAuth } from "../middleware/auth.js";
 import { resolveUserOrg } from "../services/user-org.js";
+import { geocodeAddress } from "../services/geocode.js";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
@@ -203,6 +204,7 @@ export async function syncGoogleCalendarEvents(
             address: gEvent.location || null,
             allDay: !gEvent.start?.dateTime,
             updatedAt: new Date(),
+            ...(gEvent.location ? await geocodeAddress(gEvent.location).then(g => g ? { latitude: g.lat, longitude: g.lon } : {}) : {}),
           })
           .where(eq(schema.events.googleCalendarEventId, gEvent.id));
         continue;
@@ -224,6 +226,7 @@ export async function syncGoogleCalendarEvents(
       }
 
       const initialStatus = org.requireGoogleEventApproval ? "draft" : "published";
+      const geo = gEvent.location ? await geocodeAddress(gEvent.location) : null;
       await db.insert(schema.events).values({
         orgId: org.id,
         title: gEvent.summary,
@@ -238,6 +241,8 @@ export async function syncGoogleCalendarEvents(
             : null,
         allDay: !gEvent.start?.dateTime,
         address: gEvent.location || null,
+        latitude: geo?.lat ?? null,
+        longitude: geo?.lon ?? null,
         imageUrl,
         googleCalendarEventId: gEvent.id,
         source: "google_calendar_import",
