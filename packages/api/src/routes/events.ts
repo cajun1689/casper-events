@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { eq, and, or, gte, lte, inArray, sql, ilike, desc, asc, SQL } from "drizzle-orm";
+import { eq, and, gte, lte, inArray, sql, ilike, desc, asc, SQL } from "drizzle-orm";
 import * as schema from "@cyh/shared/db";
 import {
   createEventSchema,
@@ -65,16 +65,11 @@ export async function eventRoutes(app: FastifyInstance) {
     }
 
     // Public calendar: exclude past events unless a date range is explicitly set
-    // All-day events: include if date is today or later; timed events: include if startAt >= now
+    // Include all events whose start date is today (UTC) or later
     if (!query.startAfter && !isOwnOrg && !isAdmin) {
       const now = new Date();
       const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-      conditions.push(
-        or(
-          and(eq(schema.events.allDay, true), gte(schema.events.startAt, startOfToday)),
-          and(eq(schema.events.allDay, false), gte(schema.events.startAt, now))
-        )!
-      );
+      conditions.push(gte(schema.events.startAt, startOfToday));
     }
 
     // Use start of UTC day for startAfter so all-day events (stored at midnight UTC) are included

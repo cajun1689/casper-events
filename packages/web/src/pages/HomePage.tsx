@@ -135,15 +135,9 @@ export default function HomePage() {
   }, [events, selectedCategories]);
 
   const upcomingEvents = useMemo(() => {
-    const now = new Date();
-    const todayStr = format(now, "yyyy-MM-dd");
+    const todayStr = format(new Date(), "yyyy-MM-dd");
     return filteredEvents.filter((e) => {
-      const start = new Date(e.startAt);
-      if (e.allDay) {
-        const eventDateStr = e.startAt.slice(0, 10);
-        return eventDateStr >= todayStr;
-      }
-      return start >= now;
+      return e.startAt.slice(0, 10) >= todayStr;
     });
   }, [filteredEvents]);
 

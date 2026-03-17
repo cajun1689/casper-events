@@ -43,10 +43,7 @@ export async function embedRoutes(app: FastifyInstance) {
 
     const now = new Date();
     const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    const dateFilter = or(
-      and(eq(schema.events.allDay, true), gte(schema.events.startAt, startOfToday)),
-      and(eq(schema.events.allDay, false), gte(schema.events.startAt, now))
-    )!;
+    const dateFilter = gte(schema.events.startAt, startOfToday);
 
     if (requestingOrg?.communityHub) {
       events = await db

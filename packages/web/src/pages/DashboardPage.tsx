@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Plus, CalendarDays, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Facebook, Share2, Calendar, Pencil, Trash2, X, ExternalLink, ChevronDown, ChevronRight, History } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import clsx from "clsx";
 import { useStore } from "@/lib/store";
 import { eventsApi, api } from "@/lib/api";
@@ -210,16 +210,11 @@ export default function DashboardPage() {
   };
 
   const { upcomingEvents, pastEvents } = useMemo(() => {
-    const now = new Date();
-    const todayStr = format(now, "yyyy-MM-dd");
+    const todayStr = format(new Date(), "yyyy-MM-dd");
     const upcoming: EventWithDetails[] = [];
     const past: EventWithDetails[] = [];
     for (const e of events) {
-      const start = parseISO(e.startAt);
-      const end = e.endAt ? parseISO(e.endAt) : null;
-      const isPast = e.allDay
-        ? e.startAt.slice(0, 10) < todayStr
-        : (end ?? start) < now;
+      const isPast = e.startAt.slice(0, 10) < todayStr;
       if (isPast) past.push(e);
       else upcoming.push(e);
     }

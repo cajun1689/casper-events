@@ -18,12 +18,9 @@ export default function OrgDetailPage() {
       setOrg(data);
       return eventsApi.list({ orgId: data.id });
     }).then((res) => {
-      const now = new Date();
-      const todayStr = format(now, "yyyy-MM-dd");
+      const todayStr = format(new Date(), "yyyy-MM-dd");
       const upcoming = res.data.filter((e) => {
-        const start = new Date(e.startAt);
-        if (e.allDay) return e.startAt.slice(0, 10) >= todayStr;
-        return start >= now;
+        return e.startAt.slice(0, 10) >= todayStr;
       });
       setEvents(upcoming);
       setLoading(false);
