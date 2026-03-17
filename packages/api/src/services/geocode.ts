@@ -1,7 +1,14 @@
+function cleanAddress(raw: string): string {
+  const parenMatch = raw.match(/\(([^)]+)\)/);
+  if (parenMatch) return parenMatch[1];
+  return raw;
+}
+
 export async function geocodeAddress(address: string): Promise<{ lat: number; lon: number } | null> {
   try {
+    const cleaned = cleanAddress(address);
     const params = new URLSearchParams({
-      q: address,
+      q: cleaned,
       format: "json",
       limit: "1",
       countrycodes: "us",
