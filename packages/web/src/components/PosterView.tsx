@@ -208,6 +208,7 @@ function PosterCard({ event }: { event: EventWithDetails }) {
           <img
             src={event.imageUrl}
             alt=""
+            loading="lazy"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
           <div
@@ -231,7 +232,7 @@ function PosterCard({ event }: { event: EventWithDetails }) {
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 3px rgba(0,0,0,0.1)",
             };
             const content = s.logoUrl ? (
-              <img src={s.logoUrl} alt={s.name} className={`${h} ${mw} object-contain`} title={s.name} />
+              <img src={s.logoUrl} alt={s.name} loading="lazy" className={`${h} ${mw} object-contain`} title={s.name} />
             ) : (
               <span className="text-[10px] font-bold" style={{ opacity: 0.85 }}>{s.name}</span>
             );

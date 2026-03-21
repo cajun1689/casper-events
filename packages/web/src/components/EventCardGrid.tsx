@@ -210,7 +210,7 @@ export function EventCardGrid({
                               {/* Image */}
                               {event.imageUrl && (
                                 <div className="mb-5 aspect-[2.2/1] overflow-hidden rounded-xl bg-gradient-to-br from-gray-100 to-gray-50">
-                                  <img src={event.imageUrl} alt={event.title} className="h-full w-full object-cover" />
+                                  <img src={event.imageUrl} alt={event.title} loading="lazy" className="h-full w-full object-cover" />
                                 </div>
                               )}
 

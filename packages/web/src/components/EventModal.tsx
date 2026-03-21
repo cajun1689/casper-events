@@ -65,6 +65,7 @@ export function EventModal({ event, onClose }: EventModalProps) {
             <img
               src={event.imageUrl}
               alt={event.title}
+              loading="lazy"
               className="h-full w-full object-cover"
             />
           </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { MapPin, Clock, CalendarDays, ExternalLink, Ticket, DollarSign, Building2, ArrowLeft, Link2, Mail, Users } from "lucide-react";
+import { MapPin, Clock, CalendarDays, ExternalLink, Ticket, DollarSign, Building2, ArrowLeft, Link2, Mail, Users, Share2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { safeSanitizeHtml } from "@/lib/sanitize";
 import { useStore } from "@/lib/store";
@@ -116,6 +116,42 @@ export default function EventDetailPage() {
     if (!id) return;
     eventsApi.get(id).then((data) => { setEvent(data); setLoading(false); }).catch(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!event) return;
+    const title = `${event.title} | Casper Events`;
+    document.title = title;
+    const desc = event.snippet || event.subtitle || (event.description?.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim().slice(0, 160) ?? "");
+    const url = window.location.href;
+    const image = event.imageUrl ?? null;
+    const setMeta = (key: string, content: string, useProperty: boolean) => {
+      const attr = useProperty ? "property" : "name";
+      let el = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+    setMeta("og:title", title, true);
+    setMeta("og:description", desc, true);
+    setMeta("og:url", url, true);
+    setMeta("og:type", "website", true);
+    setMeta("twitter:title", title, false);
+    setMeta("twitter:description", desc, false);
+    setMeta("twitter:card", image ? "summary_large_image" : "summary", false);
+    if (image) setMeta("og:image", image, true);
+    return () => {
+      document.title = "Casper Events";
+      setMeta("og:title", "Casper Events", true);
+      setMeta("og:description", "Discover events, activities, and things to do in Casper, Wyoming.", true);
+      setMeta("og:url", window.location.origin + "/", true);
+      setMeta("twitter:title", "Casper Events", false);
+      setMeta("twitter:description", "Discover events, activities, and things to do in Casper, Wyoming.", false);
+      setMeta("twitter:card", "summary_large_image", false);
+    };
+  }, [event]);
 
   useEffect(() => {
     if (!id) return;
@@ -238,6 +274,7 @@ export default function EventDetailPage() {
               <img
                 src={event.imageUrl}
                 alt={event.title}
+                loading="lazy"
                 className="mx-auto max-h-[480px] w-full object-contain"
               />
             </div>
@@ -427,10 +464,42 @@ export default function EventDetailPage() {
             </div>
           </div>
 
-          {/* SHARE section - David Street Station style */}
+          {/* SHARE section */}
           <div className="border-t border-gray-200 pt-8">
             <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.15em] text-gray-700">Share</p>
             <div className="flex flex-wrap gap-3">
+              {typeof navigator !== "undefined" && navigator.share && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.share({
+                        title: event.title,
+                        text: event.subtitle || event.title,
+                        url: window.location.href,
+                      });
+                    } catch { /* user cancelled */ }
+                  }}
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-5 py-2.5 text-sm font-bold text-gray-800 transition-all hover:bg-gray-100"
+                >
+                  <Share2 className="h-4 w-4" /> Share
+                </button>
+              )}
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-5 py-2.5 text-sm font-bold text-gray-800 transition-all hover:bg-gray-100"
+              >
+                Facebook
+              </a>
+              <a
+                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(event.title)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-5 py-2.5 text-sm font-bold text-gray-800 transition-all hover:bg-gray-100"
+              >
+                X
+              </a>
               <button
                 onClick={() => navigator.clipboard.writeText(window.location.href)}
                 className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-5 py-2.5 text-sm font-bold text-gray-800 transition-all hover:bg-gray-100"
@@ -441,7 +510,7 @@ export default function EventDetailPage() {
                 href={`mailto:?subject=${encodeURIComponent(event.title)}&body=${encodeURIComponent(window.location.href)}`}
                 className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-5 py-2.5 text-sm font-bold text-gray-800 transition-all hover:bg-gray-100"
               >
-                <Mail className="h-4 w-4" /> Invite via Email
+                <Mail className="h-4 w-4" /> Email
               </a>
             </div>
           </div>

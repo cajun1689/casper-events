@@ -22,6 +22,7 @@ export function EventCard({ event }: EventCardProps) {
           <img
             src={event.imageUrl}
             alt={event.title}
+            loading="lazy"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         </div>

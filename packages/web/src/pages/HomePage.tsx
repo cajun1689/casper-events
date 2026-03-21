@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { addMonths, subMonths, format, addWeeks, subWeeks, startOfDay, endOfDay, addDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
-import { ChevronLeft, ChevronRight, Sparkles, Printer } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, Printer, Search } from "lucide-react";
 import { useStore, type DatePreset } from "@/lib/store";
 import { eventsApi, categoriesApi } from "@/lib/api";
 
@@ -96,21 +96,35 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchInput]);
 
   useEffect(() => {
     async function load() {
       try {
         const presetRange = getDateRangeForPreset(datePreset);
 
-        let params: Record<string, string>;
+        let params: Record<string, string> = { limit: "100" };
         if (presetRange) {
-          params = { startAfter: presetRange.startAfter, startBefore: presetRange.startBefore, limit: "100" };
+          params.startAfter = presetRange.startAfter;
+          params.startBefore = presetRange.startBefore;
         } else if (viewMode === "month" || viewMode === "week") {
           const viewRange = getViewDateRange(viewMode, currentDate);
-          params = { startAfter: viewRange.startAfter, startBefore: viewRange.startBefore, limit: "100" };
-        } else {
-          params = { limit: "100" };
+          params.startAfter = viewRange.startAfter;
+          params.startBefore = viewRange.startBefore;
         }
+        if (debouncedSearch) params.search = debouncedSearch;
 
         const [eventsRes, catsRes] = await Promise.all([
           eventsApi.list(params),
@@ -125,7 +139,7 @@ export default function HomePage() {
       }
     }
     load();
-  }, [setCategories, datePreset, viewMode, currentDate]);
+  }, [setCategories, datePreset, viewMode, currentDate, debouncedSearch]);
 
   const filteredEvents = useMemo(() => {
     if (selectedCategories.length === 0) return events;
@@ -245,6 +259,19 @@ export default function HomePage() {
             </button>
             <ViewToggle current={viewMode} onChange={handleViewChange} excludeViews={["week"]} />
           </div>
+        </div>
+
+        {/* Search */}
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            type="search"
+            placeholder="Search events..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="w-full rounded-xl border border-gray-200/80 bg-white/60 py-2 pl-10 pr-4 text-sm shadow-sm backdrop-blur-sm placeholder:text-gray-500 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
+            aria-label="Search events"
+          />
         </div>
 
         {/* Date presets */}
