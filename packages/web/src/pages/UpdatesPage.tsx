@@ -1,7 +1,35 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Sparkles, Mail, CalendarPlus, LayoutGrid } from "lucide-react";
+import { ArrowLeft, Sparkles, Mail, CalendarPlus, LayoutGrid, Search } from "lucide-react";
 
 const updates = [
+  {
+    date: "March 17, 2026",
+    title: "Search, Sharing & UX Improvements",
+    icon: Search,
+    gradient: "from-blue-500 to-blue-600",
+    items: [
+      {
+        title: "Event search",
+        desc: "Search for events by title from the main calendar. Type in the search bar to instantly filter what you see.",
+      },
+      {
+        title: "Better link previews",
+        desc: "When you share an event link on Facebook, X/Twitter, or iMessage, it now shows the event title, description, and image.",
+      },
+      {
+        title: "Social share buttons",
+        desc: "Each event page has one-tap sharing to Facebook, X/Twitter, email, and copy link. On mobile, use the native Share option.",
+      },
+      {
+        title: "404 page",
+        desc: "Friendly 'Page not found' screen with links back to the calendar when a URL doesn't exist.",
+      },
+      {
+        title: "Faster loading",
+        desc: "Event images load lazily for quicker page loads. If something goes wrong, an error screen lets you reload instead of a blank page.",
+      },
+    ],
+  },
   {
     date: "March 17, 2026",
     title: "Calendar & Poster View Improvements",
