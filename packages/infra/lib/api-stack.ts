@@ -215,6 +215,64 @@ export class ApiStack extends cdk.Stack {
       targets: [new targets.LambdaFunction(digestHandler)],
     });
 
+    // Push notifications: 1.5h before events, every 15 minutes
+    const pushHandler = new lambda.Function(this, "PushHandler", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "push-handler.handler",
+      code: lambda.Code.fromAsset("../api/dist"),
+      memorySize: 256,
+      timeout: cdk.Duration.minutes(2),
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [lambdaSg],
+      environment: {
+        NODE_ENV: "production",
+        DB_SECRET_ARN: props.dbSecretArn,
+        DB_HOST: props.dbClusterEndpoint,
+        DB_NAME: "cyhcalendar",
+      },
+    });
+
+    pushHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["secretsmanager:GetSecretValue"],
+        resources: [props.dbSecretArn],
+      })
+    );
+
+    new events.Rule(this, "PushSchedule", {
+      schedule: events.Schedule.cron({
+        minute: "0",
+        hour: "*",
+      }),
+      targets: [new targets.LambdaFunction(pushHandler)],
+    });
+
+    // Run at :15, :30, :45 as well for finer granularity (every 15 min)
+    new events.Rule(this, "PushSchedule15", {
+      schedule: events.Schedule.cron({
+        minute: "15",
+        hour: "*",
+      }),
+      targets: [new targets.LambdaFunction(pushHandler)],
+    });
+
+    new events.Rule(this, "PushSchedule30", {
+      schedule: events.Schedule.cron({
+        minute: "30",
+        hour: "*",
+      }),
+      targets: [new targets.LambdaFunction(pushHandler)],
+    });
+
+    new events.Rule(this, "PushSchedule45", {
+      schedule: events.Schedule.cron({
+        minute: "45",
+        hour: "*",
+      }),
+      targets: [new targets.LambdaFunction(pushHandler)],
+    });
+
     new cdk.CfnOutput(this, "ApiUrl", {
       value: `https://${apiDomainName}`,
       description: "API URL",
