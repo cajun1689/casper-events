@@ -44,7 +44,6 @@
     "plugins": [
       "expo-router",
       "expo-notifications",
-      "expo-image",
       "./plugins/withMacCatalyst.js"
     ],
     "experiments": {
