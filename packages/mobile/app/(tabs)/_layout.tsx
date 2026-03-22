@@ -1,54 +1,37 @@
 import React from "react";
-import { Pressable } from "react-native";
-import { SymbolView } from "expo-symbols";
-import { Link, Tabs } from "expo-router";
+import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
-import Colors from "@/constants/Colors";
-import { useColorScheme } from "@/components/useColorScheme";
-import { useClientOnlyValue } from "@/components/useClientOnlyValue";
+import { useAppTheme } from "@/src/hooks/useAppTheme";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const theme = useAppTheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        headerShown: useClientOnlyValue(false, true),
+        tabBarActiveTintColor: theme.tint,
+        tabBarInactiveTintColor: theme.tabIconDefault,
+        tabBarStyle: {
+          backgroundColor: theme.surface,
+          borderTopColor: theme.borderLight,
+        },
+        headerStyle: {
+          backgroundColor: theme.surface,
+        },
+        headerTintColor: theme.text,
+        headerShadowVisible: false,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Events",
-          headerRight: () => (
-            <Link href="/submit" asChild>
-              <Pressable
-                style={{ marginRight: 16, padding: 4 }}
-                accessibilityLabel="Submit event"
-                accessibilityRole="button"
-              >
-                <SymbolView
-                  name={{
-                    ios: "plus.circle",
-                    android: "code",
-                    web: "code",
-                  }}
-                  size={24}
-                  tintColor="#2563eb"
-                />
-              </Pressable>
-            </Link>
-          ),
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: "chevron.left.forwardslash.chevron.right",
-                android: "code",
-                web: "code",
-              }}
-              tintColor={color}
-              size={28}
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "calendar" : "calendar-outline"}
+              size={24}
+              color={color}
             />
           ),
         }}
@@ -57,15 +40,11 @@ export default function TabLayout() {
         name="orgs"
         options={{
           title: "Organizations",
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: "chevron.left.forwardslash.chevron.right",
-                android: "code",
-                web: "code",
-              }}
-              tintColor={color}
-              size={28}
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "people" : "people-outline"}
+              size={24}
+              color={color}
             />
           ),
         }}
@@ -74,15 +53,11 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: "Settings",
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: "chevron.left.forwardslash.chevron.right",
-                android: "code",
-                web: "code",
-              }}
-              tintColor={color}
-              size={28}
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "settings" : "settings-outline"}
+              size={24}
+              color={color}
             />
           ),
         }}

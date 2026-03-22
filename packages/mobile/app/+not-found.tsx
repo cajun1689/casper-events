@@ -1,17 +1,21 @@
-import { Link, Stack } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { Link, Stack } from "expo-router";
+import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
-import { Text, View } from '@/components/Themed';
+import { useAppTheme } from "@/src/hooks/useAppTheme";
+import { spacing, typography } from "@/src/theme";
 
 export default function NotFoundScreen() {
+  const theme = useAppTheme();
+
   return (
     <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
-      <View style={styles.container}>
-        <Text style={styles.title}>This screen doesn't exist.</Text>
-
-        <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>Go to home screen!</Text>
+      <Stack.Screen options={{ title: "Not Found" }} />
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <Ionicons name="alert-circle-outline" size={56} color={theme.textTertiary} />
+        <Text style={[styles.title, { color: theme.text }]}>Page not found</Text>
+        <Link href="/" style={[styles.link, { color: theme.tint }]}>
+          Go to home screen
         </Link>
       </View>
     </>
@@ -21,20 +25,17 @@ export default function NotFoundScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.xl,
+    gap: spacing.md,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...typography.headline,
   },
   link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-  linkText: {
-    fontSize: 14,
-    color: '#2e78b7',
+    ...typography.body,
+    fontWeight: "600",
+    marginTop: spacing.sm,
   },
 });

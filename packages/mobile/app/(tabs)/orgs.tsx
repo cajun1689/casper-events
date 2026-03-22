@@ -2,35 +2,20 @@ import { useState, useEffect } from "react";
 import {
   StyleSheet,
   FlatList,
-  Pressable,
+  View,
+  Text,
   RefreshControl,
-  ActivityIndicator,
 } from "react-native";
-import { Link } from "expo-router";
-import { Text, View } from "@/components/Themed";
+import { Ionicons } from "@expo/vector-icons";
+
+import { useAppTheme } from "@/src/hooks/useAppTheme";
+import { spacing, typography } from "@/src/theme";
 import { organizationsApi } from "@/src/lib/api";
+import { OrgCard, OrgCardSkeleton } from "@/src/components/OrgCard";
 import type { OrganizationPublic } from "@cyh/shared";
 
-function OrgRow({ org }: { org: OrganizationPublic }) {
-  return (
-    <Link href={`/organizations/${org.slug}`} asChild>
-      <Pressable
-        style={({ pressed }) => [styles.orgRow, pressed && styles.orgRowPressed]}
-        accessibilityLabel={`${org.name} organization`}
-        accessibilityRole="link"
-      >
-        <Text style={styles.orgName}>{org.name}</Text>
-        {org.description ? (
-          <Text style={styles.orgDesc} numberOfLines={2}>
-            {org.description}
-          </Text>
-        ) : null}
-      </Pressable>
-    </Link>
-  );
-}
-
 export default function OrgsScreen() {
+  const theme = useAppTheme();
   const [orgs, setOrgs] = useState<OrganizationPublic[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -61,30 +46,47 @@ export default function OrgsScreen() {
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={styles.skeletonList}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <OrgCardSkeleton key={i} />
+          ))}
+        </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {error && (
-        <View style={styles.error}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      )}
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <FlatList
         data={orgs}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <OrgRow org={item} />}
+        renderItem={({ item }) => <OrgCard org={item} />}
+        contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text>No organizations found.</Text>
+            <Ionicons name="people-outline" size={48} color={theme.textTertiary} />
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>
+              No organizations found
+            </Text>
+            <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
+              Check back later for community organizations
+            </Text>
           </View>
         }
+        ListHeaderComponent={
+          error ? (
+            <View style={[styles.errorBanner, { backgroundColor: "rgba(239,68,68,0.08)" }]}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null
+        }
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.tint}
+          />
         }
       />
     </View>
@@ -92,30 +94,37 @@ export default function OrgsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  center: {
+  container: {
     flex: 1,
-    justifyContent: "center",
+  },
+  listContent: {
+    paddingTop: spacing.lg,
+    paddingBottom: spacing["3xl"],
+  },
+  skeletonList: {
+    paddingTop: spacing.lg,
+  },
+  empty: {
+    padding: spacing["4xl"],
     alignItems: "center",
+    gap: spacing.sm,
   },
-  orgRow: {
-    padding: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ccc",
+  emptyTitle: {
+    ...typography.headline,
+    marginTop: spacing.md,
   },
-  orgRowPressed: {
-    opacity: 0.7,
+  emptySubtitle: {
+    ...typography.callout,
+    textAlign: "center",
   },
-  orgName: {
-    fontSize: 16,
-    fontWeight: "600",
+  errorBanner: {
+    marginHorizontal: spacing.lg,
+    padding: spacing.md,
+    borderRadius: 8,
+    marginBottom: spacing.md,
   },
-  orgDesc: {
-    fontSize: 13,
-    opacity: 0.8,
-    marginTop: 4,
+  errorText: {
+    color: "#dc2626",
+    ...typography.callout,
   },
-  empty: { padding: 32, alignItems: "center" },
-  error: { padding: 12, backgroundColor: "#fee" },
-  errorText: { color: "#c00" },
 });

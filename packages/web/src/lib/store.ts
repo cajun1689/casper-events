@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { CategoryPublic } from "@cyh/shared";
+import type { CategoryPublic, OrganizationPublic } from "@cyh/shared";
 
 export type DatePreset = "all" | "today" | "tomorrow" | "weekend" | "next7";
 
@@ -11,6 +11,9 @@ interface AppState {
   selectedCategories: string[];
   viewMode: "month" | "week" | "list" | "poster" | "map";
   datePreset: DatePreset;
+  selectedCity: string;
+  selectedOrgIds: string[];
+  organizations: OrganizationPublic[];
 
   setAuth: (token: string, user: AppState["user"], org: AppState["organization"]) => void;
   logout: () => void;
@@ -19,6 +22,10 @@ interface AppState {
   clearCategoryFilter: () => void;
   setViewMode: (mode: "month" | "week" | "list" | "poster" | "map") => void;
   setDatePreset: (preset: DatePreset) => void;
+  setSelectedCity: (city: string) => void;
+  setOrganizations: (orgs: OrganizationPublic[]) => void;
+  toggleOrgFilter: (orgId: string) => void;
+  clearOrgFilter: () => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -29,6 +36,9 @@ export const useStore = create<AppState>((set) => ({
   selectedCategories: [],
   viewMode: "month",
   datePreset: "all",
+  selectedCity: localStorage.getItem("cyh_city") || "All Wyoming",
+  selectedOrgIds: JSON.parse(localStorage.getItem("cyh_org_filter") || "[]"),
+  organizations: [],
 
   setAuth: (token, user, organization) => {
     localStorage.setItem("cyh_token", token);
@@ -54,4 +64,29 @@ export const useStore = create<AppState>((set) => ({
 
   setViewMode: (viewMode) => set({ viewMode }),
   setDatePreset: (datePreset) => set({ datePreset }),
+
+  setSelectedCity: (city) => {
+    if (city === "All Wyoming") {
+      localStorage.removeItem("cyh_city");
+    } else {
+      localStorage.setItem("cyh_city", city);
+    }
+    set({ selectedCity: city });
+  },
+
+  setOrganizations: (organizations) => set({ organizations }),
+
+  toggleOrgFilter: (orgId) =>
+    set((state) => {
+      const selected = state.selectedOrgIds.includes(orgId)
+        ? state.selectedOrgIds.filter((id) => id !== orgId)
+        : [...state.selectedOrgIds, orgId];
+      localStorage.setItem("cyh_org_filter", JSON.stringify(selected));
+      return { selectedOrgIds: selected };
+    }),
+
+  clearOrgFilter: () => {
+    localStorage.removeItem("cyh_org_filter");
+    set({ selectedOrgIds: [] });
+  },
 }));

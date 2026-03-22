@@ -2,7 +2,11 @@
   "expo": {
     "name": "Wyoming Events Calendar",
     "extra": {
-      "privacyPolicyUrl": "https://casperevents.org/privacy"
+      "privacyPolicyUrl": "https://casperevents.org/privacy",
+      "router": {},
+      "eas": {
+        "projectId": "0a81e13a-81bb-45d4-a3cc-24a819dea3b9"
+      }
     },
     "slug": "wyoming-events-calendar",
     "version": "1.0.0",
@@ -13,16 +17,19 @@
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#f9fafb"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "org.casperyouthhub.wyomingevents"
+      "bundleIdentifier": "org.casperyouthhub.wyomingevents",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "org.casperyouthhub.wyomingevents",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#4A7C3F",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -36,12 +43,8 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-notifications",
-        {
-          "sounds": ["default"]
-        }
-      ]
+      "expo-notifications",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true

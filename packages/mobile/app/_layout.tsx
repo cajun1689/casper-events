@@ -6,27 +6,28 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
 
+import { Inter_400Regular } from "@expo-google-fonts/inter/400Regular";
+import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold";
+import { Inter_700Bold } from "@expo-google-fonts/inter/700Bold";
+
 import { useColorScheme } from "@/components/useColorScheme";
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
+export { ErrorBoundary } from "expo-router";
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: "(tabs)",
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Inter_400Regular,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
@@ -47,15 +48,15 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const router = useRouter();
+
   useEffect(() => {
-    // When user taps notification, navigate to event
     const sub = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         const data = response.notification.request.content
           .data as Record<string, unknown>;
-        const eventId = (data?.eventId as string) ?? (data?.url as string)?.match?.(
-          /\/events\/([^/]+)/
-        )?.[1];
+        const eventId =
+          (data?.eventId as string) ??
+          (data?.url as string)?.match?.(/\/events\/([^/]+)/)?.[1];
         if (eventId) {
           router.push(`/events/${eventId}`);
         }
@@ -66,10 +67,15 @@ function RootLayoutNav() {
   }, [router]);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: "Settings" }} />
+        <Stack.Screen name="about" options={{ title: "About" }} />
+        <Stack.Screen name="updates" options={{ title: "Updates" }} />
+        <Stack.Screen name="privacy" options={{ title: "Privacy Policy" }} />
+        <Stack.Screen name="terms" options={{ title: "Terms of Service" }} />
+        <Stack.Screen name="events/[id]" options={{ title: "" }} />
+        <Stack.Screen name="organizations/[slug]" options={{ title: "" }} />
       </Stack>
     </ThemeProvider>
   );
