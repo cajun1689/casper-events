@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -12,7 +12,7 @@ import {
 import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 import { useAppTheme } from "@/src/hooks/useAppTheme";
 import { colors, spacing, radii, typography } from "@/src/theme";
@@ -37,7 +37,7 @@ import type { EventWithDetails, CategoryPublic } from "@cyh/shared";
 function groupEventsByDate(events: EventWithDetails[]) {
   const groups: Map<string, EventWithDetails[]> = new Map();
   for (const event of events) {
-    const key = format(new Date(event.startAt), "yyyy-MM-dd");
+    const key = event.startAt.slice(0, 10);
     const existing = groups.get(key);
     if (existing) {
       existing.push(event);
@@ -51,10 +51,15 @@ function groupEventsByDate(events: EventWithDetails[]) {
   }));
 }
 
+function monthLabel(key: string, short = false): string {
+  const [y, m] = key.split("-").map(Number);
+  return format(new Date(y, m - 1, 1), short ? "MMM yyyy" : "MMMM yyyy");
+}
+
 function groupEventsByMonth(events: EventWithDetails[]) {
   const groups: Map<string, EventWithDetails[]> = new Map();
   for (const event of events) {
-    const key = format(new Date(event.startAt), "yyyy-MM");
+    const key = event.startAt.slice(0, 7);
     const existing = groups.get(key);
     if (existing) {
       existing.push(event);
@@ -66,7 +71,7 @@ function groupEventsByMonth(events: EventWithDetails[]) {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([monthKey, data]) => ({
       monthKey,
-      label: format(new Date(monthKey + "-01"), "MMMM yyyy"),
+      label: monthLabel(monthKey),
       data,
     }));
 }
@@ -87,6 +92,9 @@ export default function HomeScreen() {
   const [selectedCity, setSelectedCityState] = useState<string | null | undefined>(undefined);
   const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const [filteredOrgIds, setFilteredOrgIds] = useState<Set<string>>(new Set());
+  const [selectedPosterMonth, setSelectedPosterMonth] = useState<string | null>(null);
+  const posterScrollRef = useRef<ScrollView>(null);
+  const monthSectionRefs = useRef<Record<string, View | null>>({});
 
   const setViewMode = useCallback((mode: ViewMode) => {
     setViewModeState(mode);
@@ -333,6 +341,7 @@ export default function HomeScreen() {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <ScrollView
+          ref={posterScrollRef}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.tint} />
           }
@@ -342,16 +351,55 @@ export default function HomeScreen() {
           {displayEvents.length === 0 ? (
             emptyComponent
           ) : (
-            monthGroups.map(({ monthKey, label, data }) => (
-              <View key={monthKey} style={styles.posterMonthGroup}>
-                <Text style={[styles.monthGroupTitle, { color: theme.text }]}>{label}</Text>
-                <View style={styles.posterGrid}>
-                  {data.map((event) => (
-                    <PosterCard key={event.id} event={event} />
-                  ))}
+            <>
+              {monthGroups.length > 1 && (
+                <View style={styles.monthJumpRow}>
+                  {monthGroups.map(({ monthKey }) => {
+                    const active = selectedPosterMonth === monthKey;
+                    return (
+                      <Pressable
+                        key={monthKey}
+                        onPress={() => {
+                          setSelectedPosterMonth(monthKey);
+                          Haptics.selectionAsync();
+                          const ref = monthSectionRefs.current[monthKey];
+                          if (ref) ref.measureLayout(
+                            posterScrollRef.current as any,
+                            (_x: number, y: number) => posterScrollRef.current?.scrollTo({ y, animated: true }),
+                            () => {},
+                          );
+                        }}
+                        style={[
+                          styles.monthJumpPill,
+                          { backgroundColor: active ? colors.primary[600] : theme.surfaceSecondary },
+                        ]}
+                      >
+                        <Text style={[
+                          styles.monthJumpText,
+                          { color: active ? "#fff" : theme.textSecondary },
+                        ]}>
+                          {monthLabel(monthKey, true)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
-              </View>
-            ))
+              )}
+              {monthGroups.map(({ monthKey, label, data }) => (
+                <View
+                  key={monthKey}
+                  ref={(el) => { monthSectionRefs.current[monthKey] = el; }}
+                  style={styles.posterMonthGroup}
+                >
+                  <Text style={[styles.monthGroupTitle, { color: theme.text }]}>{label}</Text>
+                  <View style={styles.posterGrid}>
+                    {data.map((event) => (
+                      <PosterCard key={event.id} event={event} />
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </>
           )}
         </ScrollView>
       </View>
@@ -556,6 +604,22 @@ const styles = StyleSheet.create({
   },
   posterGrid: {
     paddingHorizontal: spacing.lg,
+  },
+  monthJumpRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  monthJumpPill: {
+    borderRadius: radii.lg,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  monthJumpText: {
+    fontSize: 12,
+    fontWeight: "700",
   },
   mapHeaderScroll: {
     paddingBottom: spacing.sm,

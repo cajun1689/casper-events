@@ -1,13 +1,26 @@
 import type { EventWithDetails } from "@cyh/shared";
 
 export function parseColor(hex: string): { r: number; g: number; b: number } | null {
-  const m = hex.match(/^#?([0-9a-f]{6})$/i);
-  if (!m) return null;
-  return {
-    r: parseInt(m[1].slice(0, 2), 16),
-    g: parseInt(m[1].slice(2, 4), 16),
-    b: parseInt(m[1].slice(4, 6), 16),
-  };
+  const h = hex.trim();
+  const m6 = h.match(/^#?([0-9a-f]{6})$/i);
+  if (m6) {
+    const s = m6[1];
+    return {
+      r: parseInt(s.slice(0, 2), 16),
+      g: parseInt(s.slice(2, 4), 16),
+      b: parseInt(s.slice(4, 6), 16),
+    };
+  }
+  const m3 = h.match(/^#?([0-9a-f]{3})$/i);
+  if (m3) {
+    const s = m3[1];
+    return {
+      r: parseInt(s[0] + s[0], 16),
+      g: parseInt(s[1] + s[1], 16),
+      b: parseInt(s[2] + s[2], 16),
+    };
+  }
+  return null;
 }
 
 export function isGradient(value: string): boolean {

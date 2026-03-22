@@ -43,3 +43,19 @@ Cloud iOS builds still produce an **iOS** `.ipa`. To ship on the **Mac App Store
 ## Disabling Catalyst
 
 Remove `./plugins/withMacCatalyst.js` from `app.json` → `plugins`, then `expo prebuild --clean`.
+
+## Dropbox / spaces in path (important)
+
+If the repo lives under a path with **spaces** (e.g. `MAPL Dropbox`):
+
+1. **`ios.buildReactNativeFromSource`** is set in `ios/Podfile.properties.json` so CocoaPods does not use RN prebuilt tarballs (Ruby `URI::File` breaks on spaces).
+2. **`pod install`** and **Xcode** should be run from a path **without spaces** if possible, or apply the local fixes below (Expo’s shell scripts use `bash -c` with unquoted paths).
+3. Convenience symlink (optional): `ln -sf "/path/to/CYH Calendar" ~/cyh-calendar` and open `~/cyh-calendar/packages/mobile/ios/*.xcworkspace`.
+
+Local patches applied in this repo for spaces:
+
+- **`expo-constants`**: `EXConstants.podspec` script uses `bash -l -c ". \"$PODS_TARGET_SRCROOT/../scripts/get-app-config-ios.sh\""` instead of invoking the script path as raw `bash -c` code.
+- **`WyomingEventsCalendar.xcodeproj`**: “Bundle React Native code and images” uses `bash "$(node … path to react-native-xcode.sh)"` instead of backticks (same quoting issue).
+
+**Note:** Running `expo prebuild --clean` will regenerate `ios/` and may drop these edits; re-apply or add an Expo config plugin / `patch-package` to persist.
+

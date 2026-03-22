@@ -2,7 +2,7 @@ import { StyleSheet, Text, View, Pressable, Linking } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link } from "expo-router";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/src/hooks/useAppTheme";
 import { colors, spacing, radii, shadows, typography } from "@/src/theme";
@@ -52,8 +52,8 @@ export function PosterCard({ event }: PosterCardProps) {
   const bgColor = resolveColor(event);
   const textColor = getTextColor(bgColor);
   const gradient = isGradient(bgColor);
-  const start = new Date(event.startAt);
-  const end = event.endAt ? new Date(event.endAt) : null;
+  const start = parseISO(event.startAt);
+  const end = event.endAt ? parseISO(event.endAt) : null;
 
   const timeLabel = event.allDay
     ? "All day"
