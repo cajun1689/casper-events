@@ -1,10 +1,15 @@
 import type { EmbedEvent } from "../types";
+import {
+  getTextColorForPosterBackground,
+  isPosterGradient,
+  getFirstHexInGradient,
+} from "@cyh/shared";
 
+/** @deprecated Use parsePosterHex from @cyh/shared */
 export function parseColor(color: string): { r: number; g: number; b: number } | null {
   if (!color || typeof color !== "string") return null;
   const s = color.trim();
 
-  // #rrggbb or #rgb
   const hex = s.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
   if (hex) {
     const h = hex[1];
@@ -22,7 +27,6 @@ export function parseColor(color: string): { r: number; g: number; b: number } |
     };
   }
 
-  // rgb(r, g, b) or rgba(r, g, b, a)
   const rgb = s.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
   if (rgb) {
     return {
@@ -40,11 +44,7 @@ export function getLuminance(r: number, g: number, b: number): number {
 }
 
 export function getTextColor(bgColor: string): string {
-  const solid = isGradient(bgColor) ? getSolidColorForContrast(bgColor) : bgColor;
-  const rgb = parseColor(solid);
-  if (!rgb) return "var(--cyh-text, #1f2937)";
-  const lum = getLuminance(rgb.r, rgb.g, rgb.b);
-  return lum > 0.55 ? "#1a1a1a" : "#ffffff";
+  return getTextColorForPosterBackground(bgColor);
 }
 
 export function resolveEventColor(
@@ -60,14 +60,16 @@ export function resolveEventColor(
 
 /** True if the value is a CSS gradient (e.g. linear-gradient(...)) */
 export function isGradient(value: string): boolean {
-  return typeof value === "string" && value.trim().startsWith("linear-gradient");
+  return isPosterGradient(value);
 }
 
-/** Extract first hex color from gradient for text contrast, or return value if solid. */
+/**
+ * Extract first hex color from gradient for text contrast, or return value if solid.
+ * @deprecated Prefer getFirstHexInGradient from @cyh/shared for gradients
+ */
 export function getSolidColorForContrast(value: string): string {
-  if (!value || isGradient(value)) {
-    const match = value?.match(/#[0-9a-fA-F]{3,6}/);
-    return match ? match[0] : "#4f46e5";
+  if (!value || isPosterGradient(value)) {
+    return getFirstHexInGradient(value);
   }
   return value;
 }

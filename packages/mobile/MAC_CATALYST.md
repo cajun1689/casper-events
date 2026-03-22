@@ -59,3 +59,21 @@ Local patches applied in this repo for spaces:
 
 **Note:** Running `expo prebuild --clean` will regenerate `ios/` and may drop these edits; re-apply or add an Expo config plugin / `patch-package` to persist.
 
+
+## Build error: `RCTSwiftUIContainerView.swift` not found
+
+This usually means **`ios/Podfile.lock` is out of sync** with `node_modules/react-native` (e.g. the lockfile still references **React Native 0.83** while `package.json` has **0.76.x**). CocoaPods then points at Swift files that do not exist in your installed RN version.
+
+**Fix — regenerate Pods (from `packages/mobile` after `pnpm install`):**
+
+```bash
+cd ios
+rm -rf Pods Podfile.lock build
+cd ..
+pnpm exec pod-install
+# or: cd ios && pod install
+```
+
+Then in Xcode: **Product → Clean Build Folder** (⇧⌘K), build again.
+
+If it still fails, align the native project: `npx expo prebuild --platform ios --clean` (may require re-applying Catalyst / Dropbox path patches documented above).

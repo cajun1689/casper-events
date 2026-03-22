@@ -9,26 +9,13 @@ interface PosterViewProps {
 }
 
 function parseColor(hex: string): { r: number; g: number; b: number } | null {
-  let h = hex.trim();
-  const m6 = h.match(/^#?([0-9a-f]{6})$/i);
-  if (m6) {
-    const s = m6[1];
-    return {
-      r: parseInt(s.slice(0, 2), 16),
-      g: parseInt(s.slice(2, 4), 16),
-      b: parseInt(s.slice(4, 6), 16),
-    };
-  }
-  const m3 = h.match(/^#?([0-9a-f]{3})$/i);
-  if (m3) {
-    const s = m3[1];
-    return {
-      r: parseInt(s[0] + s[0], 16),
-      g: parseInt(s[1] + s[1], 16),
-      b: parseInt(s[2] + s[2], 16),
-    };
-  }
-  return null;
+  const m = hex.match(/^#?([0-9a-f]{6})$/i);
+  if (!m) return null;
+  return {
+    r: parseInt(m[1].slice(0, 2), 16),
+    g: parseInt(m[1].slice(2, 4), 16),
+    b: parseInt(m[1].slice(4, 6), 16),
+  };
 }
 
 function getTextColor(bg: string): string {
@@ -64,11 +51,6 @@ function cleanDescription(raw: string): string {
     .replace(/\n{2,}/g, " ")
     .replace(/\s{2,}/g, " ")
     .trim();
-}
-
-function monthLabel(key: string, short = false): string {
-  const [y, m] = key.split("-").map(Number);
-  return format(new Date(y, m - 1, 1), short ? "MMM yyyy" : "MMMM yyyy");
 }
 
 export function PosterView({ events }: PosterViewProps) {
@@ -133,7 +115,7 @@ export function PosterView({ events }: PosterViewProps) {
                   : "border border-gray-200/80 bg-white/60 text-gray-600 hover:bg-white hover:shadow"
               }`}
             >
-              {monthLabel(m, true)}
+              {format(new Date(m + "-01"), "MMM yyyy")}
             </button>
           ))}
         </div>
@@ -147,7 +129,7 @@ export function PosterView({ events }: PosterViewProps) {
           className="animate-fade-in"
         >
           <h2 className="mb-5 text-lg font-extrabold tracking-tight text-gray-900">
-            {monthLabel(monthKey)}
+            {format(new Date(monthKey + "-01"), "MMMM yyyy")}
           </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {monthEvents.map((event) => (
@@ -161,8 +143,8 @@ export function PosterView({ events }: PosterViewProps) {
 }
 
 function PosterCard({ event }: { event: EventWithDetails }) {
-  const bgColor = resolveColor(event);
-  const textColor = getTextColor(bgColor);
+  const bgColor = resolvePosterEventColor(event);
+  const textColor = getTextColorForPosterBackground(bgColor);
   const start = parseISO(event.startAt);
   const end = event.endAt ? parseISO(event.endAt) : null;
   const timeLabel = event.allDay
@@ -178,7 +160,7 @@ function PosterCard({ event }: { event: EventWithDetails }) {
       to={`/events/${event.id}`}
       className="group relative flex min-h-[180px] flex-col overflow-hidden rounded-2xl shadow-md transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
       style={{
-        ...(isGradient(bgColor) ? { background: bgColor } : { backgroundColor: bgColor }),
+        ...(isPosterGradient(bgColor) ? { background: bgColor } : { backgroundColor: bgColor }),
         color: textColor,
       }}
     >

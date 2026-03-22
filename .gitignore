@@ -17,3 +17,6 @@ Thumbs.db
 .vscode/
 .idea/
 dns-proxy.cjs
+
+# Cursor local worktree metadata
+.cursor/worktrees.json
