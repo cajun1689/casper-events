@@ -77,3 +77,22 @@ pnpm exec pod-install
 Then in Xcode: **Product → Clean Build Folder** (⇧⌘K), build again.
 
 If it still fails, align the native project: `npx expo prebuild --platform ios --clean` (may require re-applying Catalyst / Dropbox path patches documented above).
+
+## Command-line: `xcodebuild` (Mac Catalyst)
+
+The `ios/` folder is not committed (see `.gitignore`); native projects are local. For **CLI** builds:
+
+```bash
+cd packages/mobile/ios   # or symlink path without spaces
+bash ../scripts/xcode-maccatalyst.sh
+```
+
+**Node 24 (Homebrew):** add to **`ios/.xcode.env`** (same folder as the workspace — not committed):
+
+```bash
+export NODE_OPTIONS="${NODE_OPTIONS:-} --no-experimental-strip-types"
+```
+
+Without this, Expo’s config step can fail while loading plugins from `node_modules`.
+
+**Paths with spaces (Dropbox):** some Pod script phases split paths incorrectly. Prefer a **symlink** without spaces to the repo root, then `cd` into `packages/mobile/ios` from that symlink before `xcodebuild`.
