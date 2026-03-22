@@ -10,6 +10,7 @@ import {
 } from "@aws-sdk/client-cognito-identity-provider";
 import { useStore } from "@/lib/store";
 import { authApi } from "@/lib/api";
+import { safeSetToken } from "@/lib/safe-storage";
 
 const cognito = new CognitoIdentityProviderClient({ region: "us-east-1" });
 const CLIENT_ID = "6iiuflu8b3r81fr57oifkj1o6a";
@@ -31,8 +32,20 @@ export default function LoginPage() {
   const [resetSuccess, setResetSuccess] = useState(false);
 
   async function completeLogin(idToken: string) {
-    const payload = JSON.parse(atob(idToken.split(".")[1]));
-    localStorage.setItem("cyh_token", idToken);
+    let payload: { sub?: string; email?: string; name?: string };
+    try {
+      payload = JSON.parse(atob(idToken.split(".")[1]));
+    } catch {
+      setError("Could not read session. Please sign in again.");
+      return;
+    }
+    const sub = payload.sub;
+    const email = payload.email;
+    if (!sub || !email) {
+      setError("Could not read session. Please sign in again.");
+      return;
+    }
+    safeSetToken(idToken);
 
     let profile: { user: unknown; organization: unknown };
     try {
@@ -48,8 +61,8 @@ export default function LoginPage() {
     setAuth(
       idToken,
       {
-        sub: payload.sub,
-        email: payload.email,
+        sub,
+        email,
         name: payload.name,
         isAdmin: (profile.user as Record<string, unknown>)?.isAdmin as boolean,
       },

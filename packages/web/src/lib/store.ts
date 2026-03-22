@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { CategoryPublic } from "@cyh/shared";
+import { safeGetToken, safeRemoveToken, safeSetToken } from "@/lib/safe-storage";
 
 export type DatePreset = "all" | "today" | "tomorrow" | "weekend" | "next7";
 
@@ -22,7 +23,7 @@ interface AppState {
 }
 
 export const useStore = create<AppState>((set) => ({
-  token: localStorage.getItem("cyh_token"),
+  token: safeGetToken(),
   user: null,
   organization: null,
   categories: [],
@@ -31,12 +32,12 @@ export const useStore = create<AppState>((set) => ({
   datePreset: "all",
 
   setAuth: (token, user, organization) => {
-    localStorage.setItem("cyh_token", token);
+    safeSetToken(token);
     set({ token, user, organization });
   },
 
   logout: () => {
-    localStorage.removeItem("cyh_token");
+    safeRemoveToken();
     set({ token: null, user: null, organization: null });
   },
 

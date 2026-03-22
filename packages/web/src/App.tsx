@@ -40,17 +40,21 @@ function AuthRehydrator() {
     authApi
       .me()
       .then((profile) => {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        setAuth(
-          token,
-          {
-            sub: payload.sub,
-            email: payload.email,
-            name: payload.name,
-            isAdmin: (profile.user as Record<string, unknown>)?.isAdmin as boolean,
-          },
-          profile.organization as { id: string; name: string; slug: string; status?: string } | null
-        );
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          setAuth(
+            token,
+            {
+              sub: payload.sub,
+              email: payload.email,
+              name: payload.name,
+              isAdmin: (profile.user as Record<string, unknown>)?.isAdmin as boolean,
+            },
+            profile.organization as { id: string; name: string; slug: string; status?: string } | null
+          );
+        } catch {
+          logout();
+        }
       })
       .catch(() => logout());
   }, [token, user, setAuth, logout]);

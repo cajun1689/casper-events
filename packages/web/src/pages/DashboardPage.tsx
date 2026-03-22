@@ -4,6 +4,7 @@ import { Plus, CalendarDays, Settings, BarChart3, Clock, CheckCircle2, AlertCirc
 import { format } from "date-fns";
 import clsx from "clsx";
 import { useStore } from "@/lib/store";
+import { safeGetToken } from "@/lib/safe-storage";
 import { eventsApi, api } from "@/lib/api";
 import type { EventWithDetails } from "@cyh/shared";
 
@@ -320,7 +321,7 @@ export default function DashboardPage() {
           <button
             onClick={async () => {
               try {
-                const token = localStorage.getItem("cyh_token");
+                const token = safeGetToken();
                 const res = await fetch(`${import.meta.env.VITE_API_URL || "/api"}/admin/geocode-backfill`, {
                   method: "POST",
                   headers: { Authorization: `Bearer ${token}` },
