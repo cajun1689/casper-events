@@ -1,6 +1,7 @@
 import React from "react";
+import { Pressable } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { Tabs } from "expo-router";
+import { Link, Tabs } from "expo-router";
 
 import Colors from "@/constants/Colors";
 import { useColorScheme } from "@/components/useColorScheme";
@@ -20,6 +21,25 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Events",
+          headerRight: () => (
+            <Link href="/submit" asChild>
+              <Pressable
+                style={{ marginRight: 16, padding: 4 }}
+                accessibilityLabel="Submit event"
+                accessibilityRole="button"
+              >
+                <SymbolView
+                  name={{
+                    ios: "plus.circle",
+                    android: "code",
+                    web: "code",
+                  }}
+                  size={24}
+                  tintColor="#2563eb"
+                />
+              </Pressable>
+            </Link>
+          ),
           tabBarIcon: ({ color }) => (
             <SymbolView
               name={{

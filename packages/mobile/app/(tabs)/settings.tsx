@@ -9,6 +9,7 @@ import {
   Alert,
   Platform,
 } from "react-native";
+import { Link } from "expo-router";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import { organizationsApi, pushApi } from "@/src/lib/api";
@@ -225,6 +226,44 @@ export default function SettingsScreen() {
       <Text style={styles.hint}>
         City filter is set on the Events tab.
       </Text>
+
+      <Text style={styles.sectionTitle}>More</Text>
+      <Link href="/about" asChild>
+        <Pressable
+          style={styles.linkRow}
+          accessibilityLabel="About Wyoming Events Calendar"
+          accessibilityRole="link"
+        >
+          <Text style={styles.linkText}>About</Text>
+        </Pressable>
+      </Link>
+      <Link href="/updates" asChild>
+        <Pressable
+          style={styles.linkRow}
+          accessibilityLabel="Updates"
+          accessibilityRole="link"
+        >
+          <Text style={styles.linkText}>Updates</Text>
+        </Pressable>
+      </Link>
+      <Link href="/privacy" asChild>
+        <Pressable
+          style={styles.linkRow}
+          accessibilityLabel="Privacy Policy"
+          accessibilityRole="link"
+        >
+          <Text style={styles.linkText}>Privacy Policy</Text>
+        </Pressable>
+      </Link>
+      <Link href="/terms" asChild>
+        <Pressable
+          style={styles.linkRow}
+          accessibilityLabel="Terms of Service"
+          accessibilityRole="link"
+        >
+          <Text style={styles.linkText}>Terms of Service</Text>
+        </Pressable>
+      </Link>
     </View>
   );
 }
@@ -268,4 +307,10 @@ const styles = StyleSheet.create({
   orgName: { fontSize: 16 },
   orgNameSelected: { fontWeight: "600" },
   hint: { fontSize: 12, opacity: 0.6, marginTop: 24 },
+  linkRow: {
+    padding: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#eee",
+  },
+  linkText: { fontSize: 16, color: "#2563eb" },
 });

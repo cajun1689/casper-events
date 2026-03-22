@@ -3,6 +3,7 @@ import type {
   EventWithDetails,
   PaginatedResponse,
   OrganizationPublic,
+  CategoryPublic,
 } from "@cyh/shared";
 
 async function request<T>(
@@ -64,6 +65,32 @@ export const organizationsApi = {
     api.get<{ data: OrganizationPublic[] }>("/organizations"),
   get: (slug: string) =>
     api.get<OrganizationPublic>(`/organizations/${slug}`),
+};
+
+export const categoriesApi = {
+  list: () =>
+    api.get<{ data: CategoryPublic[] }>("/categories"),
+};
+
+export const publicEventsApi = {
+  submit: (data: {
+    title: string;
+    description?: string | null;
+    startAt: string;
+    endAt?: string | null;
+    allDay?: boolean;
+    venueName?: string | null;
+    address?: string | null;
+    cost?: string | null;
+    ticketUrl?: string | null;
+    categoryIds?: string[];
+    submitterName: string;
+    submitterEmail: string;
+  }) =>
+    api.post<{ success: boolean; message: string; eventId: string }>(
+      "/public/events",
+      data
+    ),
 };
 
 export const pushApi = {
