@@ -152,7 +152,7 @@ function PosterCard({ event }: { event: EventWithDetails }) {
     : end
       ? `${format(start, "h:mm a")} – ${format(end, "h:mm a")}`
       : format(start, "h:mm a");
-  const primaryCat = event.categories[0];
+  const primaryCat = event.categories?.[0];
   const sponsors = event.sponsors ?? [];
 
   return (

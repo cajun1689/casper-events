@@ -28,25 +28,51 @@ interface AppState {
   clearOrgFilter: () => void;
 }
 
+function safeParseJson<T>(raw: string | null, fallback: T): T {
+  try {
+    const str = raw || "";
+    if (!str || str === "null" || str === "undefined") return fallback;
+    return JSON.parse(str) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function safeLocalStorageGet(key: string, fallback: string): string {
+  try {
+    return typeof localStorage !== "undefined" ? localStorage.getItem(key) || fallback : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export const useStore = create<AppState>((set) => ({
-  token: localStorage.getItem("cyh_token"),
+  token: safeLocalStorageGet("cyh_token", ""),
   user: null,
   organization: null,
   categories: [],
   selectedCategories: [],
   viewMode: "month",
   datePreset: "all",
-  selectedCity: localStorage.getItem("cyh_city") || "All Wyoming",
-  selectedOrgIds: JSON.parse(localStorage.getItem("cyh_org_filter") || "[]"),
+  selectedCity: safeLocalStorageGet("cyh_city", "All Wyoming"),
+  selectedOrgIds: safeParseJson<string[]>(safeLocalStorageGet("cyh_org_filter", "[]"), []),
   organizations: [],
 
   setAuth: (token, user, organization) => {
-    localStorage.setItem("cyh_token", token);
+    try {
+      if (typeof localStorage !== "undefined") localStorage.setItem("cyh_token", token);
+    } catch {
+      // ignore
+    }
     set({ token, user, organization });
   },
 
   logout: () => {
-    localStorage.removeItem("cyh_token");
+    try {
+      if (typeof localStorage !== "undefined") localStorage.removeItem("cyh_token");
+    } catch {
+      // ignore
+    }
     set({ token: null, user: null, organization: null });
   },
 
@@ -66,10 +92,13 @@ export const useStore = create<AppState>((set) => ({
   setDatePreset: (datePreset) => set({ datePreset }),
 
   setSelectedCity: (city) => {
-    if (city === "All Wyoming") {
-      localStorage.removeItem("cyh_city");
-    } else {
-      localStorage.setItem("cyh_city", city);
+    try {
+      if (typeof localStorage !== "undefined") {
+        if (city === "All Wyoming") localStorage.removeItem("cyh_city");
+        else localStorage.setItem("cyh_city", city);
+      }
+    } catch {
+      // ignore
     }
     set({ selectedCity: city });
   },
@@ -81,12 +110,20 @@ export const useStore = create<AppState>((set) => ({
       const selected = state.selectedOrgIds.includes(orgId)
         ? state.selectedOrgIds.filter((id) => id !== orgId)
         : [...state.selectedOrgIds, orgId];
-      localStorage.setItem("cyh_org_filter", JSON.stringify(selected));
+      try {
+        if (typeof localStorage !== "undefined") localStorage.setItem("cyh_org_filter", JSON.stringify(selected));
+      } catch {
+        // ignore
+      }
       return { selectedOrgIds: selected };
     }),
 
   clearOrgFilter: () => {
-    localStorage.removeItem("cyh_org_filter");
+    try {
+      if (typeof localStorage !== "undefined") localStorage.removeItem("cyh_org_filter");
+    } catch {
+      // ignore
+    }
     set({ selectedOrgIds: [] });
   },
 }));
