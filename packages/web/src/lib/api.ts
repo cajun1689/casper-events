@@ -1,10 +1,23 @@
-const API_BASE = import.meta.env.VITE_API_URL || "/api";
+/** Production fallback if VITE_API_URL was missing at build time (prevents blank app from wrong /api origin). */
+const PRODUCTION_API = "https://api.casperevents.org/v1";
+
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? PRODUCTION_API : "/api");
+
+function safeGetStoredToken(): string | null {
+  try {
+    return typeof localStorage !== "undefined" ? localStorage.getItem("cyh_token") : null;
+  } catch {
+    return null;
+  }
+}
 
 async function request<T>(
   path: string,
   options?: RequestInit
 ): Promise<T> {
-  const token = localStorage.getItem("cyh_token");
+  const token = safeGetStoredToken();
   const headers: Record<string, string> = {
     ...(options?.headers as Record<string, string>),
   };
