@@ -7,9 +7,23 @@ export default function PrivacyScreen() {
     <>
       <Stack.Screen options={{ title: "Privacy Policy" }} />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        <Text style={styles.muted}>Last updated: March 2026</Text>
+        <Pressable
+          style={styles.fullPolicyBtn}
+          onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+          accessibilityLabel="View full privacy policy in browser"
+          accessibilityRole="button"
+        >
+          <Text style={styles.fullPolicyBtnText}>
+            View Full Privacy Policy (App Store & Play Store)
+          </Text>
+        </Pressable>
 
-        <Text style={styles.heading}>Overview</Text>
+        <Text style={styles.muted}>Last updated: March 2026</Text>
+        <Text style={styles.para}>
+          The full policy at casperevents.org/privacy complies with Apple App Store and Google Play Store requirements.
+        </Text>
+
+        <Text style={styles.heading}>Summary</Text>
         <Text style={styles.para}>
           Wyoming Events Calendar ("we", "us", "our") operates this mobile app
           and the casperevents.org platform. This Privacy Policy explains how we
@@ -59,9 +73,19 @@ export default function PrivacyScreen() {
   );
 }
 
+const PRIVACY_POLICY_URL = "https://casperevents.org/privacy";
+
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
+  fullPolicyBtn: {
+    backgroundColor: "#2563eb",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  fullPolicyBtnText: { color: "#fff", fontWeight: "600", fontSize: 16 },
   muted: { fontSize: 12, color: "#999", marginBottom: 16 },
   heading: { fontSize: 16, fontWeight: "600", marginTop: 16, marginBottom: 6 },
   para: { fontSize: 14, color: "#444", marginBottom: 6, lineHeight: 20 },

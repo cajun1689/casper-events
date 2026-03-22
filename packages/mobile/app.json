@@ -1,6 +1,9 @@
 {
   "expo": {
     "name": "Wyoming Events Calendar",
+    "extra": {
+      "privacyPolicyUrl": "https://casperevents.org/privacy"
+    },
     "slug": "wyoming-events-calendar",
     "version": "1.0.0",
     "orientation": "portrait",
