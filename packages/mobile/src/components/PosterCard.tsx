@@ -47,10 +47,12 @@ interface PosterCardProps {
   event: EventWithDetails;
 }
 
+const FALLBACK_BG = "#4f46e5";
+
 export function PosterCard({ event }: PosterCardProps) {
   const theme = useAppTheme();
-  const bgColor = resolveColor(event);
-  const textColor = getTextColor(bgColor);
+  const bgColor = resolveColor(event) || FALLBACK_BG;
+  const textColor = getTextColor(bgColor) || "#ffffff";
   const gradient = isGradient(bgColor);
   const start = parseISO(event.startAt);
   const end = event.endAt ? parseISO(event.endAt) : null;
@@ -233,12 +235,6 @@ export function PosterCard({ event }: PosterCardProps) {
     </>
   );
 
-  const cardStyle = [
-    styles.card,
-    shadows.lg,
-    !gradient && { backgroundColor: bgColor },
-  ];
-
   if (gradient) {
     const gradientColors = extractGradientColors(bgColor);
     return (
@@ -265,7 +261,9 @@ export function PosterCard({ event }: PosterCardProps) {
     <Link href={`/events/${event.id}`} asChild>
       <Pressable
         style={({ pressed }) => [
-          ...cardStyle,
+          styles.card,
+          shadows.lg,
+          { backgroundColor: bgColor },
           pressed && styles.pressed,
         ]}
         accessibilityLabel={`${event.title}, ${format(start, "EEEE, MMMM d")}`}
