@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { spacing, typography } from "@/src/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { spacing, typography } from "@/theme";
 import { isToday, isTomorrow, format } from "date-fns";
 
 interface SectionDateHeaderProps {

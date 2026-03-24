@@ -1,7 +1,7 @@
 import { ScrollView, Pressable, Text, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { colors, spacing, radii, typography } from "@/src/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { colors, spacing, radii, typography } from "@/theme";
 import {
   startOfDay,
   endOfDay,

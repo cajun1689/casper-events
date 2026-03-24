@@ -13,9 +13,9 @@ import { useRouter } from "expo-router";
 import { format } from "date-fns";
 import { Ionicons } from "@expo/vector-icons";
 
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { colors, spacing, radii, shadows, typography } from "@/src/theme";
-import { resolveSolidColor as resolveColor, hexToRgba } from "@/src/lib/event-colors";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { colors, spacing, radii, shadows, typography } from "@/theme";
+import { resolveSolidColor as resolveColor, hexToRgba } from "@/lib/event-colors";
 import type { EventWithDetails } from "@cyh/shared";
 
 const DEFAULT_REGION: Region = {

@@ -11,11 +11,11 @@ import { Image } from "expo-image";
 import { useLocalSearchParams, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { colors, spacing, radii, shadows, typography } from "@/src/theme";
-import { organizationsApi, eventsApi } from "@/src/lib/api";
-import { EventCard } from "@/src/components/EventCard";
-import { SkeletonList } from "@/src/components/SkeletonCard";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { colors, spacing, radii, shadows, typography } from "@/theme";
+import { organizationsApi, eventsApi } from "@/lib/api";
+import { EventCard } from "@/components/EventCard";
+import { SkeletonList } from "@/components/SkeletonCard";
 import type { OrganizationPublic, EventWithDetails } from "@cyh/shared";
 
 function hexToRgba(hex: string, alpha: number): string {

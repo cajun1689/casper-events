@@ -16,11 +16,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import MapView, { Marker } from "react-native-maps";
 import { format } from "date-fns";
 
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { colors, spacing, radii, shadows, typography } from "@/src/theme";
-import { resolveSolidColor, hexToRgba } from "@/src/lib/event-colors";
-import { eventsApi } from "@/src/lib/api";
-import { SkeletonList } from "@/src/components/SkeletonCard";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { colors, spacing, radii, shadows, typography } from "@/theme";
+import { resolveSolidColor, hexToRgba } from "@/lib/event-colors";
+import { eventsApi } from "@/lib/api";
+import { SkeletonList } from "@/components/SkeletonCard";
 import type { EventWithDetails } from "@cyh/shared";
 
 function buildGoogleCalendarUrl(event: EventWithDetails): string {

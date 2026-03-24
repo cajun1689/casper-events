@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { ViewMode } from "@/src/components/ViewToggle";
+import type { ViewMode } from "@/components/ViewToggle";
 
 const VIEW_MODE_KEY = "defaultViewMode";
 const VALID_MODES: ViewMode[] = ["cards", "list", "poster", "calendar", "map"];

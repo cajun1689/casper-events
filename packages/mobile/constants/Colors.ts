@@ -1,4 +1,4 @@
-import { lightTheme, darkTheme } from "@/src/theme";
+import { lightTheme, darkTheme } from "@/theme";
 
 export default {
   light: lightTheme,

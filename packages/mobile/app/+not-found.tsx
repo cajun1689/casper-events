@@ -2,8 +2,8 @@ import { Link, Stack } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { spacing, typography } from "@/src/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { spacing, typography } from "@/theme";
 
 export default function NotFoundScreen() {
   const theme = useAppTheme();

@@ -16,9 +16,9 @@ import {
   isToday,
 } from "date-fns";
 
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { colors, spacing, radii, shadows, typography } from "@/src/theme";
-import { EventRow } from "@/src/components/EventRow";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { colors, spacing, radii, shadows, typography } from "@/theme";
+import { EventRow } from "@/components/EventRow";
 import type { EventWithDetails } from "@cyh/shared";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

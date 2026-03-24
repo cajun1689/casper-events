@@ -2,8 +2,8 @@ import { ScrollView, Text, View, StyleSheet, Pressable, Linking } from "react-na
 import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { colors, spacing, radii, shadows, typography } from "@/src/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { colors, spacing, radii, shadows, typography } from "@/theme";
 
 const PRIVACY_POLICY_URL = "https://casperevents.org/privacy";
 

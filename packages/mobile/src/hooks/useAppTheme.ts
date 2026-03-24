@@ -1,5 +1,5 @@
 import { useColorScheme } from "@/components/useColorScheme";
-import { lightTheme, darkTheme, AppTheme } from "@/src/theme";
+import { lightTheme, darkTheme, AppTheme } from "@/theme";
 
 export function useAppTheme(): AppTheme {
   const colorScheme = useColorScheme();

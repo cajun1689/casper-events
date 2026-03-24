@@ -16,19 +16,19 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
 
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { colors, spacing, radii, shadows, typography } from "@/src/theme";
-import { organizationsApi, pushApi } from "@/src/lib/api";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { colors, spacing, radii, shadows, typography } from "@/theme";
+import { organizationsApi, pushApi } from "@/lib/api";
 import {
   getStoredPushToken,
   setStoredPushToken,
   clearStoredPushToken,
-} from "@/src/lib/push-token-storage";
-import { getSelectedCity, setSelectedCity } from "@/src/lib/city-storage";
-import { getDefaultViewMode, setDefaultViewMode } from "@/src/lib/view-storage";
-import { getFilteredOrgIds, setFilteredOrgIds } from "@/src/lib/org-filter-storage";
-import { ALL_WYOMING_VALUE, WYOMING_CITIES } from "@/src/lib/wyoming-cities";
-import type { ViewMode } from "@/src/components/ViewToggle";
+} from "@/lib/push-token-storage";
+import { getSelectedCity, setSelectedCity } from "@/lib/city-storage";
+import { getDefaultViewMode, setDefaultViewMode } from "@/lib/view-storage";
+import { getFilteredOrgIds, setFilteredOrgIds } from "@/lib/org-filter-storage";
+import { ALL_WYOMING_VALUE, WYOMING_CITIES } from "@/lib/wyoming-cities";
+import type { ViewMode } from "@/components/ViewToggle";
 import type { OrganizationPublic } from "@cyh/shared";
 
 const VIEW_MODE_LABELS: Record<ViewMode, string> = {

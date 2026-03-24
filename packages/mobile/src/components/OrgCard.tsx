@@ -2,8 +2,8 @@ import { StyleSheet, Text, View, Pressable } from "react-native";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { colors, spacing, radii, shadows, typography } from "@/src/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { colors, spacing, radii, shadows, typography } from "@/theme";
 import type { OrganizationPublic } from "@cyh/shared";
 
 function hexToRgba(hex: string, alpha: number): string {

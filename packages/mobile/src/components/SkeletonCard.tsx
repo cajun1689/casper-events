@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View } from "react-native";
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { spacing, radii, shadows } from "@/src/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { spacing, radii, shadows } from "@/theme";
 
 export function SkeletonCard() {
   const theme = useAppTheme();

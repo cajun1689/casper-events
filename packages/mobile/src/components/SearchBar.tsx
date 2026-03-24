@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { StyleSheet, TextInput, View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { spacing, radii, typography } from "@/src/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { spacing, radii, typography } from "@/theme";
 
 interface SearchBarProps {
   value: string;

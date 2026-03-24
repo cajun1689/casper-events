@@ -4,14 +4,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Link } from "expo-router";
 import { format, parseISO } from "date-fns";
 import { Ionicons } from "@expo/vector-icons";
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { colors, spacing, radii, shadows, typography } from "@/src/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { colors, spacing, radii, shadows, typography } from "@/theme";
 import {
   resolveColor,
   getTextColor,
   isGradient,
   extractGradientColors,
-} from "@/src/lib/event-colors";
+} from "@/lib/event-colors";
 import type { EventWithDetails } from "@cyh/shared";
 
 function cleanDescription(raw: string): string {

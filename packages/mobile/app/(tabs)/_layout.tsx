@@ -2,7 +2,7 @@ import React from "react";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-import { useAppTheme } from "@/src/hooks/useAppTheme";
+import { useAppTheme } from "@/hooks/useAppTheme";
 
 export default function TabLayout() {
   const theme = useAppTheme();

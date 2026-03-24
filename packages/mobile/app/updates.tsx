@@ -2,8 +2,8 @@ import { ScrollView, Text, View, StyleSheet } from "react-native";
 import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { colors, spacing, radii, shadows, typography } from "@/src/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { colors, spacing, radii, shadows, typography } from "@/theme";
 
 function FeatureItem({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) {
   const theme = useAppTheme();

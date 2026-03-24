@@ -8,10 +8,10 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { spacing, typography } from "@/src/theme";
-import { organizationsApi } from "@/src/lib/api";
-import { OrgCard, OrgCardSkeleton } from "@/src/components/OrgCard";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { spacing, typography } from "@/theme";
+import { organizationsApi } from "@/lib/api";
+import { OrgCard, OrgCardSkeleton } from "@/components/OrgCard";
 import type { OrganizationPublic } from "@cyh/shared";
 
 export default function OrgsScreen() {

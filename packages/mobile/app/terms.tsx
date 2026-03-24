@@ -1,8 +1,8 @@
 import { ScrollView, Text, View, StyleSheet, Pressable, Linking } from "react-native";
 import { Stack } from "expo-router";
 
-import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { spacing, radii, shadows, typography } from "@/src/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { spacing, radii, shadows, typography } from "@/theme";
 
 export default function TermsScreen() {
   const theme = useAppTheme();
