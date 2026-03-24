@@ -171,7 +171,7 @@ importers:
         specifier: ~9.0.17
         version: 9.0.17
       '@expo/vector-icons':
-        specifier: ^14.0.4
+        specifier: ~14.0.4
         version: 14.0.4
       '@react-native-async-storage/async-storage':
         specifier: ~1.23.1

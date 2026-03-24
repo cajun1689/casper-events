@@ -22,7 +22,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    ionicons: require("@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf"),
+    ionicons: require("../assets/fonts/Ionicons.ttf"),
     Inter_400Regular,
     Inter_600SemiBold,
     Inter_700Bold,
