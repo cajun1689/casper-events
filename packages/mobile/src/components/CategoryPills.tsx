@@ -34,14 +34,14 @@ export function CategoryPills({
       contentContainerStyle={styles.container}
     >
       {categories.map((cat) => {
-        const active = selected.has(cat.id);
+        const active = selected.has(cat.slug);
         const catColor = cat.color || theme.tint;
         return (
           <Pressable
             key={cat.id}
             onPress={() => {
               Haptics.selectionAsync();
-              onToggle(cat.id);
+              onToggle(cat.slug);
             }}
             style={[
               styles.pill,
