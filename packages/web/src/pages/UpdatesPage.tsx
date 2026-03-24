@@ -1,7 +1,27 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Sparkles, Mail, CalendarPlus, LayoutGrid, Search } from "lucide-react";
+import { ArrowLeft, Sparkles, Mail, CalendarPlus, LayoutGrid, Search, Smartphone } from "lucide-react";
 
 const updates = [
+  {
+    date: "March 22, 2026",
+    title: "Mobile apps in progress",
+    icon: Smartphone,
+    gradient: "from-violet-500 to-purple-600",
+    items: [
+      {
+        title: "iPhone & iPad",
+        desc: "A native Wyoming Events Calendar app is in development for iOS — browse events, posters, maps, orgs, and push notification preferences for your favorite organizations.",
+      },
+      {
+        title: "Mac (Catalyst)",
+        desc: "The Mac Catalyst target is enabled so the same app can ship as a Mac app alongside iPhone and iPad.",
+      },
+      {
+        title: "Android",
+        desc: "An Android build is in the works alongside iOS so you can keep the calendar in your pocket on every device.",
+      },
+    ],
+  },
   {
     date: "March 17, 2026",
     title: "Search, Sharing & UX Improvements",

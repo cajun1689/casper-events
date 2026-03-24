@@ -17,6 +17,7 @@ import { orgCategoryRoutes } from "./routes/org-categories.js";
 import { publicEventRoutes } from "./routes/public-events.js";
 import { digestRoutes } from "./routes/digest.js";
 import { siteSponsorsRoutes } from "./routes/site-sponsors.js";
+import { pushRoutes } from "./routes/push.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -63,6 +64,7 @@ export function buildApp() {
   app.register(publicEventRoutes);
   app.register(digestRoutes);
   app.register(siteSponsorsRoutes);
+  app.register(pushRoutes);
 
   return app;
 }

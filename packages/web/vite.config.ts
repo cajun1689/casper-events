@@ -10,6 +10,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
       "@cyh/embed": path.resolve(__dirname, "../embed/src"),
     },
+    dedupe: ["react", "react-dom"],
   },
   server: {
     port: 5173,

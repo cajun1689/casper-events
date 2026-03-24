@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { addMonths, subMonths, format, addWeeks, subWeeks, startOfDay, endOfDay, addDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
-import { ChevronLeft, ChevronRight, Sparkles, Printer, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, Printer, Search, MapPin, Building2, X } from "lucide-react";
 import { useStore, type DatePreset } from "@/lib/store";
-import { eventsApi, categoriesApi } from "@/lib/api";
+import { eventsApi, categoriesApi, organizationsApi } from "@/lib/api";
 
 function getDateRangeForPreset(preset: DatePreset): { startAfter: string; startBefore: string } | null {
   const now = new Date();
@@ -78,17 +78,118 @@ import { EventCardGrid } from "@/components/EventCardGrid";
 import { DigestSignup } from "@/components/DigestSignup";
 import { SiteSponsors } from "@/components/SiteSponsors";
 
+const WYOMING_CITIES = [
+  "All Wyoming", "Cheyenne", "Casper", "Laramie", "Gillette", "Rock Springs",
+  "Sheridan", "Green River", "Evanston", "Riverton", "Cody", "Douglas",
+  "Powell", "Rawlins", "Worland", "Torrington", "Jackson", "Buffalo",
+  "Lander", "Wheatland", "Kemmerer", "Newcastle", "Thermopolis", "Sundance",
+  "Glenrock", "Lovell", "Saratoga", "Pinedale", "Afton",
+];
+
+function OrgFilterDropdown({
+  organizations,
+  selectedCity,
+  selectedOrgIds,
+  onToggle,
+  onClear,
+}: {
+  organizations: import("@cyh/shared").OrganizationPublic[];
+  selectedCity: string;
+  selectedOrgIds: string[];
+  onToggle: (id: string) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const visibleOrgs = useMemo(() => {
+    if (selectedCity === "All Wyoming") return organizations;
+    return organizations.filter(
+      (org) => org.address?.toLowerCase().includes(selectedCity.toLowerCase())
+    );
+  }, [organizations, selectedCity]);
+
+  const count = selectedOrgIds.length;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium shadow-sm transition-all ${
+          count > 0
+            ? "border-primary-300 bg-primary-50 text-primary-700"
+            : "border-gray-200/80 bg-white/60 text-gray-600 hover:bg-white hover:text-gray-800"
+        }`}
+      >
+        <Building2 className="h-4 w-4" />
+        {count > 0 ? `${count} org${count > 1 ? "s" : ""} selected` : "All organizations"}
+        {count > 0 && (
+          <span
+            onClick={(e) => { e.stopPropagation(); onClear(); }}
+            className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-200 text-primary-700 hover:bg-primary-300"
+          >
+            <X className="h-3 w-3" />
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full z-20 mt-2 max-h-72 w-64 overflow-y-auto rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
+            {visibleOrgs.length === 0 ? (
+              <p className="px-3 py-2 text-sm text-gray-500">No organizations in this city</p>
+            ) : (
+              visibleOrgs.map((org) => {
+                const active = selectedOrgIds.includes(org.id);
+                return (
+                  <button
+                    key={org.id}
+                    onClick={() => onToggle(org.id)}
+                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                      active
+                        ? "bg-primary-50 text-primary-700 font-medium"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${
+                      active ? "border-primary-500 bg-primary-500 text-white" : "border-gray-300"
+                    }`}>
+                      {active && (
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </span>
+                    <span className="truncate">{org.name}</span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const {
     categories,
     selectedCategories,
     viewMode,
     datePreset,
+    selectedCity,
+    selectedOrgIds,
+    organizations,
     setCategories,
     setViewMode,
     setDatePreset,
+    setSelectedCity,
+    setOrganizations,
     toggleCategory,
     clearCategoryFilter,
+    toggleOrgFilter,
+    clearOrgFilter,
   } = useStore();
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -125,13 +226,16 @@ export default function HomePage() {
           params.startBefore = viewRange.startBefore;
         }
         if (debouncedSearch) params.search = debouncedSearch;
+        if (selectedCity && selectedCity !== "All Wyoming") params.city = selectedCity;
 
-        const [eventsRes, catsRes] = await Promise.all([
+        const [eventsRes, catsRes, orgsRes] = await Promise.all([
           eventsApi.list(params),
           categoriesApi.list(),
+          organizationsApi.list(),
         ]);
         setEvents(eventsRes.data);
         setCategories(catsRes.data);
+        setOrganizations(orgsRes.data);
       } catch (err) {
         console.error("Failed to load data:", err);
       } finally {
@@ -139,14 +243,22 @@ export default function HomePage() {
       }
     }
     load();
-  }, [setCategories, datePreset, viewMode, currentDate, debouncedSearch]);
+  }, [setCategories, setOrganizations, datePreset, viewMode, currentDate, debouncedSearch, selectedCity]);
 
   const filteredEvents = useMemo(() => {
-    if (selectedCategories.length === 0) return events;
-    return events.filter((e) =>
-      e.categories.some((c) => selectedCategories.includes(c.slug))
-    );
-  }, [events, selectedCategories]);
+    let result = events;
+    if (selectedCategories.length > 0) {
+      result = result.filter((e) =>
+        e.categories.some((c) => selectedCategories.includes(c.slug))
+      );
+    }
+    if (selectedOrgIds.length > 0) {
+      result = result.filter(
+        (e) => e.organization && selectedOrgIds.includes(e.organization.id)
+      );
+    }
+    return result;
+  }, [events, selectedCategories, selectedOrgIds]);
 
   const upcomingEvents = useMemo(() => {
     const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -210,7 +322,7 @@ export default function HomePage() {
         <div className="relative">
           <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
             <Sparkles className="h-3.5 w-3.5" />
-            Casper, Wyoming
+            {selectedCity === "All Wyoming" ? "Wyoming" : `${selectedCity}, Wyoming`}
           </div>
           <h1 className="mb-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
             Community Calendar
@@ -289,6 +401,31 @@ export default function HomePage() {
               {preset === "all" ? "All events" : preset === "today" ? "Today" : preset === "tomorrow" ? "Tomorrow" : preset === "weekend" ? "This weekend" : "Next 7 days"}
             </button>
           ))}
+        </div>
+
+        {/* Location & Organization filters */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative">
+            <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <select
+              value={selectedCity}
+              onChange={(e) => setSelectedCity(e.target.value)}
+              className="appearance-none rounded-xl border border-gray-200/80 bg-white/60 py-2 pl-9 pr-8 text-sm font-medium shadow-sm backdrop-blur-sm focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
+              aria-label="Filter by city"
+            >
+              {WYOMING_CITIES.map((city) => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
+          </div>
+
+          <OrgFilterDropdown
+            organizations={organizations}
+            selectedCity={selectedCity}
+            selectedOrgIds={selectedOrgIds}
+            onToggle={toggleOrgFilter}
+            onClear={clearOrgFilter}
+          />
         </div>
 
         {/* Category filter */}

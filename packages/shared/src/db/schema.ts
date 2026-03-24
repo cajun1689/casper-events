@@ -309,6 +309,44 @@ export const embedConfigs = pgTable("embed_configs", {
     .notNull(),
 });
 
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    expoPushToken: varchar("expo_push_token", { length: 255 }).notNull(),
+    platform: varchar("platform", { length: 10 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("push_subscriptions_token_idx").on(table.expoPushToken),
+    index("push_subscriptions_platform_idx").on(table.platform),
+  ]
+);
+
+export const pushSubscriptionOrgs = pgTable(
+  "push_subscription_orgs",
+  {
+    subscriptionId: uuid("subscription_id")
+      .notNull()
+      .references(() => pushSubscriptions.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    uniqueIndex("push_subscription_orgs_pk").on(
+      table.subscriptionId,
+      table.orgId
+    ),
+  ]
+);
+
 export const venues = pgTable(
   "venues",
   {

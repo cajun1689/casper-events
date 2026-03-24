@@ -41,7 +41,13 @@ function AuthRehydrator() {
       .me()
       .then((profile) => {
         try {
-          const payload = JSON.parse(atob(token.split(".")[1]));
+          const parts = token.split(".");
+          if (parts.length < 2) {
+            logout();
+            return;
+          }
+          const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+          const payload = JSON.parse(atob(base64));
           setAuth(
             token,
             {

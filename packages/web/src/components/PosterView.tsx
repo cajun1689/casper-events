@@ -3,43 +3,21 @@ import { Link } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import { MapPin, ExternalLink } from "lucide-react";
 import type { EventWithDetails } from "@cyh/shared";
+import {
+  getTextColorForPosterBackground,
+  isPosterGradient,
+  resolvePosterEventColor,
+} from "@cyh/shared";
 
 interface PosterViewProps {
   events: EventWithDetails[];
 }
 
-function parseColor(hex: string): { r: number; g: number; b: number } | null {
-  const m = hex.match(/^#?([0-9a-f]{6})$/i);
-  if (!m) return null;
-  return {
-    r: parseInt(m[1].slice(0, 2), 16),
-    g: parseInt(m[1].slice(2, 4), 16),
-    b: parseInt(m[1].slice(4, 6), 16),
-  };
-}
-
-function getTextColor(bg: string): string {
-  const solid = isGradient(bg) ? getSolidFromGradient(bg) : bg;
-  const c = parseColor(solid);
-  if (!c) return "#1a1a1a";
-  const lum = (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
-  return lum > 0.55 ? "#1a1a1a" : "#ffffff";
-}
-
-function resolveColor(event: EventWithDetails): string {
-  if (event.color) return event.color;
-  const cats = event.orgCategories?.length ? event.orgCategories : event.categories ?? [];
-  if (cats.length > 0 && cats[0].color) return cats[0].color;
-  return "#4f46e5";
-}
-
-function isGradient(value: string): boolean {
-  return typeof value === "string" && value.trim().startsWith("linear-gradient");
-}
-
-function getSolidFromGradient(value: string): string {
-  const match = value?.match(/#[0-9a-fA-F]{3,6}/);
-  return match ? match[0] : "#4f46e5";
+/** Format yyyy-MM key into a display label using a local-time date (avoids UTC midnight shift). */
+function monthLabel(yyyyMm: string, longYear = false): string {
+  const [y, m] = yyyyMm.split("-").map(Number);
+  const d = new Date(y, m - 1, 1);
+  return format(d, longYear ? "MMMM yyyy" : "MMM yyyy");
 }
 
 function cleanDescription(raw: string): string {
@@ -65,7 +43,7 @@ export function PosterView({ events }: PosterViewProps) {
   const grouped = useMemo(() => {
     const map = new Map<string, EventWithDetails[]>();
     for (const event of sorted) {
-      const key = event.startAt.slice(0, 7);
+      const key = format(parseISO(event.startAt), "yyyy-MM");
       const list = map.get(key) ?? [];
       list.push(event);
       map.set(key, list);
@@ -115,7 +93,7 @@ export function PosterView({ events }: PosterViewProps) {
                   : "border border-gray-200/80 bg-white/60 text-gray-600 hover:bg-white hover:shadow"
               }`}
             >
-              {format(new Date(m + "-01"), "MMM yyyy")}
+              {monthLabel(m)}
             </button>
           ))}
         </div>
@@ -129,7 +107,7 @@ export function PosterView({ events }: PosterViewProps) {
           className="animate-fade-in"
         >
           <h2 className="mb-5 text-lg font-extrabold tracking-tight text-gray-900">
-            {format(new Date(monthKey + "-01"), "MMMM yyyy")}
+            {monthLabel(monthKey, true)}
           </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {monthEvents.map((event) => (
@@ -143,8 +121,8 @@ export function PosterView({ events }: PosterViewProps) {
 }
 
 function PosterCard({ event }: { event: EventWithDetails }) {
-  const bgColor = resolveColor(event);
-  const textColor = getTextColor(bgColor);
+  const bgColor = resolvePosterEventColor(event);
+  const textColor = getTextColorForPosterBackground(bgColor);
   const start = parseISO(event.startAt);
   const end = event.endAt ? parseISO(event.endAt) : null;
   const timeLabel = event.allDay
@@ -152,7 +130,7 @@ function PosterCard({ event }: { event: EventWithDetails }) {
     : end
       ? `${format(start, "h:mm a")} – ${format(end, "h:mm a")}`
       : format(start, "h:mm a");
-  const primaryCat = event.categories[0];
+  const primaryCat = event.categories?.[0];
   const sponsors = event.sponsors ?? [];
 
   return (
@@ -160,7 +138,7 @@ function PosterCard({ event }: { event: EventWithDetails }) {
       to={`/events/${event.id}`}
       className="group relative flex min-h-[180px] flex-col overflow-hidden rounded-2xl shadow-md transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
       style={{
-        ...(isGradient(bgColor) ? { background: bgColor } : { backgroundColor: bgColor }),
+        ...(isPosterGradient(bgColor) ? { background: bgColor } : { backgroundColor: bgColor }),
         color: textColor,
       }}
     >

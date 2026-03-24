@@ -1,0 +1,34 @@
+---
+description: Web deployment safety rules to prevent blank page / white screen issues
+alwaysApply: true
+---
+
+# Web Deploy Safety
+
+## Architecture
+- **Web** (casperevents.org): Vite SPA on S3 + CloudFront
+- **API** (api.casperevents.org): Lambda behind API Gateway (separate subdomain)
+- **CI/CD**: GitHub Actions on push to `main` → builds all, deploys CDK + S3 + CloudFront invalidation
+
+## Critical: Cache Headers
+- `index.html` MUST have `Cache-Control: no-cache, no-store, must-revalidate`
+- Hashed assets (`/assets/*.js`, `/assets/*.css`) use `Cache-Control: public, max-age=31536000, immutable`
+- Without this, browsers cache old HTML → load deleted JS filenames → blank page
+
+## After Pushing Web Changes
+1. CI auto-deploys on push to `main`
+2. If user reports blank page, tell them to **hard-refresh** (Cmd+Shift+R)
+3. Verify deploy: `curl -sI https://casperevents.org/ | grep cache-control`
+
+## Date/Timezone Safety (Mountain Time)
+- NEVER use `new Date("YYYY-MM-DD")` for display — parses as UTC midnight, shifts backward in MT
+- Use `new Date(year, month - 1, day)` for local dates or `parseISO()` for ISO strings
+- For grouping by month/date, use string slicing: `event.startAt.slice(0, 7)` or `.slice(0, 10)`
+
+## PosterView Parity
+- Web and mobile Poster views should stay in sync (same grouping logic, same features)
+- Both use `monthLabel()` helper with `new Date(y, m - 1, 1)` for safe local month names
+
+## Mobile Rebuild Checklist
+- JS changes need Xcode **Clean Build Folder** (Shift+Cmd+K) then rebuild
+- If pod install fails from Dropbox path spaces, set `ios.buildReactNativeFromSource: true`

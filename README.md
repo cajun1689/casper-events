@@ -110,6 +110,7 @@ See [docs/EMBEDDING.md](docs/EMBEDDING.md) for full configuration options.
 ## Documentation
 
 - [Setup Guide](docs/SETUP.md) — Local development and AWS deployment
+- [Web deploy & reliability](docs/WEB_DEPLOY.md) — **S3/CloudFront checklist**, env vars, and avoiding blank-page regressions
 - [API Reference](docs/API.md) — All REST endpoints
 - [Embedding Guide](docs/EMBEDDING.md) — Widget configuration and theming
 

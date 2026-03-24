@@ -6,7 +6,13 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 await build({
-  entryPoints: ["src/index.ts", "src/scheduled.ts", "src/migrate-handler.ts", "src/digest-handler.ts"],
+  entryPoints: [
+    "src/index.ts",
+    "src/scheduled.ts",
+    "src/migrate-handler.ts",
+    "src/digest-handler.ts",
+    "src/push-handler.ts",
+  ],
   bundle: true,
   platform: "node",
   target: "node20",

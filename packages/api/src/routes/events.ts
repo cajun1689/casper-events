@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { eq, and, gte, lte, inArray, sql, ilike, desc, asc, SQL } from "drizzle-orm";
+import { eq, and, gte, lte, inArray, sql, ilike, desc, asc, or, SQL } from "drizzle-orm";
 import * as schema from "@cyh/shared/db";
 import {
   createEventSchema,
@@ -68,6 +68,16 @@ export async function eventRoutes(app: FastifyInstance) {
 
     if (query.search) {
       conditions.push(ilike(schema.events.title, `%${query.search}%`));
+    }
+
+    if (query.city && query.city.trim()) {
+      const cityPattern = `%${query.city.trim()}%`;
+      conditions.push(
+        or(
+          ilike(schema.events.address, cityPattern),
+          ilike(schema.events.venueName, cityPattern)
+        )!
+      );
     }
 
     if (query.featured === true) {

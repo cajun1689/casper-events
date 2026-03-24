@@ -1,6 +1,12 @@
 import React, { useState } from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import type { EmbedEvent } from "../types";
+
+/** Format yyyy-MM key into a display label using a local-time date (avoids UTC midnight shift). */
+function monthLabel(yyyyMm: string): string {
+  const [y, m] = yyyyMm.split("-").map(Number);
+  return format(new Date(y, m - 1, 1), "MMMM yyyy");
+}
 
 interface EmbedPosterFiltersProps {
   events: EmbedEvent[];
@@ -24,7 +30,7 @@ export function EmbedPosterFilters({
   const months = React.useMemo(() => {
     const set = new Set<string>();
     for (const e of events) {
-      set.add(e.startAt.slice(0, 7));
+      set.add(format(parseISO(e.startAt), "yyyy-MM"));
     }
     return Array.from(set).sort();
   }, [events]);
@@ -79,7 +85,7 @@ export function EmbedPosterFilters({
             cursor: "pointer",
           }}
         >
-          {selectedMonth ? format(new Date(selectedMonth + "-01"), "MMMM yyyy") : "Dates"}
+          {selectedMonth ? monthLabel(selectedMonth) : "Dates"}
           <span style={{ fontSize: "10px" }}>▼</span>
         </button>
         {datesOpen && (
@@ -134,7 +140,7 @@ export function EmbedPosterFilters({
                   cursor: "pointer",
                 }}
               >
-                {format(new Date(m + "-01"), "MMMM yyyy")}
+                {monthLabel(m)}
               </button>
             ))}
           </div>

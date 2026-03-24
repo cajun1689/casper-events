@@ -1,6 +1,11 @@
 import { safeGetToken } from "@/lib/safe-storage";
 
-const API_BASE = import.meta.env.VITE_API_URL || "/api";
+/** Production fallback if VITE_API_URL was missing at build time (prevents blank app from wrong /api origin). */
+const PRODUCTION_API = "https://api.casperevents.org/v1";
+
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? PRODUCTION_API : "/api");
 
 async function request<T>(
   path: string,

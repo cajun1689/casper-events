@@ -17,16 +17,23 @@ interface EmbedPosterViewProps {
   layoutOptions?: LayoutOptions;
 }
 
+/** Group events by local-time month so the header always matches the date badge. */
 function groupEventsByMonth(events: EmbedEvent[]): Map<string, EmbedEvent[]> {
   const groups = new Map<string, EmbedEvent[]>();
   const sorted = [...events].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   for (const event of sorted) {
-    const key = event.startAt.slice(0, 7);
+    const key = format(parseISO(event.startAt), "yyyy-MM");
     const list = groups.get(key) ?? [];
     list.push(event);
     groups.set(key, list);
   }
   return groups;
+}
+
+/** Format yyyy-MM key into a display label using a local-time date (avoids UTC midnight shift). */
+function monthLabel(yyyyMm: string): string {
+  const [y, m] = yyyyMm.split("-").map(Number);
+  return format(new Date(y, m - 1, 1), "MMMM yyyy");
 }
 
 export function EmbedPosterView({
@@ -99,8 +106,7 @@ export function EmbedPosterView({
         .filter(([monthKey]) => monthKey >= format(new Date(), "yyyy-MM"))
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([monthKey, monthEvents]) => {
-        const firstDate = parseISO(monthEvents[0].startAt);
-        const monthLabel = format(firstDate, "MMMM yyyy");
+        const label = monthLabel(monthKey);
         return (
           <div
             key={monthKey}
@@ -116,7 +122,7 @@ export function EmbedPosterView({
                 letterSpacing: "-0.02em",
               }}
             >
-              {monthLabel}
+              {label}
             </div>
             <div
               style={{
