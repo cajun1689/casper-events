@@ -22,7 +22,6 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    ionicons: require("../assets/fonts/Ionicons.ttf"),
     Inter_400Regular,
     Inter_600SemiBold,
     Inter_700Bold,

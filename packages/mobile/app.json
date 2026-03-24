@@ -48,7 +48,6 @@
         "expo-font",
         {
           "fonts": [
-            "./assets/fonts/Ionicons.ttf",
             "./assets/fonts/SpaceMono-Regular.ttf"
           ]
         }
