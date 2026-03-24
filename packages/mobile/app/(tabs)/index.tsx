@@ -427,13 +427,18 @@ export default function HomeScreen() {
   if (viewMode === "map") {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <ScrollView
-          contentContainerStyle={styles.mapHeaderScroll}
-          nestedScrollEnabled
-        >
-          {renderHeader()}
-        </ScrollView>
-        <EventMapView events={displayEvents} />
+        <View style={styles.mapHeaderWrap}>
+          <ScrollView
+            contentContainerStyle={styles.mapHeaderScroll}
+            nestedScrollEnabled
+            bounces={false}
+          >
+            {renderHeader()}
+          </ScrollView>
+        </View>
+        <View style={styles.mapFill}>
+          <EventMapView events={displayEvents} />
+        </View>
       </View>
     );
   }
@@ -620,6 +625,13 @@ const styles = StyleSheet.create({
   monthJumpText: {
     fontSize: 12,
     fontWeight: "700",
+  },
+  mapHeaderWrap: {
+    flexShrink: 0,
+    flexGrow: 0,
+  },
+  mapFill: {
+    flex: 1,
   },
   mapHeaderScroll: {
     paddingBottom: spacing.sm,

@@ -5,7 +5,6 @@ import {
   View,
   Pressable,
   Dimensions,
-  Platform,
 } from "react-native";
 import MapView, { Marker, Callout, Region } from "react-native-maps";
 import { Image } from "expo-image";
@@ -237,7 +236,6 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
-    minHeight: SCREEN_HEIGHT * 0.55,
   },
   emptyContainer: {
     height: SCREEN_HEIGHT * 0.45,
