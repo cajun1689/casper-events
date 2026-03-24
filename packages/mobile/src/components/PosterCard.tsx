@@ -235,41 +235,29 @@ export function PosterCard({ event }: PosterCardProps) {
     </>
   );
 
-  if (gradient) {
-    const gradientColors = extractGradientColors(bgColor);
-    return (
-      <Link href={`/events/${event.id}`} asChild>
-        <Pressable
-          style={({ pressed }) => [pressed && styles.pressed]}
-          accessibilityLabel={`${event.title}, ${format(start, "EEEE, MMMM d")}`}
-          accessibilityRole="link"
-        >
-          <LinearGradient
-            colors={gradientColors as [string, string]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.card, shadows.lg]}
-          >
-            {cardContent}
-          </LinearGradient>
-        </Pressable>
-      </Link>
-    );
-  }
+  const inner = gradient ? (
+    <LinearGradient
+      colors={extractGradientColors(bgColor) as [string, string]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[styles.card, shadows.lg]}
+    >
+      {cardContent}
+    </LinearGradient>
+  ) : (
+    <View style={[styles.card, shadows.lg, { backgroundColor: bgColor }]}>
+      {cardContent}
+    </View>
+  );
 
   return (
     <Link href={`/events/${event.id}`} asChild>
       <Pressable
-        style={({ pressed }) => [
-          styles.card,
-          shadows.lg,
-          { backgroundColor: bgColor },
-          pressed && styles.pressed,
-        ]}
+        style={({ pressed }) => [pressed && styles.pressed]}
         accessibilityLabel={`${event.title}, ${format(start, "EEEE, MMMM d")}`}
         accessibilityRole="link"
       >
-        {cardContent}
+        {inner}
       </Pressable>
     </Link>
   );
