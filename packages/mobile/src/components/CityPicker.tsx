@@ -1,6 +1,6 @@
 import { View, Text, Pressable, Modal, FlatList, StyleSheet } from "react-native";
 import { useState } from "react";
-import { WYOMING_CITIES } from "@/lib/constants";
+import { WYOMING_CITIES } from "@/lib/wyoming-cities";
 import { useStore } from "@/lib/store";
 import { Colors } from "@/lib/constants";
 
