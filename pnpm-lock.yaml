@@ -164,6 +164,9 @@ importers:
       '@cyh/shared':
         specifier: workspace:*
         version: link:../shared
+      '@expo/config-plugins':
+        specifier: ~9.0.17
+        version: 9.0.17
       '@react-native-async-storage/async-storage':
         specifier: ~2.1.2
         version: 2.1.2(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.2(@babel/core@7.29.0))(@types/react@18.3.28)(react@19.2.4))
@@ -243,9 +246,6 @@ importers:
         specifier: ^5.0.0
         version: 5.0.11(@types/react@18.3.28)(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
     devDependencies:
-      '@expo/config-plugins':
-        specifier: ~9.0.17
-        version: 9.0.17
       '@types/react':
         specifier: ~18.3.0
         version: 18.3.28
