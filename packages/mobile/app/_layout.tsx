@@ -18,7 +18,7 @@ export const unstable_settings = {
   initialRouteName: "(tabs)",
 };
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({

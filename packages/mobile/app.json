@@ -42,15 +42,7 @@
     },
     "plugins": [
       "expo-router",
-      "expo-notifications",
-      [
-        "expo-font",
-        {
-          "fonts": [
-            "./assets/fonts/SpaceMono-Regular.ttf"
-          ]
-        }
-      ]
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true
