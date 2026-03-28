@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, type ComponentType } from "react";
 import {
   StyleSheet,
   Text,
@@ -21,6 +21,7 @@ import { getSelectedCity, setSelectedCity } from "@/src/lib/city-storage";
 import { getDefaultViewMode, setDefaultViewMode } from "@/src/lib/view-storage";
 import { getFilteredOrgIds } from "@/src/lib/org-filter-storage";
 import { WYOMING_CITIES, ALL_WYOMING_VALUE } from "@/src/lib/wyoming-cities";
+import { logBreadcrumb } from "@/src/lib/crash-logger";
 import { SearchBar } from "@/src/components/SearchBar";
 import { DatePresets, getDateRange, type PresetKey } from "@/src/components/DatePresets";
 import { CategoryPills } from "@/src/components/CategoryPills";
@@ -31,7 +32,6 @@ import { SkeletonList } from "@/src/components/SkeletonCard";
 import { ViewToggle, type ViewMode } from "@/src/components/ViewToggle";
 import { MonthCalendar } from "@/src/components/MonthCalendar";
 import { PosterCard } from "@/src/components/PosterCard";
-import { EventMapView } from "@/src/components/EventMapView";
 import type { EventWithDetails, CategoryPublic } from "@cyh/shared";
 
 function groupEventsByDate(events: EventWithDetails[]) {
@@ -95,6 +95,16 @@ export default function HomeScreen() {
   const [selectedPosterMonth, setSelectedPosterMonth] = useState<string | null>(null);
   const posterScrollRef = useRef<ScrollView>(null);
   const monthSectionRefs = useRef<Record<string, View | null>>({});
+  const [mapLoadFailed, setMapLoadFailed] = useState(false);
+
+  const MapViewComponent = useMemo(() => {
+    try {
+      return require("@/src/components/EventMapView")
+        .EventMapView as ComponentType<{ events: EventWithDetails[] }>;
+    } catch {
+      return null;
+    }
+  }, []);
 
   const setViewMode = useCallback((mode: ViewMode) => {
     setViewModeState(mode);
@@ -133,10 +143,22 @@ export default function HomeScreen() {
         params.categories = Array.from(selectedCats).join(",");
       }
 
+      logBreadcrumb("events-fetch-start", {
+        hasCity: Boolean(selectedCity),
+        hasSearch: Boolean(search.trim()),
+        preset: datePreset,
+        categoryCount: selectedCats.size,
+      });
+
       const res = await eventsApi.list(params);
       setEvents(res.data);
+      logBreadcrumb("events-fetch-success", {
+        count: res.data.length,
+      });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load events");
+      const message = e instanceof Error ? e.message : "Failed to load events";
+      setError(message);
+      logBreadcrumb("events-fetch-error", { message });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -164,6 +186,14 @@ export default function HomeScreen() {
     setRefreshing(true);
     fetchEvents();
   };
+
+  useEffect(() => {
+    if (viewMode !== "map" || MapViewComponent || mapLoadFailed) return;
+    setMapLoadFailed(true);
+    setError("Map view is unavailable in this build.");
+    logBreadcrumb("map-view-module-unavailable");
+    setViewMode("cards");
+  }, [viewMode, MapViewComponent, mapLoadFailed, setViewMode]);
 
   const handleSelectCity = async (city: string) => {
     const value = city === ALL_WYOMING_VALUE ? null : city;
@@ -433,7 +463,19 @@ export default function HomeScreen() {
         >
           {renderHeader()}
         </ScrollView>
-        <EventMapView events={displayEvents} />
+        {MapViewComponent ? (
+          <MapViewComponent events={displayEvents} />
+        ) : (
+          <View style={styles.empty}>
+            <Ionicons name="map-outline" size={48} color={theme.textTertiary} />
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>
+              Map unavailable
+            </Text>
+            <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
+              Use Cards, List, Poster, or Calendar view in this version.
+            </Text>
+          </View>
+        )}
       </View>
     );
   }

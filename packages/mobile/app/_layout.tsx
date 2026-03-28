@@ -11,6 +11,7 @@ import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold";
 import { Inter_700Bold } from "@expo-google-fonts/inter/700Bold";
 
 import { useColorScheme } from "@/components/useColorScheme";
+import { installGlobalErrorHandler, logBreadcrumb } from "@/src/lib/crash-logger";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -29,11 +30,26 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (error) throw error;
+    installGlobalErrorHandler();
+    logBreadcrumb("app-root-mounted", {
+      platform: "mobile",
+      loadedInitially: loaded,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (error) {
+      logBreadcrumb("font-load-error", {
+        message: error.message,
+        stack: error.stack,
+      });
+      throw new Error(`RootLayout font load failed: ${error.message}`);
+    }
   }, [error]);
 
   useEffect(() => {
     if (loaded) {
+      logBreadcrumb("fonts-loaded");
       SplashScreen.hideAsync();
     }
   }, [loaded]);
@@ -50,20 +66,40 @@ function RootLayoutNav() {
   const router = useRouter();
 
   useEffect(() => {
+    logBreadcrumb("notification-listener-register");
     const sub = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        const data = response.notification.request.content
-          .data as Record<string, unknown>;
-        const eventId =
-          (data?.eventId as string) ??
-          (data?.url as string)?.match?.(/\/events\/([^/]+)/)?.[1];
-        if (eventId) {
-          router.push(`/events/${eventId}`);
+        try {
+          const data = response.notification.request.content
+            .data as Record<string, unknown>;
+          const eventId =
+            (data?.eventId as string) ??
+            (data?.url as string)?.match?.(/\/events\/([^/]+)/)?.[1];
+
+          logBreadcrumb("notification-response", {
+            hasEventId: Boolean(eventId),
+            keys: Object.keys(data ?? {}),
+          });
+
+          if (eventId) {
+            router.push(`/events/${eventId}`);
+          }
+        } catch (listenerError) {
+          logBreadcrumb("notification-listener-error", {
+            message:
+              listenerError instanceof Error
+                ? listenerError.message
+                : "unknown-notification-listener-error",
+          });
+          throw listenerError;
         }
       }
     );
 
-    return () => sub.remove();
+    return () => {
+      logBreadcrumb("notification-listener-remove");
+      sub.remove();
+    };
   }, [router]);
 
   return (

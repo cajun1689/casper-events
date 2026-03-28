@@ -28,6 +28,7 @@ import { getSelectedCity, setSelectedCity } from "@/src/lib/city-storage";
 import { getDefaultViewMode, setDefaultViewMode } from "@/src/lib/view-storage";
 import { getFilteredOrgIds, setFilteredOrgIds } from "@/src/lib/org-filter-storage";
 import { ALL_WYOMING_VALUE, WYOMING_CITIES } from "@/src/lib/wyoming-cities";
+import { clearBreadcrumbs, getBreadcrumbDump, logBreadcrumb } from "@/src/lib/crash-logger";
 import type { ViewMode } from "@/src/components/ViewToggle";
 import type { OrganizationPublic } from "@cyh/shared";
 
@@ -260,6 +261,23 @@ export default function SettingsScreen() {
   };
 
   const appVersion = Constants.expoConfig?.version || "1.0.0";
+
+  const showDiagnostics = useCallback(async () => {
+    const dump = await getBreadcrumbDump();
+    logBreadcrumb("diagnostics-viewed", { length: dump.length });
+    // eslint-disable-next-line no-console
+    console.log(`[diag-dump] ${dump}`);
+    Alert.alert(
+      "Diagnostics captured",
+      "Startup diagnostics were written to app logs as [diag-dump]. Include those logs with your crash report."
+    );
+  }, []);
+
+  const resetDiagnostics = useCallback(async () => {
+    await clearBreadcrumbs();
+    logBreadcrumb("diagnostics-reset");
+    Alert.alert("Diagnostics cleared", "Stored crash breadcrumbs were reset.");
+  }, []);
 
   if (loading) {
     return (
@@ -565,6 +583,14 @@ export default function SettingsScreen() {
             <SettingsRow icon="information-circle-outline" label="About" />
           </Pressable>
         </Link>
+        <View style={[styles.separator, { backgroundColor: theme.borderLight }]} />
+        <Pressable onPress={showDiagnostics} accessibilityLabel="Show diagnostics" accessibilityRole="button">
+          <SettingsRow icon="bug-outline" label="Show Diagnostics" value="Writes [diag-dump] to logs" />
+        </Pressable>
+        <View style={[styles.separator, { backgroundColor: theme.borderLight }]} />
+        <Pressable onPress={resetDiagnostics} accessibilityLabel="Reset diagnostics" accessibilityRole="button">
+          <SettingsRow icon="trash-outline" label="Reset Diagnostics" />
+        </Pressable>
         <View style={[styles.separator, { backgroundColor: theme.borderLight }]} />
         <Link href="/updates" asChild>
           <Pressable accessibilityLabel="Updates" accessibilityRole="link">
